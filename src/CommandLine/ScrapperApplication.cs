@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CLAP;
+using CLAP.Interception;
 using HtmlAgilityPack;
 
 namespace Scrap.CommandLine
@@ -21,12 +22,15 @@ namespace Scrap.CommandLine
             string resourceXPath,
             string resourceAttribute,
             string destinationRootFolder,
-            string[] destinationFolderPattern,
-            string[] destinationFileNamePattern)
+            string destinationExpression,
+            bool whatIf = true)
         {
             var rootUri = new Uri(rootUrl);
 
             var baseUrl = new Uri(rootUri.Scheme + "://" + rootUri.Host);
+
+            Console.WriteLine("Compiling destination expression...");
+            var destinationProvider = DestinationProvider.Create(destinationExpression);
 
             var web = new HtmlWeb();
 
@@ -75,37 +79,37 @@ namespace Scrap.CommandLine
                 if (!resources.Any()) continue;
                 foreach (var resource in resources)
                 {
-                    await ProcessResource(resource, destinationRootFolder, destinationFolderPattern, destinationFileNamePattern, pageSegments);
+                    await ProcessResource(destinationProvider, resource, destinationRootFolder, page.Uri, page.Document, whatIf);
                 }
             }
         }
 
         private static async Task ProcessResource(
-            Uri resource,
+            DestinationProvider destinationProvider,
+            Uri resourceUrl,
             string destinationRootFolder,
-            string[] destinationFolderPattern,
-            string[] destinationFileNamePattern,
-            string[] pageSegments)
+            Uri pageUrl,
+            HtmlDocument pageDoc,
+            bool whatIf)
         {
-            var resourceSegments = resource.Segments.Select(segment => segment.Replace("/", "")).ToArray();
-            var resourceExtension = Path.GetExtension(resource.Segments.Last());
-            var data = new DestinationData(destinationRootFolder, pageSegments, resourceSegments,
-                resourceExtension);
+            var destinationPath = destinationProvider.GetDestination(
+                resourceUrl,
+                destinationRootFolder,
+                pageUrl,
+                pageDoc
+            );
 
-            var destinationFolderParts = data.Parse(destinationFolderPattern);
-            var destinationFileNameParts = data.Parse(destinationFileNamePattern);
-            var destinationFileName = string.Join("", destinationFileNameParts);
-            var destinationPathParts = destinationFolderParts.Concat(new[] { destinationFileName });
-            var destinationPath = Path.Combine(destinationPathParts.ToArray());
-
-            Console.Write("GET {0} -> {1}", resource, destinationPath);
+            Console.WriteLine("GET {0}", resourceUrl);
+            Console.WriteLine("-> {0}", destinationPath);
             var directoryName = Path.GetDirectoryName(destinationPath);
             if (directoryName != null)
             {
                 Directory.CreateDirectory(directoryName);
                 if (!File.Exists(destinationPath))
                 {
-                    await HttpHelper.DownloadFileAsync(resource, destinationPath);
+                    if (!whatIf) {
+                        await HttpHelper.DownloadFileAsync(resourceUrl, destinationPath);
+                    }
                     Console.WriteLine(" OK!");
                 }
                 else
@@ -114,5 +118,11 @@ namespace Scrap.CommandLine
                 }
             }
         }
+
+        [PostVerbExecution]
+        public static void After(PostVerbExecutionContext context)
+        {
+            Console.WriteLine(context.Exception);
+        }        
     }
 }

@@ -23,11 +23,12 @@ namespace Scrap.CommandLine
                 }
             }
         }
-        public static IEnumerable<TExp> DepthFirstSearch<T, TExp>(T v, Func<T, TExp> expensive, Func<TExp, IEnumerable<T>> adj)
+        
+        public static IEnumerable<TExp> DepthFirstSearch<T, TExp>(T root, Func<T, TExp> expensive, Func<TExp, IEnumerable<T>> adj)
         {
             HashSet<T> visited = new(EqualityComparer<T>.Default);
             Stack<T> stack = new();
-            stack.Push(v);
+            stack.Push(root);
             while (stack.Any())
             {
                 var currentNode = stack.Pop();

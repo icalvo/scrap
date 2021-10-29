@@ -20,6 +20,7 @@ namespace Scrap.CommandLine
                 {
                     Thread.Sleep(1000);
                     using HttpResponseMessage response = await HttpClient.GetAsync(uri);
+                    // using HttpResponseMessage response = await Trol(uri);
                     await using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
                     await using Stream streamToWriteTo = File.Open(outputPath, FileMode.Create);
                     await streamToReadFrom.CopyToAsync(streamToWriteTo);
@@ -30,6 +31,11 @@ namespace Scrap.CommandLine
                     Console.WriteLine("Error: " + ex.Message);
                 }
             }
+        }
+
+        private static Task<HttpResponseMessage> Trol(Uri uri)
+        {
+            throw new Exception("TROLOLO");
         }
     }
 }

@@ -3,19 +3,26 @@ using System.IO;
 using System.Net;
 using System.Linq;
 using HtmlAgilityPack;
+using Microsoft.CodeAnalysis;
 using Scrap.CommandLine;
 
 namespace RoslynCompileSample
 {
-    public class InternalDestinationProvider2 : IDestinationProvider
+    public class InternalDestinationProvider2 : BaseDestinationProvider
     {
-        public string GetDestination(
+        public InternalDestinationProvider2(IPageRetriever pageRetriever, Uri baseUri)
+            : base(pageRetriever, baseUri)
+        {
+        }
+
+        public override string GetDestination(
             Uri resourceUrl,
             string destinationRootFolder,
             Uri pageUrl,
             HtmlDocument pageDoc)
         {
-            return "";
+            return
+                destinationRootFolder.C(pageDoc.GetContent("//h1") ?? "").C(pageUrl.CleanSegments()[^1] + resourceUrl.Extension()).Combine();
         }
     }
 }

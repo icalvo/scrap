@@ -1,9 +1,10 @@
 using System;
+using System.Threading.Tasks;
 
 namespace Scrap.Pages
 {
     public interface IPageRetriever
     {
-        Page GetPage(Uri uri);
+        Task<Page> GetPageAsync(Uri uri);
     }
 }

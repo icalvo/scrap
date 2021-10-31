@@ -9,15 +9,15 @@ namespace Scrap.Resources.FileSystem
     public class FileSystemResourceRepository : IResourceRepository
     {
         private readonly IDestinationProvider _destinationProvider;
-        private readonly HttpHelper _httpHelper;
+        private readonly IResourceDownloader _resourceDownloader;
         private readonly string _destinationRootFolder;
         private readonly bool _whatIf;
         private readonly ILogger<FileSystemResourceRepository> _logger;
 
-        public FileSystemResourceRepository(IDestinationProvider destinationProvider, HttpHelper httpHelper, string destinationRootFolder, bool whatIf, ILogger<FileSystemResourceRepository> logger)
+        public FileSystemResourceRepository(IDestinationProvider destinationProvider, IResourceDownloader resourceDownloader, string destinationRootFolder, bool whatIf, ILogger<FileSystemResourceRepository> logger)
         {
             _destinationProvider = destinationProvider;
-            _httpHelper = httpHelper;
+            _resourceDownloader = resourceDownloader;
             _destinationRootFolder = destinationRootFolder;
             _whatIf = whatIf;
             _logger = logger;
@@ -27,36 +27,31 @@ namespace Scrap.Resources.FileSystem
             Uri resourceUrl,
             Page page)
         {
-            var destinationPath = _destinationProvider.GetDestination(
+            var destinationPath = await _destinationProvider.GetDestinationAsync(
                 resourceUrl,
                 _destinationRootFolder,
                 page);
 
-            _logger.LogInformation("GET {0}", resourceUrl);
-            _logger.LogInformation("-> {0}", destinationPath);
-            try
+            _logger.LogInformation("GET {ResourceUrl}", resourceUrl);
+            _logger.LogInformation("-> {DestinationPath}", destinationPath);
+
+            var directoryName = Path.GetDirectoryName(destinationPath);
+            if (directoryName != null)
             {
-                var directoryName = Path.GetDirectoryName(destinationPath);
-                if (directoryName != null)
+                Directory.CreateDirectory(directoryName);
+                if (!File.Exists(destinationPath))
                 {
-                    Directory.CreateDirectory(directoryName);
-                    if (!File.Exists(destinationPath))
+                    if (!_whatIf)
                     {
-                        if (!_whatIf) {
-                            await _httpHelper.DownloadFileAsync(resourceUrl, destinationPath);
-                        }
-                        _logger.LogInformation(" OK!");
+                        await using var outputStream = File.Open(destinationPath, FileMode.Create);
+                        await _resourceDownloader.DownloadFileAsync(resourceUrl, outputStream);
                     }
-                    else
-                    {
-                        _logger.LogInformation(" Already there!");
-                    }
+                    _logger.LogInformation(" OK!");
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(1, ex, ex.Message);
-                throw;
+                else
+                {
+                    _logger.LogInformation(" Already there!");
+                }
             }
         }
     }

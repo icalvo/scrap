@@ -7,10 +7,12 @@ namespace Scrap.Resources
 {
     public class ResourceRepositoryFactory : IResourceRepositoryFactory
     {
+        private readonly IResourceDownloader _resourceDownloader;
         private readonly ILoggerFactory _loggerFactory;
 
-        public ResourceRepositoryFactory(ILoggerFactory loggerFactory)
+        public ResourceRepositoryFactory(IResourceDownloader resourceDownloader, ILoggerFactory loggerFactory)
         {
+            _resourceDownloader = resourceDownloader;
             _loggerFactory = loggerFactory;
         }
 
@@ -22,12 +24,12 @@ namespace Scrap.Resources
                     string destinationRootFolder = args[0];
                     string destinationExpression = args[1];
                     bool whatIf = bool.Parse(args[2]);
-                    var destinationProvider = DestinationProvider.CreateCompiled(
+                    var destinationProvider = CompiledDestinationProvider.CreateCompiled(
                         destinationExpression,
-                        new Logger<DestinationProvider>(_loggerFactory));
+                        new Logger<CompiledDestinationProvider>(_loggerFactory));
                     return new FileSystemResourceRepository(
                         destinationProvider,
-                        new HttpHelper(new Logger<HttpHelper>(_loggerFactory)),
+                        _resourceDownloader,
                         destinationRootFolder,
                         whatIf,
                         new Logger<FileSystemResourceRepository>(_loggerFactory));

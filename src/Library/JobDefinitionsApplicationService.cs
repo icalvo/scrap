@@ -7,15 +7,15 @@ using Scrap.Resources.FileSystem.Extensions;
 
 namespace Scrap
 {
-    public class ScrapperJobApplicationService
+    public class JobDefinitionsApplicationService
     {
         private readonly IJobDefinitionRepository _definitionRepository;
         private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
-        private readonly ILogger<ScrapperJobApplicationService> _logger;
+        private readonly ILogger<JobDefinitionsApplicationService> _logger;
 
-        public ScrapperJobApplicationService(
+        public JobDefinitionsApplicationService(
             IJobDefinitionRepository definitionRepository,
-            ILogger<ScrapperJobApplicationService> logger,
+            ILogger<JobDefinitionsApplicationService> logger,
             IResourceRepositoryFactory resourceRepositoryFactory)
         {
             _definitionRepository = definitionRepository;
@@ -46,5 +46,11 @@ namespace Scrap
 
             return _definitionRepository.AddAsync(name, jobDefinition);
         }
+        
+
+        public Task<JobDefinition> GetJobAsync(string name)
+        {
+            return _definitionRepository.GetByNameAsync(name);
+        }        
     }
 }

@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Scrap
 {
@@ -48,7 +51,33 @@ namespace Scrap
                 }
             }
         }
+        
+        public static async IAsyncEnumerable<TExp> DepthFirstSearchAsync<T, TExp>(T root, Func<T, Task<TExp>> expensive, Func<TExp, IEnumerable<T>> adj)
+        {
+            HashSet<T> visited = new(EqualityComparer<T>.Default);
+            Stack<T> stack = new();
+            stack.Push(root);
+            while (stack.Any())
+            {
+                var currentNode = stack.Pop();
+                if (visited.Contains(currentNode))
+                {
+                    continue;
+                }
 
+                var ex = await expensive(currentNode);
+                visited.Add(currentNode);
+                yield return ex;
+
+                var adjacentNodes = adj(ex).Where(n => !visited.Contains(n)).Reverse().ToList();
+                foreach (var adjacentNode in adjacentNodes)
+                {
+                    stack.Push(adjacentNode);
+                }
+            }
+        }
+
+        
         public static IEnumerable<T> BreadthFirstSearch<T>(T s, Func<T, IEnumerable<T>> adj)
         {
             // Mark all the vertices as not

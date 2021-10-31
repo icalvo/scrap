@@ -12,22 +12,19 @@ namespace Scrap
 {
     public class ScrapperApplicationService
     {
-        private readonly Func<Uri, Func<Uri, Page>, Func<Page, IEnumerable<Uri>>, IEnumerable<Page>> _searchFunc;
+        private readonly Func<Uri, Func<Uri, Task<Page>>, Func<Page, IEnumerable<Uri>>, IAsyncEnumerable<Page>> _searchFunc;
         private readonly IPageRetriever _pageRetriever;
-        private readonly IJobDefinitionRepository _definitionRepository;
         private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
         private readonly ILogger<ScrapperApplicationService> _logger;
 
         public ScrapperApplicationService(
-            Func<Uri, Func<Uri, Page>, Func<Page, IEnumerable<Uri>>, IEnumerable<Page>> searchFunc,
+            Func<Uri, Func<Uri, Task<Page>>, Func<Page, IEnumerable<Uri>>, IAsyncEnumerable<Page>> searchFunc,
             IPageRetriever pageRetriever,
-            IJobDefinitionRepository definitionRepository,
             IResourceRepositoryFactory resourceRepositoryFactory,
             ILogger<ScrapperApplicationService> logger)
         {
             _searchFunc = searchFunc;
             _pageRetriever = pageRetriever;
-            _definitionRepository = definitionRepository;
             _resourceRepositoryFactory = resourceRepositoryFactory;
             _logger = logger;
         }
@@ -46,13 +43,13 @@ namespace Scrap
 
             IEnumerable<Uri> AdjacencyFunction(Page page) => page.Links(adjacencyXPath, adjacencyAttribute, baseUrl);
 
-            var pages = _searchFunc(rootUri, _pageRetriever.GetPage, AdjacencyFunction);
+            var pages = _searchFunc(rootUri, _pageRetriever.GetPageAsync, AdjacencyFunction);
 
             var resourceRepository = _resourceRepositoryFactory.Build(
                 resourceRepoType,
                 resourceRepoArgs.C(whatIf.ToString()).ToArray());
 
-            foreach (var page in pages)
+            await foreach (var page in pages)
             {
                 var resources = page.Links(resourceXPath, resourceAttribute, baseUrl).ToArray();
                 if (!resources.Any())
@@ -82,22 +79,6 @@ namespace Scrap
             _logger.LogDebug("Resource attribute: {ResourceAttribute}", resourceAttribute);
             _logger.LogDebug("Resource repo type: {ResourceRepoType}", resourceRepoType);
             _logger.LogDebug("Resource repo args: {ResourceRepoArgs}", string.Join(" , ", resourceRepoArgs));
-        }
-
-        public async Task ScrapAsync(string jobName, bool whatIf, string? rootUrl)
-        {
-            var scrapJobDefinition = await _definitionRepository.GetByNameAsync(jobName);
-            if (scrapJobDefinition.RootUrl == null)
-            {
-                if (rootUrl == null)
-                {
-                    throw new Exception("No Root URL found as argument or in the job definition");
-                }
-
-                scrapJobDefinition = new JobDefinition(scrapJobDefinition, rootUrl);
-            }
-            
-            await ScrapAsync(scrapJobDefinition, whatIf);
         }
     }
 }

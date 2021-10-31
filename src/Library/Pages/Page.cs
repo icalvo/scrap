@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
 
@@ -107,17 +108,17 @@ namespace Scrap.Pages
             return Attributes(xPath, attribute).FirstOrDefault();
         }
 
-        public Page? LinkedDoc(string adjacencyXPath, Uri? baseUrl = null)
+        public Task<Page?> LinkedDoc(string adjacencyXPath, Uri? baseUrl = null)
         {
             var link = Link(adjacencyXPath, baseUrl);
             return Doc(link);
         }
 
-        private Page? Doc(Uri? link)
+        private async Task<Page?> Doc(Uri? link)
         {
             Debug.Assert(_pageRetriever != null, nameof(_pageRetriever) + " != null");
 
-            return link == null ? null : new Page(link, _pageRetriever.GetPage(link).Document, _pageRetriever, _logger);
+            return link == null ? null : new Page(link, (await _pageRetriever.GetPageAsync(link)).Document, _pageRetriever, _logger);
         }        
     }
 }

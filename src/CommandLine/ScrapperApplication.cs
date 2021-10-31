@@ -2,11 +2,15 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using CLAP;
 using CLAP.Interception;
 using LiteDB;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Polly;
+using Polly.Caching.Memory;
 using Scrap.JobDefinitions;
 using Scrap.Pages;
 using Scrap.Resources;
@@ -15,6 +19,10 @@ namespace Scrap.CommandLine
 {
     public class ScrapperApplication
     {
+        private const int DefaultHttpRequestRetries = 5;
+        private static readonly TimeSpan DefaultCacheTtl = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan DefaultHttpRequestDelayBetweenRetries = TimeSpan.FromSeconds(1);
+
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public static Task Literal(
             string adjacencyXPath,
@@ -23,10 +31,15 @@ namespace Scrap.CommandLine
             string resourceAttribute,
             string destinationRootFolder,
             string destinationExpression,
+            int httpRequestRetries = DefaultHttpRequestRetries,
+            TimeSpan? httpRequestDelayBetweenRetries = null,
             bool whatIf = true,
             string? rootUrl = null)
         {
-            var appService = BuildScrapperApplicationService();
+            httpRequestDelayBetweenRetries ??= DefaultHttpRequestDelayBetweenRetries;
+            var appService = BuildScrapperApplicationService(
+                httpRequestRetries,
+                (TimeSpan)httpRequestDelayBetweenRetries);
 
             return appService.ScrapAsync(
                 new JobDefinition(
@@ -40,7 +53,9 @@ namespace Scrap.CommandLine
                         destinationExpression,
                         whatIf.ToString()
                     },
-                    rootUrl),
+                    rootUrl,
+                    httpRequestRetries,
+                    (TimeSpan)httpRequestDelayBetweenRetries),
                 whatIf);
         }
 
@@ -54,11 +69,14 @@ namespace Scrap.CommandLine
             string resourceAttribute,
             string destinationRootFolder,
             string destinationExpression,
+            int httpRequestRetries = DefaultHttpRequestRetries,
+            TimeSpan? httpRequestDelayBetweenRetries = null,
+
             string? rootUrl = null)
         {
-            var appService = BuildScrapperJobApplicationService();
-
-            return appService.AddJobAsync(
+            var defsAppService = BuildJobDefinitionsApplicationService();
+            
+            return defsAppService.AddJobAsync(
                 name,
                 new JobDefinition(
                     adjacencyXPath,
@@ -71,22 +89,30 @@ namespace Scrap.CommandLine
                         destinationExpression,
                         false.ToString()
                     },
-                    rootUrl));
+                    rootUrl,
+                    httpRequestRetries,
+                    httpRequestDelayBetweenRetries ?? DefaultHttpRequestDelayBetweenRetries));
         }
 
         [Verb(IsDefault = true)]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static Task Scrap(
+        public static async Task Scrap(
             string name,
             string? rootUrl = null,
             bool whatIf = true)
         {
-            var appService = BuildScrapperApplicationService();
+            var defsAppService = BuildJobDefinitionsApplicationService();
+            var scrapJobDefinition = await defsAppService.GetJobAsync(name);
+            scrapJobDefinition = new JobDefinition(scrapJobDefinition, rootUrl);
+            
+            if (scrapJobDefinition.RootUrl == null)
+            {
+                throw new Exception("No Root URL found as argument or in the job definition");
+            }
 
-            return appService.ScrapAsync(
-                name,
-                whatIf,
-                rootUrl);
+            var scrapAppService = BuildScrapperApplicationService(scrapJobDefinition.HttpRequestRetries, scrapJobDefinition.HttpRequestDelayBetweenRetries);
+            
+            await scrapAppService.ScrapAsync(scrapJobDefinition, whatIf);            
         }
 
         [PostVerbExecution]
@@ -96,28 +122,52 @@ namespace Scrap.CommandLine
             Console.WriteLine(context.Exception);
         }
 
-        private static ScrapperJobApplicationService BuildScrapperJobApplicationService()
+        private static JobDefinitionsApplicationService BuildJobDefinitionsApplicationService()
         {
             var loggerFactory = BuildLoggerFactory();
-
             return
-                new ScrapperJobApplicationService(
+                new JobDefinitionsApplicationService(
                     new LiteDbJobDefinitionRepository(
-                        new LiteDatabase(GetExecutableDirectory()),
+                        new LiteDatabase(GetDbPath()),
                         new Logger<LiteDbJobDefinitionRepository>(loggerFactory)),
-                    new Logger<ScrapperJobApplicationService>(loggerFactory),
-                    new ResourceRepositoryFactory(loggerFactory));
+                    new Logger<JobDefinitionsApplicationService>(loggerFactory),
+                    new ResourceRepositoryFactory(
+                        new NullResourceDownloader(),
+                        loggerFactory));
         }
 
-        private static ScrapperApplicationService BuildScrapperApplicationService()
+        private static ScrapperApplicationService BuildScrapperApplicationService(
+            int httpRequestRetries,
+            TimeSpan httpRequestDelayBetweenRetries)
         {
             var loggerFactory = BuildLoggerFactory();
+            var cacheLogger = loggerFactory.CreateLogger("Cache");
+            var httpPolicy = Policy.CacheAsync(
+                new MemoryCacheProvider(
+                    new MemoryCache(new MemoryCacheOptions(), loggerFactory)),
+                DefaultCacheTtl,
+                (_, key) => { cacheLogger.LogInformation("CACHED {Uri}", key); },
+                (_, _) => {  },
+                (_, _) => {  },
+                (_, _, _) => {  },
+                (_, _, _) => {  })
+                .WrapAsync(
+                    Policy
+                        .Handle<Exception>()
+                        .WaitAndRetryAsync(
+                            httpRequestRetries, _ => httpRequestDelayBetweenRetries,
+                            (exception, span) =>
+                            {
+                                Console.WriteLine(exception.Message);
+                                Thread.Sleep(span);
+                            }));
 
             return new ScrapperApplicationService(
-                GraphSearch.DepthFirstSearch,
-                new CachedPageRetriever(new Logger<CachedPageRetriever>(loggerFactory), new Logger<Page>(loggerFactory)),
-                new LiteDbJobDefinitionRepository(new LiteDatabase(GetExecutableDirectory()), new Logger<LiteDbJobDefinitionRepository>(loggerFactory)),
-                new ResourceRepositoryFactory(loggerFactory),
+                GraphSearch.DepthFirstSearchAsync,
+                new HttpPageRetriever(new Logger<HttpPageRetriever>(loggerFactory), loggerFactory, httpPolicy),
+                new ResourceRepositoryFactory(
+                    new HttpResourceDownloader(new Logger<HttpResourceDownloader>(loggerFactory), httpPolicy),
+                    loggerFactory),
                 new Logger<ScrapperApplicationService>(loggerFactory));
         }
 
@@ -126,17 +176,19 @@ namespace Scrap.CommandLine
             return LoggerFactory.Create(builder =>
             {
                 builder
+                    .SetMinimumLevel(LogLevel.Trace)
                     .AddFilter("Microsoft", LogLevel.Warning)
                     .AddFilter("System", LogLevel.Warning)
                     .AddSimpleConsole(options => options.SingleLine = true);
             });
         }
 
-        private static string? GetExecutableDirectory()
+        private static string GetDbPath()
         {
-            var executableDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location), "jobs.db");
-            Console.WriteLine("DB dir: "+ executableDirectory);
-            return executableDirectory;
+            var directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? throw new Exception("Cannot find entry assembly path");
+            var dbPath = Path.Combine(directoryName, "jobs.db");
+            Console.WriteLine("DB dir: {0}", dbPath);
+            return dbPath;
         }
     }
 }

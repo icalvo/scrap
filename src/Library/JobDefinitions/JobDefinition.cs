@@ -1,8 +1,10 @@
+using System;
+
 namespace Scrap.JobDefinitions
 {
     public class JobDefinition
     {
-        public JobDefinition(string adjacencyXPath, string adjacencyAttribute, string resourceXPath, string resourceAttribute, string resourceRepoType, string[] resourceRepoArgs, string? rootUrl)
+        public JobDefinition(string adjacencyXPath, string adjacencyAttribute, string resourceXPath, string resourceAttribute, string resourceRepoType, string[] resourceRepoArgs, string? rootUrl, int httpRequestRetries, TimeSpan httpRequestDelayBetweenRetries)
         {
             AdjacencyXPath = adjacencyXPath;
             AdjacencyAttribute = adjacencyAttribute;
@@ -11,17 +13,22 @@ namespace Scrap.JobDefinitions
             ResourceRepoType = resourceRepoType;
             ResourceRepoArgs = resourceRepoArgs;
             RootUrl = rootUrl;
+            HttpRequestRetries = httpRequestRetries;
+            HttpRequestDelayBetweenRetries = httpRequestDelayBetweenRetries;
         }
 
         public JobDefinition(JobDefinition jobDefinition)
-            : this(jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoType, jobDefinition.ResourceRepoArgs, jobDefinition.RootUrl)
+            : this(jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoType, jobDefinition.ResourceRepoArgs, jobDefinition.RootUrl, jobDefinition.HttpRequestRetries, jobDefinition.HttpRequestDelayBetweenRetries)
         {
         }
 
-        public JobDefinition(JobDefinition jobDefinition, string rootUrl)
-            : this(jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoType, jobDefinition.ResourceRepoArgs, jobDefinition.RootUrl)
+        public JobDefinition(JobDefinition jobDefinition, string? rootUrl)
+            : this(jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoType, jobDefinition.ResourceRepoArgs, jobDefinition.RootUrl, jobDefinition.HttpRequestRetries, jobDefinition.HttpRequestDelayBetweenRetries)
         {
-            RootUrl = rootUrl;
+            if (rootUrl != null)
+            {
+                RootUrl = rootUrl;
+            }
         }
 
         public string? RootUrl { get; }
@@ -31,5 +38,7 @@ namespace Scrap.JobDefinitions
         public string ResourceAttribute { get; }
         public string ResourceRepoType { get; }
         public string[] ResourceRepoArgs { get; }
+        public int HttpRequestRetries { get; }
+        public TimeSpan HttpRequestDelayBetweenRetries { get; }
     }
 }

@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using CLAP;
 using CLAP.Interception;
@@ -13,9 +15,8 @@ namespace Scrap.CommandLine
 {
     public class ScrapperApplication
     {
-        [Verb(IsDefault = true)]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static Task Scrap(
+        public static Task Literal(
             string adjacencyXPath,
             string adjacencyAttribute,
             string resourceXPath,
@@ -25,17 +26,20 @@ namespace Scrap.CommandLine
             bool whatIf = true,
             string? rootUrl = null)
         {
-            var appService = BuildApplicationService();
-
+            var appService = BuildScrapperApplicationService();
 
             return appService.ScrapAsync(
-                new ScrapJobDefinition(
+                new JobDefinition(
                     adjacencyXPath,
                     adjacencyAttribute,
                     resourceXPath,
                     resourceAttribute,
-                    destinationRootFolder,
-                    destinationExpression,
+                    "filesystem",
+                    new []{
+                        destinationRootFolder,
+                        destinationExpression,
+                        whatIf.ToString()
+                    },
                     rootUrl),
                 whatIf);
         }
@@ -52,34 +56,32 @@ namespace Scrap.CommandLine
             string destinationExpression,
             string? rootUrl = null)
         {
-            var loggerFactory = BuildLoggerFactory();
+            var appService = BuildScrapperJobApplicationService();
 
-            var appService = new ScrapperJobApplicationService(
-                new LiteDbJobDefinitionRepository(
-                    new LiteDatabase("jobs.db"),
-                    new Logger<LiteDbJobDefinitionRepository>(loggerFactory)),
-                new Logger<ScrapperJobApplicationService>(loggerFactory));
-
-            return appService.AddJob(
+            return appService.AddJobAsync(
                 name,
-                new ScrapJobDefinition(
+                new JobDefinition(
                     adjacencyXPath,
                     adjacencyAttribute,
                     resourceXPath,
                     resourceAttribute,
-                    destinationRootFolder,
-                    destinationExpression,
+                    "filesystem",
+                    new []{
+                        destinationRootFolder,
+                        destinationExpression,
+                        false.ToString()
+                    },
                     rootUrl));
         }
 
-        [Verb]
+        [Verb(IsDefault = true)]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static Task Db(
+        public static Task Scrap(
             string name,
             string? rootUrl = null,
             bool whatIf = true)
         {
-            var appService = BuildApplicationService();
+            var appService = BuildScrapperApplicationService();
 
             return appService.ScrapAsync(
                 name,
@@ -94,14 +96,27 @@ namespace Scrap.CommandLine
             Console.WriteLine(context.Exception);
         }
 
-        private static ScrapperApplicationService BuildApplicationService()
+        private static ScrapperJobApplicationService BuildScrapperJobApplicationService()
+        {
+            var loggerFactory = BuildLoggerFactory();
+
+            return
+                new ScrapperJobApplicationService(
+                    new LiteDbJobDefinitionRepository(
+                        new LiteDatabase(GetExecutableDirectory()),
+                        new Logger<LiteDbJobDefinitionRepository>(loggerFactory)),
+                    new Logger<ScrapperJobApplicationService>(loggerFactory),
+                    new ResourceRepositoryFactory(loggerFactory));
+        }
+
+        private static ScrapperApplicationService BuildScrapperApplicationService()
         {
             var loggerFactory = BuildLoggerFactory();
 
             return new ScrapperApplicationService(
                 GraphSearch.DepthFirstSearch,
                 new CachedPageRetriever(new Logger<CachedPageRetriever>(loggerFactory), new Logger<Page>(loggerFactory)),
-                new LiteDbJobDefinitionRepository(new LiteDatabase("jobs.db"), new Logger<LiteDbJobDefinitionRepository>(loggerFactory)),
+                new LiteDbJobDefinitionRepository(new LiteDatabase(GetExecutableDirectory()), new Logger<LiteDbJobDefinitionRepository>(loggerFactory)),
                 new ResourceRepositoryFactory(loggerFactory),
                 new Logger<ScrapperApplicationService>(loggerFactory));
         }
@@ -115,6 +130,13 @@ namespace Scrap.CommandLine
                     .AddFilter("System", LogLevel.Warning)
                     .AddSimpleConsole(options => options.SingleLine = true);
             });
+        }
+
+        private static string? GetExecutableDirectory()
+        {
+            var executableDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location), "jobs.db");
+            Console.WriteLine("DB dir: "+ executableDirectory);
+            return executableDirectory;
         }
     }
 }

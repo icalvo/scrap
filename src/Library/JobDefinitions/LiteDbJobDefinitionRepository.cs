@@ -18,16 +18,16 @@ namespace Scrap.JobDefinitions
             _collection = _db.GetCollection<LiteDbJobDefinition>();
         }
 
-        public Task<ScrapJobDefinition> GetByNameAsync(string jobName)
+        public Task<JobDefinition> GetByNameAsync(string jobName)
         {
             _logger.LogInformation("Getting job def. {JobName}", jobName);
-            return Task.FromResult((ScrapJobDefinition)_collection.FindById(jobName));
+            return Task.FromResult((JobDefinition)_collection.FindById(jobName));
         }
 
-        public Task AddAsync(string jobName, ScrapJobDefinition scrapJobDefinition)
+        public Task AddAsync(string jobName, JobDefinition jobDefinition)
         {
             _logger.LogInformation("Upserting job def. {JobName}", jobName);
-            _collection.Upsert(jobName, new LiteDbJobDefinition(jobName, scrapJobDefinition));
+            _collection.Upsert(jobName, new LiteDbJobDefinition(jobName, jobDefinition));
             return Task.CompletedTask;
         }
 

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Scrap.JobDefinitions;
 using Scrap.Pages;
 using Scrap.Resources;
+using Scrap.Resources.FileSystem.Extensions;
 
 namespace Scrap
 {
@@ -32,13 +33,13 @@ namespace Scrap
         }
 
         public async Task ScrapAsync(
-            ScrapJobDefinition scrapJobDefinition,
+            JobDefinition jobDefinition,
             bool whatIf = true)
         {
-            var (rootUrl, adjacencyXPath, adjacencyAttribute, resourceXPath, resourceAttribute, destinationRootFolder, destinationExpression) =
-                (scrapJobDefinition.RootUrl, scrapJobDefinition.AdjacencyXPath, scrapJobDefinition.AdjacencyAttribute, scrapJobDefinition.ResourceXPath, scrapJobDefinition.ResourceAttribute, scrapJobDefinition.DestinationRootFolder, scrapJobDefinition.DestinationExpression);
+            var (rootUrl, adjacencyXPath, adjacencyAttribute, resourceXPath, resourceAttribute, resourceRepoType, resourceRepoArgs) =
+                (jobDefinition.RootUrl, jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoType, jobDefinition.ResourceRepoArgs);
 
-            PrintArguments(scrapJobDefinition);
+            PrintArguments(jobDefinition);
             
             var rootUri = new Uri(rootUrl ?? throw new InvalidOperationException("Root URL must not be null"));
             var baseUrl = new Uri(rootUri.Scheme + "://" + rootUri.Host);
@@ -48,10 +49,8 @@ namespace Scrap
             var pages = _searchFunc(rootUri, _pageRetriever.GetPage, AdjacencyFunction);
 
             var resourceRepository = _resourceRepositoryFactory.Build(
-                "filesystem",
-                destinationRootFolder,
-                destinationExpression,
-                whatIf.ToString());
+                resourceRepoType,
+                resourceRepoArgs.C(whatIf.ToString()).ToArray());
 
             foreach (var page in pages)
             {
@@ -71,18 +70,18 @@ namespace Scrap
             _logger.LogInformation("Finished!");
         }
 
-        private void PrintArguments(ScrapJobDefinition scrapJobDefinition)
+        private void PrintArguments(JobDefinition jobDefinition)
         {
-            var (rootUrl, adjacencyXPath, adjacencyAttribute, resourceXPath, resourceAttribute, destinationRootFolder, destinationExpression) =
-                (scrapJobDefinition.RootUrl, scrapJobDefinition.AdjacencyXPath, scrapJobDefinition.AdjacencyAttribute, scrapJobDefinition.ResourceXPath, scrapJobDefinition.ResourceAttribute, scrapJobDefinition.DestinationRootFolder, scrapJobDefinition.DestinationExpression);
+            var (rootUrl, adjacencyXPath, adjacencyAttribute, resourceXPath, resourceAttribute, resourceRepoType, resourceRepoArgs) =
+                (jobDefinition.RootUrl, jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoType, jobDefinition.ResourceRepoArgs);
 
             _logger.LogDebug("Root URL: {RootUrl}", rootUrl);
             _logger.LogDebug("Adjacency X-Path: {AdjacencyXPath}", adjacencyXPath);
             _logger.LogDebug("Adjacency attribute: {AdjacencyAttribute}", adjacencyAttribute);
             _logger.LogDebug("Resource X-Path: {ResourceXPath}", resourceXPath);
             _logger.LogDebug("Resource attribute: {ResourceAttribute}", resourceAttribute);
-            _logger.LogDebug("Destination root folder: {DestinationRootFolder}", destinationRootFolder);
-            _logger.LogDebug("Destination expression: {DestinationExpression}", destinationExpression);
+            _logger.LogDebug("Resource repo type: {ResourceRepoType}", resourceRepoType);
+            _logger.LogDebug("Resource repo args: {ResourceRepoArgs}", string.Join(" , ", resourceRepoArgs));
         }
 
         public async Task ScrapAsync(string jobName, bool whatIf, string? rootUrl)
@@ -95,7 +94,7 @@ namespace Scrap
                     throw new Exception("No Root URL found as argument or in the job definition");
                 }
 
-                scrapJobDefinition = new ScrapJobDefinition(scrapJobDefinition, rootUrl);
+                scrapJobDefinition = new JobDefinition(scrapJobDefinition, rootUrl);
             }
             
             await ScrapAsync(scrapJobDefinition, whatIf);

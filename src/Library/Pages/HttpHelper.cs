@@ -3,18 +3,25 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
-namespace Scrap.CommandLine
+namespace Scrap.Pages
 {
-    public static class HttpHelper
+    public class HttpHelper
     {
+        private readonly ILogger<HttpHelper> _logger;
         private static readonly HttpClient HttpClient = new();
 
-        public static async Task DownloadFileAsync(
+        public HttpHelper(ILogger<HttpHelper> logger)
+        {
+            _logger = logger;
+        }
+
+        public async Task DownloadFileAsync(
             Uri uri,
             string outputPath)
         {
-            while (true)
+            for (int i = 1; i <= 5; i++)
             {
                 try
                 {
@@ -28,14 +35,11 @@ namespace Scrap.CommandLine
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Error: " + ex.Message);
+                    _logger.LogInformation("Error: " + ex.Message);
                 }
             }
-        }
 
-        private static Task<HttpResponseMessage> Trol(Uri uri)
-        {
-            throw new Exception("TROLOLO");
+            throw new InvalidOperationException("Retried download too many times");
         }
     }
 }

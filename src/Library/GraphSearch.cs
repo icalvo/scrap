@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Scrap.CommandLine
+namespace Scrap
 {
     public static class GraphSearch
     {

@@ -33,8 +33,8 @@ To do so we will use a full C# expression. This expression will have at its disp
 context and global variables, and also a number of standard namespaces in order to be able to
 use standard functions, and some extension methods that come with this project. Let's first see an example:
 
-```
-Path.Combine(destinationRootFolder.C(pageUrl.CleanSegments()[4..^1]).C(pageUrl.CleanSegments()[^1] + resourceUrl.Extension()).ToArray())
+```csharp
+destinationRootFolder.C(pageUrl.CleanSegments()[4..^1]).C(pageUrl.CleanSegments()[^1] + resourceUrl.Extension()).ToPath()
 ```
 
 This combines a number of pieces using `Path.Combine`, which is a function to join together pieces of a path with the folder separator (`\` in Windows and `/` in Unix-related OSs). We also use the `C()` extension methods that concatenate strings and arrays of strings (no matter what). So for example:
@@ -53,5 +53,31 @@ The variables are:
 | Name | Type | Description |
 |---|---|---|
 | destinationRootFolder | string | Destination root folder as specified by -destinationRootFolder command line argument |
-| pageUrl | Uri | URL of the page where the resource link is. |
+| page | Page | Information about the current page. |
 | resourceUrl | Uri | URL of the downloaded resource. |
+
+Methods and extension methods:
+
+```
+string.C(string): string list
+stringList.C(string): string list
+string.C(stringList): string list
+stringList.C(stringList): string list
+doc.CleanSegments(): string list
+page.Text(xpath): string
+page.Attribute(xpath, attributeName): string
+page.Link(xpath): string
+page.LinkedDoc(xpath): Page
+```
+
+## Job definitions
+You can store a scrap job definition in a LiteDB database and then use its name and a root URL to start a job.
+
+```
+scrap.exe add -name=mycrawl -adjacencyXPath=...
+
+scrap.exe db -name=mycrawl -rootUrl=http://domain.com
+
+```
+
+

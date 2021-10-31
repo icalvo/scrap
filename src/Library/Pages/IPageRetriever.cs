@@ -1,6 +1,6 @@
 using System;
 
-namespace Scrap.CommandLine
+namespace Scrap.Pages
 {
     public interface IPageRetriever
     {

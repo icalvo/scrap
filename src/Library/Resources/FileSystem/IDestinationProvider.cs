@@ -1,14 +1,14 @@
 using System;
 using HtmlAgilityPack;
+using Scrap.Pages;
 
-namespace Scrap.CommandLine
+namespace Scrap.Resources.FileSystem
 {
     public interface IDestinationProvider
     {
         string GetDestination(
             Uri resourceUrl,
             string destinationRootFolder,
-            Uri pageUrl,
-            HtmlDocument pageDoc);
+            Page page);
     }
 }

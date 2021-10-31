@@ -3,45 +3,44 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Basic.Reference.Assemblies;
+using HtmlAgilityPack;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
-using Basic.Reference.Assemblies;
-using HtmlAgilityPack;
+using Microsoft.Extensions.Logging;
+using Scrap.Pages;
 
-namespace Scrap.CommandLine
+namespace Scrap.Resources.FileSystem
 {
     internal class DestinationProvider : IDestinationProvider
     {
         private readonly string _destinationFolderPattern;
-        private readonly IPageRetriever _pageRetriever;
-        private readonly Uri _baseUri;
         private IDestinationProvider _compiledDestinationProvider = null!;
-
-        private DestinationProvider(string destinationFolderPattern, IPageRetriever pageRetriever, Uri baseUri)
+        private readonly ILogger<DestinationProvider> _logger;
+        private DestinationProvider(string destinationFolderPattern, ILogger<DestinationProvider> logger)
         {
             _destinationFolderPattern = destinationFolderPattern;
-            _pageRetriever = pageRetriever;
-            _baseUri = baseUri;
+            _logger = logger;
         }
 
-        public static DestinationProvider Create(string destinationFolderPattern, IPageRetriever pageRetriever, Uri baseUri)
+        public static DestinationProvider CreateCompiled(string destinationFolderPattern, ILogger<DestinationProvider> logger)
         {
-            var result = new DestinationProvider(destinationFolderPattern, pageRetriever, baseUri);
+            var result = new DestinationProvider(destinationFolderPattern, logger);
             result.Compile();
-
             return result;
         }
 
         public string GetDestination(
             Uri resourceUrl,
-            string destinationRootFolder, Uri pageUrl, HtmlDocument pageDoc)
+            string destinationRootFolder, Page page)
         {
-            return _compiledDestinationProvider.GetDestination(resourceUrl, destinationRootFolder, pageUrl, pageDoc);
+            return _compiledDestinationProvider.GetDestination(resourceUrl, destinationRootFolder, page);
         }
 
         private void Compile()
         {
+            _logger.LogInformation("Compiling destination expression...");
             // define source code, then parse it (to the type used for compilation)
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(@"
                 using System;
@@ -49,22 +48,17 @@ namespace Scrap.CommandLine
                 using System.Net;
                 using System.Linq;
                 using HtmlAgilityPack;
-                using Scrap.CommandLine;
+                using Scrap.Pages;
+                using Scrap.Resources.FileSystem.Extensions;
 
-                namespace RoslynCompileSample
+                namespace Scrap.Resources.FileSystem
                 {
-                    public class InternalDestinationProvider : BaseDestinationProvider
+                    public class InternalDestinationProvider: IDestinationProvider
                     {
-                        public InternalDestinationProvider(IPageRetriever pageRetriever, Uri baseUri)
-                            : base(pageRetriever, baseUri)
-                        {
-                        }
-
-                        public override string GetDestination(
+                        public string GetDestination(
                             Uri resourceUrl,
                             string destinationRootFolder,
-                            Uri pageUrl,
-                            HtmlDocument pageDoc)
+                            Page page)
                         {
                             return " + _destinationFolderPattern + @";
                         }
@@ -94,13 +88,14 @@ namespace Scrap.CommandLine
             if (!result.Success)
             {
                 // handle exceptions
-                IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic => 
-                    diagnostic.IsWarningAsError || 
+                IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+                    diagnostic.IsWarningAsError ||
                     diagnostic.Severity == DiagnosticSeverity.Error);
 
                 foreach (Diagnostic diagnostic in failures)
                 {
-                    Console.Error.WriteLine("{0}: {1} at {2}", diagnostic.Id, diagnostic.GetMessage(), diagnostic.Location);
+                    _logger.LogError("{0}: {1} at {2}", diagnostic.Id, diagnostic.GetMessage(),
+                        diagnostic.Location);
                 }
 
                 throw new Exception("Compilation error");
@@ -111,8 +106,9 @@ namespace Scrap.CommandLine
             Assembly assembly = Assembly.Load(ms.ToArray());
 
             // create instance of the desired class and call the desired function
-            Type type = assembly.GetType("RoslynCompileSample.InternalDestinationProvider") ?? throw new Exception("1");
-            object obj = Activator.CreateInstance(type, _pageRetriever, _baseUri) ?? throw new Exception("2");
+            var typeName = "Scrap.Resources.FileSystem.InternalDestinationProvider";
+            Type type = assembly.GetType(typeName) ?? throw new Exception($"Type {typeName} not found");
+            object obj = Activator.CreateInstance(type) ?? throw new Exception("Could not activate instance");
 
             _compiledDestinationProvider = (IDestinationProvider)obj;
         }

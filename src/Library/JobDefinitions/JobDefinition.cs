@@ -1,4 +1,5 @@
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace Scrap.JobDefinitions
 {
@@ -29,6 +30,17 @@ namespace Scrap.JobDefinitions
             {
                 RootUrl = rootUrl;
             }
+        }
+
+        public void Log(ILogger logger)
+        {
+            logger.LogDebug("Root URL: {RootUrl}", RootUrl);
+            logger.LogDebug("Adjacency X-Path: {AdjacencyXPath}", AdjacencyXPath);
+            logger.LogDebug("Adjacency attribute: {AdjacencyAttribute}", AdjacencyAttribute);
+            logger.LogDebug("Resource X-Path: {ResourceXPath}", ResourceXPath);
+            logger.LogDebug("Resource attribute: {ResourceAttribute}", ResourceAttribute);
+            logger.LogDebug("Resource repo type: {ResourceRepoType}", ResourceRepoType);
+            logger.LogDebug("Resource repo args: {ResourceRepoArgs}", string.Join(" , ", ResourceRepoArgs));
         }
 
         public string? RootUrl { get; }

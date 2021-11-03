@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Scrap.Resources.FileSystem.Extensions
+namespace Scrap
 {
     public static class StringExtensions
     {

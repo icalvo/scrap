@@ -9,7 +9,7 @@ TaskScheduler.UnobservedTaskException += (_, eventArgs) => Console.WriteLine(eve
 Console.WriteLine("SCRAP");
 Console.WriteLine("-----");
 var parser = new Parser<ScrapperApplication>();
-parser.Register.HelpHandler("help,h,?", (Action<string>) (Console.WriteLine));
+parser.Register.HelpHandler("help,h,?", (Action<string>) Console.WriteLine);
 parser.Register.ParameterHandler("debug", (Action) (() => Debugger.Launch()));
 parser.Register.ErrorHandler((Action<ExceptionContext>) (c =>
 {

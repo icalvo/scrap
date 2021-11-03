@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using LiteDB;
 using Microsoft.Extensions.Logging;
@@ -28,6 +29,22 @@ namespace Scrap.JobDefinitions
         {
             _logger.LogInformation("Upserting job def. {JobName}", jobName);
             _collection.Upsert(jobName, new LiteDbJobDefinition(jobName, jobDefinition));
+            return Task.CompletedTask;
+        }
+
+        public Task<JobDefinition> FindJobByRootUrlAsync(string rootUrl)
+        {
+            _logger.LogInformation("Getting job def. by URL {RootUrl}", rootUrl);
+            var found = _collection.Query().Where(x => rootUrl.Contains(x.Id)).Single();
+            var result = new JobDefinition(found, rootUrl);
+
+            return Task.FromResult(result);
+        }
+
+        public Task DeleteJobAsync(string jobName)
+        {
+            _logger.LogTrace("Deleting job def. {JobName}", jobName);
+            _ = _collection.Delete(jobName);
             return Task.CompletedTask;
         }
 

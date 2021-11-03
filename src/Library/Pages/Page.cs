@@ -84,20 +84,25 @@ namespace Scrap.Pages
 
         public IEnumerable<string?> Texts(string xPath)
         {
-            _logger.LogInformation("Get innerTexts from {0}", xPath);
+            _logger.LogInformation("Get innerTexts from {XPath}", xPath);
             return
                 SelectNodes(xPath)
                 .Select(node => node.InnerText);
         }
 
-        public string? Text(string adjacencyXPath)
+        public string? AllText(string adjacencyXPath)
         {
             return string.Join("", Texts(adjacencyXPath));
         }
 
+        public string? Text(string adjacencyXPath)
+        {
+            return Texts(adjacencyXPath).FirstOrDefault();
+        }
+
         public IEnumerable<string?> Attributes(string linksXPath, string linkAttribute)
         {
-            _logger.LogInformation("Get {0} from {1}", linkAttribute, linksXPath);
+            _logger.LogInformation("Get {LinkAttribute} from {LinksXPath}", linkAttribute, linksXPath);
             return
                 SelectNodes(linksXPath)
                 .Select(node => node.Attributes?[linkAttribute]?.Value);

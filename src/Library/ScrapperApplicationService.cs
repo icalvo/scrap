@@ -6,27 +6,28 @@ using Microsoft.Extensions.Logging;
 using Scrap.JobDefinitions;
 using Scrap.Pages;
 using Scrap.Resources;
-using Scrap.Resources.FileSystem.Extensions;
 
 namespace Scrap
 {
     public class ScrapperApplicationService
     {
-        private readonly Func<Uri, Func<Uri, Task<Page>>, Func<Page, IEnumerable<Uri>>, IAsyncEnumerable<Page>> _searchFunc;
+        private readonly Func<Uri, Func<Uri, Task<Page>>, Func<Page, IAsyncEnumerable<Uri>>, IAsyncEnumerable<Page>> _searchFunc;
         private readonly IPageRetriever _pageRetriever;
         private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
         private readonly ILogger<ScrapperApplicationService> _logger;
+        private readonly IPageMarkerRepository _pageMarkerRepository;
 
         public ScrapperApplicationService(
-            Func<Uri, Func<Uri, Task<Page>>, Func<Page, IEnumerable<Uri>>, IAsyncEnumerable<Page>> searchFunc,
+            Func<Uri, Func<Uri, Task<Page>>, Func<Page, IAsyncEnumerable<Uri>>, IAsyncEnumerable<Page>> searchFunc,
             IPageRetriever pageRetriever,
             IResourceRepositoryFactory resourceRepositoryFactory,
-            ILogger<ScrapperApplicationService> logger)
+            ILogger<ScrapperApplicationService> logger, IPageMarkerRepository pageMarkerRepository)
         {
             _searchFunc = searchFunc;
             _pageRetriever = pageRetriever;
             _resourceRepositoryFactory = resourceRepositoryFactory;
             _logger = logger;
+            _pageMarkerRepository = pageMarkerRepository;
         }
 
         public async Task ScrapAsync(
@@ -41,7 +42,20 @@ namespace Scrap
             var rootUri = new Uri(rootUrl ?? throw new InvalidOperationException("Root URL must not be null"));
             var baseUrl = new Uri(rootUri.Scheme + "://" + rootUri.Host);
 
-            IEnumerable<Uri> AdjacencyFunction(Page page) => page.Links(adjacencyXPath, adjacencyAttribute, baseUrl);
+            async IAsyncEnumerable<Uri> AdjacencyFunction(Page page)
+            {
+
+                foreach (var link in page.Links(adjacencyXPath, adjacencyAttribute, baseUrl))
+                {
+                    if (await _pageMarkerRepository.ExistsAsync(link))
+                    {
+                        continue;
+                    }
+
+                    await _pageMarkerRepository.AddAsync(link);
+                    yield return link;
+                }
+            }
 
             var pages = _searchFunc(rootUri, _pageRetriever.GetPageAsync, AdjacencyFunction);
 

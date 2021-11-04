@@ -77,6 +77,30 @@ namespace Scrap
             }
         }
 
+       
+        public static async IAsyncEnumerable<TExp> DepthFirstSearchAsync<T, TExp>(T root, Func<T, Task<TExp>> expensive, Func<TExp, IAsyncEnumerable<T>> adj)
+        {
+            HashSet<T> visited = new(EqualityComparer<T>.Default);
+            Stack<T> stack = new();
+            stack.Push(root);
+            while (stack.Any())
+            {
+                var currentNode = stack.Pop();
+                if (visited.Contains(currentNode))
+                {
+                    continue;
+                }
+
+                var ex = await expensive(currentNode);
+                visited.Add(currentNode);
+                yield return ex;
+
+                await foreach (var adjacentNode in adj(ex).Where(n => !visited.Contains(n)).Reverse())
+                {
+                    stack.Push(adjacentNode);
+                }
+            }
+        }
         
         public static IEnumerable<T> BreadthFirstSearch<T>(T s, Func<T, IEnumerable<T>> adj)
         {

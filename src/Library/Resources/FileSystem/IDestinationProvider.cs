@@ -10,6 +10,7 @@ namespace Scrap.Resources.FileSystem
         Task<string> GetDestinationAsync(
             Uri resourceUrl,
             string destinationRootFolder,
-            Page page);
+            Page page, 
+            int pageIndex);
     }
 }

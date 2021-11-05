@@ -1,9 +1,9 @@
-using Microsoft.Extensions.Logging;
+using Polly;
 
 namespace Scrap.Resources
 {
     public interface IResourceRepositoryFactory
     {
-        IResourceRepository Build(string id, params string[] args);
+        IResourceRepository Build(IAsyncPolicy httpPolicy, IResourceRepositoryConfiguration args, bool whatIf);
     }
 }

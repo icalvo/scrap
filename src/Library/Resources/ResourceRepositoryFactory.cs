@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.Logging;
+using Polly;
 using Scrap.Pages;
 using Scrap.Resources.FileSystem;
 
@@ -7,34 +8,31 @@ namespace Scrap.Resources
 {
     public class ResourceRepositoryFactory : IResourceRepositoryFactory
     {
-        private readonly IResourceDownloader _resourceDownloader;
+        private readonly ResourceDownloaderFactory _resourceDownloaderFactory;
         private readonly ILoggerFactory _loggerFactory;
 
-        public ResourceRepositoryFactory(IResourceDownloader resourceDownloader, ILoggerFactory loggerFactory)
+        public ResourceRepositoryFactory(ResourceDownloaderFactory resourceDownloaderFactory, ILoggerFactory loggerFactory)
         {
-            _resourceDownloader = resourceDownloader;
+            _resourceDownloaderFactory = resourceDownloaderFactory;
             _loggerFactory = loggerFactory;
         }
 
-        public IResourceRepository Build(string id, params string[] args)
+        public IResourceRepository? Build(IAsyncPolicy httpPolicy, IResourceRepositoryConfiguration args, bool whatIf)
         {
-            switch (id)
+            switch (args)
             {
-                case "filesystem":
-                    string destinationRootFolder = args[0];
-                    string destinationExpression = args[1];
-                    bool whatIf = bool.Parse(args[2]);
+                case FileSystemResourceRepositoryConfiguration config:
                     var destinationProvider = CompiledDestinationProvider.CreateCompiled(
-                        destinationExpression,
+                        config.DestinationExpression,
                         new Logger<CompiledDestinationProvider>(_loggerFactory));
                     return new FileSystemResourceRepository(
                         destinationProvider,
-                        _resourceDownloader,
-                        destinationRootFolder,
+                        _resourceDownloaderFactory.Build(httpPolicy),
+                        config.DestinationRootFolder,
                         whatIf,
                         new Logger<FileSystemResourceRepository>(_loggerFactory));
                 default:
-                    throw new ArgumentException($"Invalid resource repository type {id}", nameof(id));
+                    throw new ArgumentException($"Invalid resource repository type {args}", nameof(args));
             }
         }
     }

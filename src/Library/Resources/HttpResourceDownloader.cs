@@ -10,10 +10,10 @@ namespace Scrap.Resources
     public class HttpResourceDownloader : IResourceDownloader
     {
         private readonly ILogger<HttpResourceDownloader> _logger;
-        private readonly AsyncPolicy _policy;
+        private readonly IAsyncPolicy _policy;
         private static readonly HttpClient HttpClient = new();
 
-        public HttpResourceDownloader(ILogger<HttpResourceDownloader> logger, AsyncPolicy policy)
+        public HttpResourceDownloader(ILogger<HttpResourceDownloader> logger, IAsyncPolicy policy)
         {
             _logger = logger;
             _policy = policy;

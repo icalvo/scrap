@@ -1,35 +1,41 @@
 using System;
 using Microsoft.Extensions.Logging;
+using Scrap.Resources;
 
 namespace Scrap.JobDefinitions
 {
     public class JobDefinition
     {
-        public JobDefinition(string adjacencyXPath, string adjacencyAttribute, string resourceXPath, string resourceAttribute, string resourceRepoType, string[] resourceRepoArgs, string? rootUrl, int httpRequestRetries, TimeSpan httpRequestDelayBetweenRetries)
+        public JobDefinition(JobDefinitionDto jobDefinition)
         {
-            AdjacencyXPath = adjacencyXPath;
-            AdjacencyAttribute = adjacencyAttribute;
-            ResourceXPath = resourceXPath;
-            ResourceAttribute = resourceAttribute;
-            ResourceRepoType = resourceRepoType;
-            ResourceRepoArgs = resourceRepoArgs;
-            RootUrl = rootUrl;
-            HttpRequestRetries = httpRequestRetries;
-            HttpRequestDelayBetweenRetries = httpRequestDelayBetweenRetries;
+            AdjacencyXPath = jobDefinition.AdjacencyXPath;
+            AdjacencyAttribute = jobDefinition.AdjacencyAttribute ?? "href";
+            ResourceXPath = jobDefinition.ResourceXPath;
+            ResourceAttribute = jobDefinition.ResourceAttribute;
+            ResourceRepoArgs = jobDefinition.ResourceRepoArgs;
+            RootUrl = jobDefinition.RootUrl;
+            HttpRequestRetries = jobDefinition.HttpRequestRetries ?? 5;
+            HttpRequestDelayBetweenRetries = jobDefinition.HttpRequestDelayBetweenRetries ?? TimeSpan.FromSeconds(1);
+            WhatIf = jobDefinition.WhatIf ?? false;
         }
 
-        public JobDefinition(JobDefinition jobDefinition)
-            : this(jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoType, jobDefinition.ResourceRepoArgs, jobDefinition.RootUrl, jobDefinition.HttpRequestRetries, jobDefinition.HttpRequestDelayBetweenRetries)
+        public JobDefinition(JobDefinitionDto jobDefinition, string? rootUrl)
+            : this(jobDefinition with { RootUrl = rootUrl ?? jobDefinition.RootUrl })
         {
         }
 
-        public JobDefinition(JobDefinition jobDefinition, string? rootUrl)
-            : this(jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoType, jobDefinition.ResourceRepoArgs, jobDefinition.RootUrl, jobDefinition.HttpRequestRetries, jobDefinition.HttpRequestDelayBetweenRetries)
+        public JobDefinitionDto ToDto()
         {
-            if (rootUrl != null)
-            {
-                RootUrl = rootUrl;
-            }
+            return new JobDefinitionDto(
+                AdjacencyXPath,
+                AdjacencyAttribute,
+                ResourceXPath,
+                ResourceAttribute,
+                ResourceRepoArgs,
+                RootUrl,
+                HttpRequestRetries,
+                HttpRequestDelayBetweenRetries,
+                WhatIf);            
         }
 
         public void Log(ILogger logger)
@@ -39,8 +45,7 @@ namespace Scrap.JobDefinitions
             logger.LogDebug("Adjacency attribute: {AdjacencyAttribute}", AdjacencyAttribute);
             logger.LogDebug("Resource X-Path: {ResourceXPath}", ResourceXPath);
             logger.LogDebug("Resource attribute: {ResourceAttribute}", ResourceAttribute);
-            logger.LogDebug("Resource repo type: {ResourceRepoType}", ResourceRepoType);
-            logger.LogDebug("Resource repo args: {ResourceRepoArgs}", string.Join(" , ", ResourceRepoArgs));
+            logger.LogDebug("Resource repo args: {ResourceRepoArgs}", ResourceRepoArgs);
         }
 
         public string? RootUrl { get; }
@@ -48,9 +53,9 @@ namespace Scrap.JobDefinitions
         public string AdjacencyAttribute { get; }
         public string ResourceXPath { get; }
         public string ResourceAttribute { get; }
-        public string ResourceRepoType { get; }
-        public string[] ResourceRepoArgs { get; }
+        public IResourceRepositoryConfiguration ResourceRepoArgs { get; }
         public int HttpRequestRetries { get; }
         public TimeSpan HttpRequestDelayBetweenRetries { get; }
+        public bool WhatIf { get; }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -12,32 +13,35 @@ namespace Scrap
     public class ScrapperApplicationService
     {
         private readonly Func<Uri, Func<Uri, Task<Page>>, Func<Page, IAsyncEnumerable<Uri>>, IAsyncEnumerable<Page>> _searchFunc;
-        private readonly IPageRetriever _pageRetriever;
+        private readonly PageRetrieverFactory _pageRetrieverFactory;
         private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
         private readonly ILogger<ScrapperApplicationService> _logger;
         private readonly IPageMarkerRepository _pageMarkerRepository;
+        private readonly HttpPolicyFactory _httpPolicyFactory;
 
         public ScrapperApplicationService(
             Func<Uri, Func<Uri, Task<Page>>, Func<Page, IAsyncEnumerable<Uri>>, IAsyncEnumerable<Page>> searchFunc,
-            IPageRetriever pageRetriever,
+            PageRetrieverFactory pageRetrieverFactory,
             IResourceRepositoryFactory resourceRepositoryFactory,
-            ILogger<ScrapperApplicationService> logger, IPageMarkerRepository pageMarkerRepository)
+            ILogger<ScrapperApplicationService> logger,
+            IPageMarkerRepository pageMarkerRepository,
+            HttpPolicyFactory httpPolicyFactory)
         {
             _searchFunc = searchFunc;
-            _pageRetriever = pageRetriever;
+            _pageRetrieverFactory = pageRetrieverFactory;
             _resourceRepositoryFactory = resourceRepositoryFactory;
             _logger = logger;
             _pageMarkerRepository = pageMarkerRepository;
+            _httpPolicyFactory = httpPolicyFactory;
         }
 
-        public async Task ScrapAsync(
-            JobDefinition jobDefinition,
-            bool whatIf = true)
+        public async Task ScrapAsync(JobDefinitionDto jobDefinitionDto)
         {
-            var (rootUrl, adjacencyXPath, adjacencyAttribute, resourceXPath, resourceAttribute, resourceRepoType, resourceRepoArgs) =
-                (jobDefinition.RootUrl, jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoType, jobDefinition.ResourceRepoArgs);
+            var jobDefinition = new JobDefinition(jobDefinitionDto);
+            var (rootUrl, adjacencyXPath, adjacencyAttribute, resourceXPath, resourceAttribute, resourceRepoArgs) =
+                (jobDefinition.RootUrl, jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoArgs);
 
-            PrintArguments(jobDefinition);
+            jobDefinition.Log(_logger);
             
             var rootUri = new Uri(rootUrl ?? throw new InvalidOperationException("Root URL must not be null"));
             var baseUrl = new Uri(rootUri.Scheme + "://" + rootUri.Host);
@@ -57,11 +61,12 @@ namespace Scrap
                 }
             }
 
-            var pages = _searchFunc(rootUri, _pageRetriever.GetPageAsync, AdjacencyFunction);
-
-            var resourceRepository = _resourceRepositoryFactory.Build(
-                resourceRepoType,
-                resourceRepoArgs.C(whatIf.ToString()).ToArray());
+            var httpPolicy = _httpPolicyFactory.Build(jobDefinition.HttpRequestRetries,
+                jobDefinition.HttpRequestDelayBetweenRetries);
+            var pageRetriever = _pageRetrieverFactory.Build(httpPolicy);
+            var pages = _searchFunc(rootUri, pageRetriever.GetPageAsync, AdjacencyFunction);
+            
+            var resourceRepository = _resourceRepositoryFactory.Build(httpPolicy, resourceRepoArgs, jobDefinition.WhatIf);
 
             await foreach (var page in pages)
             {
@@ -72,27 +77,13 @@ namespace Scrap
                     continue;
                 }
 
-                foreach (var resource in resources)
+                foreach (var (resource, idx) in resources.Select((res, idx) => (res, idx)))
                 {
-                    await resourceRepository.UpsertResourceAsync(resource, page);
+                    await resourceRepository.UpsertResourceAsync(resource, page, idx);
                 }
             }
             
             _logger.LogInformation("Finished!");
-        }
-
-        private void PrintArguments(JobDefinition jobDefinition)
-        {
-            var (rootUrl, adjacencyXPath, adjacencyAttribute, resourceXPath, resourceAttribute, resourceRepoType, resourceRepoArgs) =
-                (jobDefinition.RootUrl, jobDefinition.AdjacencyXPath, jobDefinition.AdjacencyAttribute, jobDefinition.ResourceXPath, jobDefinition.ResourceAttribute, jobDefinition.ResourceRepoType, jobDefinition.ResourceRepoArgs);
-
-            _logger.LogDebug("Root URL: {RootUrl}", rootUrl);
-            _logger.LogDebug("Adjacency X-Path: {AdjacencyXPath}", adjacencyXPath);
-            _logger.LogDebug("Adjacency attribute: {AdjacencyAttribute}", adjacencyAttribute);
-            _logger.LogDebug("Resource X-Path: {ResourceXPath}", resourceXPath);
-            _logger.LogDebug("Resource attribute: {ResourceAttribute}", resourceAttribute);
-            _logger.LogDebug("Resource repo type: {ResourceRepoType}", resourceRepoType);
-            _logger.LogDebug("Resource repo args: {ResourceRepoArgs}", string.Join(" , ", resourceRepoArgs));
         }
     }
 }

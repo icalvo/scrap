@@ -25,12 +25,14 @@ namespace Scrap.Resources.FileSystem
 
         public async Task UpsertResourceAsync(
             Uri resourceUrl,
-            Page page)
+            Page page, 
+            int pageIndex)
         {
             var destinationPath = await _destinationProvider.GetDestinationAsync(
                 resourceUrl,
                 _destinationRootFolder,
-                page);
+                page,
+                pageIndex);
 
             _logger.LogInformation("GET {ResourceUrl}", resourceUrl);
             _logger.LogInformation("-> {DestinationPath}", destinationPath);

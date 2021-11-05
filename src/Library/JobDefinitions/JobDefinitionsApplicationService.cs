@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -8,37 +9,37 @@ namespace Scrap.JobDefinitions
     public class JobDefinitionsApplicationService
     {
         private readonly IJobDefinitionRepository _definitionRepository;
-        private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
-        private readonly ILogger<JobDefinitionsApplicationService> _logger;
+        private readonly IResourceRepositoryConfigurationValidator _resourceRepositoryConfigurationValidator;
 
         public JobDefinitionsApplicationService(
             IJobDefinitionRepository definitionRepository,
-            ILogger<JobDefinitionsApplicationService> logger,
-            IResourceRepositoryFactory resourceRepositoryFactory)
+            IResourceRepositoryConfigurationValidator resourceRepositoryConfigurationValidator)
         {
             _definitionRepository = definitionRepository;
-            _logger = logger;
-            _resourceRepositoryFactory = resourceRepositoryFactory;
+            _resourceRepositoryConfigurationValidator = resourceRepositoryConfigurationValidator;
         }
 
-        public Task AddJobAsync(string name, JobDefinition jobDefinition)
+        public Task AddJobAsync(string name, JobDefinitionDto jobDefinitionDto)
         {
-            _ = _resourceRepositoryFactory.Build(
-                jobDefinition.ResourceRepoType,
-                jobDefinition.ResourceRepoArgs.C(false.ToString()).ToArray());
+            var jobDefinition = new JobDefinition(jobDefinitionDto);
+            _resourceRepositoryConfigurationValidator.Validate(jobDefinition.ResourceRepoArgs);
 
             return _definitionRepository.AddAsync(name, jobDefinition);
         }
-        
 
-        public Task<JobDefinition> GetJobAsync(string name)
+        public async Task<JobDefinitionDto> GetJobAsync(string name)
         {
-            return _definitionRepository.GetByNameAsync(name);
+            return (await _definitionRepository.GetByNameAsync(name)).ToDto();
         }
 
-        public Task<JobDefinition> FindJobByRootUrlAsync(string rootUrl)
+        public async Task<ImmutableArray<JobDefinitionDto>> GetJobsAsync()
         {
-            return _definitionRepository.FindJobByRootUrlAsync(rootUrl);
+            return (await _definitionRepository.ListAsync()).Select(x => x.ToDto()).ToImmutableArray();
+        }
+
+        public async Task<JobDefinitionDto> FindJobByRootUrlAsync(string rootUrl)
+        {
+            return (await _definitionRepository.FindJobByRootUrlAsync(rootUrl)).ToDto();
         }
 
         public Task DeleteJobAsync(string name)

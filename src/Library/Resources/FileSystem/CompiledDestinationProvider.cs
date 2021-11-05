@@ -34,9 +34,11 @@ namespace Scrap.Resources.FileSystem
 
         public Task<string> GetDestinationAsync(
             Uri resourceUrl,
-            string destinationRootFolder, Page page)
+            string destinationRootFolder,
+            Page page, 
+            int pageIndex)
         {
-            return _compiledDestinationProvider.GetDestinationAsync(resourceUrl, destinationRootFolder, page);
+            return _compiledDestinationProvider.GetDestinationAsync(resourceUrl, destinationRootFolder, page, pageIndex);
         }
 
         private void Compile()
@@ -46,31 +48,12 @@ namespace Scrap.Resources.FileSystem
             {
                 _logger.LogInformation("Compiling destination expression...");
             
+                var directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? throw new Exception("Cannot find entry assembly path");
+                var sourcePath = Path.Combine(directoryName, @"Resources\FileSystem\ExampleDestinationProvider.cs");
+
                 // define source code, then parse it (to the type used for compilation)
-                sourceCode = @"
-                using System;
-                using System.IO;
-                using System.Net;
-                using System.Linq;
-                using System.Threading.Tasks;
-                using HtmlAgilityPack;
-                using Scrap.Pages;
-                using Scrap.Resources.FileSystem.Extensions;
-
-                namespace Scrap.Resources.FileSystem
-                {
-                    public class InternalDestinationProvider: IDestinationProvider
-                    {
-                        public async Task<string> GetDestinationAsync(
-                            Uri resourceUrl,
-                            string destinationRootFolder,
-                            Page page)
-                        {
-                            return " + _destinationFolderPattern + @";
-                        }
-                    }
-                }";
-
+                sourceCode = File.ReadAllText(sourcePath);
+                sourceCode = sourceCode.Replace("\"destinationFolderPattern\"", _destinationFolderPattern);
                 SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
 
                 // define other necessary objects for compilation

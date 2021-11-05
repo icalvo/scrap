@@ -1,23 +1,23 @@
 using System;
+using System.IO;
+using System.Net;
+using System.Linq;
 using System.Threading.Tasks;
+using HtmlAgilityPack;
 using Scrap.Pages;
 using Scrap.Resources.FileSystem.Extensions;
 
 namespace Scrap.Resources.FileSystem
 {
-    public class ExampleDestinationProvider: IDestinationProvider
+    public class InternalDestinationProvider: IDestinationProvider
     {
         public async Task<string> GetDestinationAsync(
             Uri resourceUrl,
             string destinationRootFolder,
-            Page page)
+            Page page, 
+            int pageIndex)
         {
-            return
-                destinationRootFolder
-                    .C((await page.LinkedDoc("//*[contains(@class='back-to-gallery')]//a]"))?.Text("//a[contains(@href='/gallery/artist']"))
-                    .C(page.Text("//h1") ?? "")
-                    .C(page.Uri.CleanSegments()[^1] + resourceUrl.Extension())
-                    .ToPath();
+            return "destinationFolderPattern";
         }
     }
 }

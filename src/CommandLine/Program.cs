@@ -6,9 +6,10 @@ using CLAP;
 using Scrap.CommandLine;
 
 TaskScheduler.UnobservedTaskException += (_, eventArgs) => Console.WriteLine(eventArgs.Exception);
+
 Console.WriteLine("SCRAP");
 Console.WriteLine("-----");
-var parser = new Parser<ScrapperApplication>();
+var parser = new Parser<ScrapCommandLine>();
 parser.Register.HelpHandler("help,h,?", (Action<string>) Console.WriteLine);
 parser.Register.ParameterHandler("debug", (Action) (() => Debugger.Launch()));
 parser.Register.ErrorHandler((Action<ExceptionContext>) (c =>

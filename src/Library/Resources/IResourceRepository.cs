@@ -7,8 +7,6 @@ namespace Scrap.Resources
 {
     public interface IResourceRepository
     {
-        Task UpsertResourceAsync(
-            Uri resourceUrl,
-            Page page);
+        Task UpsertResourceAsync(Uri resourceUrl, Page page, int pageIndex);
     }
 }

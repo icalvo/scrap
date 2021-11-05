@@ -1,18 +1,33 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using CLAP;
 using CLAP.Interception;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Memory;
 using Scrap.JobDefinitions;
-using static Scrap.CommandLine.DependencyInjection;
+using Scrap.Resources.FileSystem;
+using static Scrap.DependencyInjection.DependencyInjection;
 
 namespace Scrap.CommandLine
 {
-    public class ScrapperApplication
+    public class ScrapCommandLine
     {
-        private const int DefaultHttpRequestRetries = 5;
-        private static readonly TimeSpan DefaultHttpRequestDelayBetweenRetries = TimeSpan.FromSeconds(1);
-        
+        private static readonly IConfiguration Configuration;
+
+        static ScrapCommandLine()
+        {
+            var directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? throw new Exception("Cannot find entry assembly path");
+            var dbPath = Path.Combine(directoryName, "jobs.db");
+            Console.WriteLine("DB dir: {0}", dbPath);
+            Configuration =
+                new ConfigurationBuilder()
+                    .AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Database", $"Filename={dbPath};Connection=shared") })
+                    .Build();
+        }
         [Verb(Description = "Executes a job definition provided with the arguments")]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public static Task Literal(
@@ -35,26 +50,22 @@ namespace Scrap.CommandLine
             bool fullScan = false)
         {
             var appService = BuildScrapperApplicationService(
-                httpRequestRetries ?? DefaultHttpRequestRetries,
-                httpRequestDelayBetweenRetries ?? DefaultHttpRequestDelayBetweenRetries,
+                Configuration,
                 fullScan);
 
             return appService.ScrapAsync(
-                new JobDefinition(
+                new JobDefinitionDto(
                     adjacencyXPath,
                     adjacencyAttribute ?? "href",
                     resourceXPath,
                     resourceAttribute,
-                    "filesystem",
-                    new []{
-                        destinationRootFolder,
+                    new FileSystemResourceRepositoryConfiguration(
                         destinationExpression,
-                        whatIf.ToString()
-                    },
+                        destinationRootFolder),
                     rootUrl,
-                    httpRequestRetries ?? DefaultHttpRequestRetries,
-                    httpRequestDelayBetweenRetries ?? DefaultHttpRequestDelayBetweenRetries),
-                whatIf);
+                    httpRequestRetries,
+                    httpRequestDelayBetweenRetries,
+                    whatIf));
         }
 
         [Verb(Description = "Adds to the database a job definition provided with the arguments")]
@@ -71,22 +82,20 @@ namespace Scrap.CommandLine
             TimeSpan? httpRequestDelayBetweenRetries = null,
             string? rootUrl = null)
         {
-            var defsAppService = BuildJobDefinitionsApplicationService();
+            var defsAppService = BuildJobDefinitionsApplicationService(Configuration);
             
-            var jobDefinition = new JobDefinition(
+            var jobDefinition = new JobDefinitionDto(
                 adjacencyXPath,
                 adjacencyAttribute ?? "href",
                 resourceXPath,
                 resourceAttribute,
-                "filesystem",
-                new []{
-                    destinationRootFolder,
+                new FileSystemResourceRepositoryConfiguration(
                     destinationExpression,
-                    false.ToString()
-                },
+                    destinationRootFolder),
                 rootUrl,
-                httpRequestRetries ?? DefaultHttpRequestRetries,
-                httpRequestDelayBetweenRetries ?? DefaultHttpRequestDelayBetweenRetries);
+                httpRequestRetries,
+                httpRequestDelayBetweenRetries,
+                false);
 
             jobDefinition.Log(LoggerFactoryInstance.CreateLogger("Console"));
             
@@ -99,7 +108,7 @@ namespace Scrap.CommandLine
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public static Task Delete(string name)
         {
-            var defsAppService = BuildJobDefinitionsApplicationService();
+            var defsAppService = BuildJobDefinitionsApplicationService(Configuration);
             
             return defsAppService.DeleteJobAsync(name);
         }
@@ -108,7 +117,7 @@ namespace Scrap.CommandLine
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public static async Task Show(string name)
         {
-            var defsAppService = BuildJobDefinitionsApplicationService();
+            var defsAppService = BuildJobDefinitionsApplicationService(Configuration);
             
             var jobDefinition = await defsAppService.GetJobAsync(name);
             jobDefinition.Log(LoggerFactoryInstance.CreateLogger("Console"));
@@ -119,11 +128,11 @@ namespace Scrap.CommandLine
         public static async Task Scrap(
             string? name = null,
             string? rootUrl = null,
-            bool whatIf = true,
+            bool? whatIf = false,
             bool fullScan = false)
         {
-            var defsAppService = BuildJobDefinitionsApplicationService();
-            JobDefinition scrapJobDefinition;
+            var defsAppService = BuildJobDefinitionsApplicationService(Configuration);
+            JobDefinitionDto scrapJobDefinition;
             if (name == null)
             {
                 if (rootUrl == null)
@@ -136,8 +145,7 @@ namespace Scrap.CommandLine
             else
             {
                 scrapJobDefinition = await defsAppService.GetJobAsync(name);
-
-                scrapJobDefinition = new JobDefinition(scrapJobDefinition, rootUrl);
+                scrapJobDefinition = scrapJobDefinition with { RootUrl = rootUrl ?? scrapJobDefinition.RootUrl };
             
                 if (scrapJobDefinition.RootUrl == null)
                 {
@@ -145,13 +153,9 @@ namespace Scrap.CommandLine
                 }
             }
 
-
-            var scrapAppService = BuildScrapperApplicationService(
-                scrapJobDefinition.HttpRequestRetries,
-                scrapJobDefinition.HttpRequestDelayBetweenRetries,
-                fullScan);
+            var scrapAppService = BuildScrapperApplicationService(Configuration, fullScan);
             
-            await scrapAppService.ScrapAsync(scrapJobDefinition, whatIf);            
+            await scrapAppService.ScrapAsync(scrapJobDefinition with { WhatIf = whatIf ?? scrapJobDefinition.WhatIf });            
         }
 
         [PostVerbExecution]

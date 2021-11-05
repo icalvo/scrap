@@ -55,6 +55,7 @@ The variables are:
 | destinationRootFolder | string | Destination root folder as specified by -destinationRootFolder command line argument |
 | page | Page | Information about the current page. |
 | resourceUrl | Uri | URL of the downloaded resource. |
+| pageIndex | int | Index of the resource in the page (zero-based). |
 
 Methods and extension methods:
 

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Immutable;
 using System.Threading.Tasks;
 
 namespace Scrap.JobDefinitions
@@ -8,5 +10,6 @@ namespace Scrap.JobDefinitions
         Task AddAsync(string jobName, JobDefinition jobDefinition);
         Task<JobDefinition> FindJobByRootUrlAsync(string rootUrl);
         Task DeleteJobAsync(string jobName);
+        Task<ImmutableArray<JobDefinition>> ListAsync();
     }
 }

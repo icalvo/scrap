@@ -11,11 +11,11 @@ namespace Scrap.Pages
     public class HttpPageRetriever : IPageRetriever
     {
         private readonly ILogger<HttpPageRetriever> _logger;
-        private readonly AsyncPolicy _executionPolicy;
+        private readonly IAsyncPolicy _executionPolicy;
         private readonly ILogger<Page> _pageLogger;
         private readonly HtmlWeb _web = new();
 
-        public HttpPageRetriever(ILogger<HttpPageRetriever> logger, ILoggerFactory loggerFactory, AsyncPolicy executionPolicy)
+        public HttpPageRetriever(ILogger<HttpPageRetriever> logger, ILoggerFactory loggerFactory, IAsyncPolicy executionPolicy)
         {
             _logger = logger;
             _executionPolicy = executionPolicy;

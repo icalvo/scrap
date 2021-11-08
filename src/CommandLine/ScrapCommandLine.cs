@@ -47,11 +47,10 @@ namespace Scrap.CommandLine
             TimeSpan? httpRequestDelayBetweenRetries = null,
             bool whatIf = true,
             string? rootUrl = null,
-            bool fullScan = false)
+            bool fullScan = false,
+            string? urlPattern = null)
         {
-            var appService = BuildScrapperApplicationService(
-                Configuration,
-                fullScan);
+            var appService = BuildScrapperApplicationService(Configuration);
 
             return appService.ScrapAsync(
                 new JobDefinitionDto(
@@ -65,7 +64,9 @@ namespace Scrap.CommandLine
                     rootUrl,
                     httpRequestRetries,
                     httpRequestDelayBetweenRetries,
-                    whatIf));
+                    whatIf,
+                    fullScan,
+                    urlPattern));
         }
 
         [Verb(Description = "Adds to the database a job definition provided with the arguments")]
@@ -80,7 +81,8 @@ namespace Scrap.CommandLine
             string? adjacencyAttribute = null,
             int? httpRequestRetries = null,
             TimeSpan? httpRequestDelayBetweenRetries = null,
-            string? rootUrl = null)
+            string? rootUrl = null,
+            string? urlPattern = null)
         {
             var defsAppService = BuildJobDefinitionsApplicationService(Configuration);
             
@@ -95,7 +97,9 @@ namespace Scrap.CommandLine
                 rootUrl,
                 httpRequestRetries,
                 httpRequestDelayBetweenRetries,
-                false);
+                false,
+                false,
+                urlPattern);
 
             jobDefinition.Log(LoggerFactoryInstance.CreateLogger("Console"));
             
@@ -129,33 +133,10 @@ namespace Scrap.CommandLine
             string? name = null,
             string? rootUrl = null,
             bool? whatIf = false,
-            bool fullScan = false)
+            bool? fullScan = false)
         {
-            var defsAppService = BuildJobDefinitionsApplicationService(Configuration);
-            JobDefinitionDto scrapJobDefinition;
-            if (name == null)
-            {
-                if (rootUrl == null)
-                {
-                    throw new Exception("No Root URL found as argument or in the job definition");
-                }
-
-                scrapJobDefinition = await defsAppService.FindJobByRootUrlAsync(rootUrl);
-            }
-            else
-            {
-                scrapJobDefinition = await defsAppService.GetJobAsync(name);
-                scrapJobDefinition = scrapJobDefinition with { RootUrl = rootUrl ?? scrapJobDefinition.RootUrl };
-            
-                if (scrapJobDefinition.RootUrl == null)
-                {
-                    throw new Exception("No Root URL found as argument or in the job definition");
-                }
-            }
-
-            var scrapAppService = BuildScrapperApplicationService(Configuration, fullScan);
-            
-            await scrapAppService.ScrapAsync(scrapJobDefinition with { WhatIf = whatIf ?? scrapJobDefinition.WhatIf });            
+            var scrapAppService = BuildScrapperApplicationService(Configuration);
+            await scrapAppService.ScrapAsync(name, rootUrl, fullScan, whatIf);            
         }
 
         [PostVerbExecution]

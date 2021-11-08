@@ -24,9 +24,9 @@ namespace Scrap.DependencyInjection
         }
 
         public static ScrapperApplicationService BuildScrapperApplicationService(
-            IConfiguration config,
-            bool fullScan)
+            IConfiguration config)
         {
+            var liteDatabase = new LiteDatabase(new ConnectionString(config["Database"]));
             return new ScrapperApplicationService(
                 GraphSearch.DepthFirstSearchAsync,
                 new PageRetrieverFactory(LoggerFactoryInstance, BuildMemoryCacheProvider()),
@@ -34,11 +34,11 @@ namespace Scrap.DependencyInjection
                     new ResourceDownloaderFactory(LoggerFactoryInstance),
                     LoggerFactoryInstance),
                 new Logger<ScrapperApplicationService>(LoggerFactoryInstance),
-                new LiteDbPageMarkerRepository(
-                    new LiteDatabase(new ConnectionString(config["Database"])),
-                    new Logger<LiteDbPageMarkerRepository>(LoggerFactoryInstance),
-                    disableExists: fullScan),
-                new HttpPolicyFactory(LoggerFactoryInstance, BuildMemoryCacheProvider()));
+                new PageMarkerRepositoryFactory(liteDatabase, LoggerFactoryInstance),
+                new HttpPolicyFactory(LoggerFactoryInstance, BuildMemoryCacheProvider()),
+                new LiteDbJobDefinitionRepository(
+                    liteDatabase,
+                    new Logger<LiteDbJobDefinitionRepository>(LoggerFactoryInstance)));
         }
 
         private static MemoryCacheProvider BuildMemoryCacheProvider()

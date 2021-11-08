@@ -1,3 +1,4 @@
+// ReSharper disable RedundantUsingDirective
 using System;
 using System.IO;
 using System.Net;
@@ -7,8 +8,11 @@ using HtmlAgilityPack;
 using Scrap.Pages;
 using Scrap.Resources.FileSystem.Extensions;
 
+#pragma warning disable 1998
+
 namespace Scrap.Resources.FileSystem
 {
+    // ReSharper disable once UnusedType.Global
     public class InternalDestinationProvider: IDestinationProvider
     {
         public async Task<string> GetDestinationAsync(

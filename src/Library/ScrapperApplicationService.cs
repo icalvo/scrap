@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -16,23 +15,67 @@ namespace Scrap
         private readonly PageRetrieverFactory _pageRetrieverFactory;
         private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
         private readonly ILogger<ScrapperApplicationService> _logger;
-        private readonly IPageMarkerRepository _pageMarkerRepository;
+        private readonly PageMarkerRepositoryFactory _pageMarkerRepositoryFactory;
         private readonly HttpPolicyFactory _httpPolicyFactory;
+        private readonly IJobDefinitionRepository _definitionRepository;
 
         public ScrapperApplicationService(
             Func<Uri, Func<Uri, Task<Page>>, Func<Page, IAsyncEnumerable<Uri>>, IAsyncEnumerable<Page>> searchFunc,
             PageRetrieverFactory pageRetrieverFactory,
             IResourceRepositoryFactory resourceRepositoryFactory,
             ILogger<ScrapperApplicationService> logger,
-            IPageMarkerRepository pageMarkerRepository,
-            HttpPolicyFactory httpPolicyFactory)
+            PageMarkerRepositoryFactory pageMarkerRepositoryFactory,
+            HttpPolicyFactory httpPolicyFactory,
+            IJobDefinitionRepository definitionRepository)
         {
             _searchFunc = searchFunc;
             _pageRetrieverFactory = pageRetrieverFactory;
             _resourceRepositoryFactory = resourceRepositoryFactory;
             _logger = logger;
-            _pageMarkerRepository = pageMarkerRepository;
+            _pageMarkerRepositoryFactory = pageMarkerRepositoryFactory;
             _httpPolicyFactory = httpPolicyFactory;
+            _definitionRepository = definitionRepository;
+        }
+
+        public async Task ScrapAsync(string? name, string? rootUrl, bool? fullScan, bool? whatIf)
+        {
+            JobDefinitionDto? scrapJobDefinition;
+            if (name == null)
+            {
+                if (rootUrl == null)
+                {
+                    throw new Exception("Neither Root URL or a name was provided");
+                }
+
+                scrapJobDefinition = (await _definitionRepository.FindJobByRootUrlAsync(rootUrl))?.ToDto();
+            }
+            else
+            {
+                scrapJobDefinition = (await _definitionRepository.GetByNameAsync(name))?.ToDto();
+                if (scrapJobDefinition != null)
+                {
+                    scrapJobDefinition = scrapJobDefinition with { RootUrl = rootUrl ?? scrapJobDefinition.RootUrl };
+            
+                    if (scrapJobDefinition.RootUrl == null)
+                    {
+                        throw new Exception("No Root URL found as argument or in the job definition");
+                    }
+                }
+            }
+
+            if (scrapJobDefinition == null)
+            {
+                throw new KeyNotFoundException("No job definition was found based on name or Root URL");
+            }
+
+            scrapJobDefinition = scrapJobDefinition with
+            {
+                RootUrl = rootUrl ?? scrapJobDefinition.RootUrl,
+                WhatIf = whatIf ?? scrapJobDefinition.WhatIf,
+                FullScan = fullScan ?? scrapJobDefinition.FullScan
+            };
+
+            await ScrapAsync(scrapJobDefinition);
         }
 
         public async Task ScrapAsync(JobDefinitionDto jobDefinitionDto)
@@ -45,18 +88,19 @@ namespace Scrap
             
             var rootUri = new Uri(rootUrl ?? throw new InvalidOperationException("Root URL must not be null"));
             var baseUrl = new Uri(rootUri.Scheme + "://" + rootUri.Host);
+            var pageMarkerRepository = _pageMarkerRepositoryFactory.Build(jobDefinition.FullScan);
 
             async IAsyncEnumerable<Uri> AdjacencyFunction(Page page)
             {
-
                 foreach (var link in page.Links(adjacencyXPath, adjacencyAttribute, baseUrl))
                 {
-                    if (await _pageMarkerRepository.ExistsAsync(link))
+                    if (await pageMarkerRepository.ExistsAsync(link))
                     {
+                        _logger.LogTrace("Page {Link} already visited", link);
                         continue;
                     }
 
-                    await _pageMarkerRepository.AddAsync(link);
+                    await pageMarkerRepository.AddAsync(link);
                     yield return link;
                 }
             }

@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using LiteDB;
 using Scrap.Resources;
 
 namespace Scrap.JobDefinitions
@@ -21,20 +19,22 @@ namespace Scrap.JobDefinitions
             HttpRequestRetries = jobDefinition.HttpRequestRetries;
             HttpRequestDelayBetweenRetries = jobDefinition.HttpRequestDelayBetweenRetries;
             WhatIf = jobDefinition.WhatIf;
+            FullScan = jobDefinition.FullScan;
+            UrlPattern = jobDefinition.UrlPattern;
         }
 
         public JobDefinition ToJobDefinition()
         {
             return new JobDefinition(new JobDefinitionDto(
                 AdjacencyXPath, AdjacencyAttribute, ResourceXPath, ResourceAttribute,
-                ResourceRepoArgs, RootUrl, HttpRequestRetries, HttpRequestDelayBetweenRetries, WhatIf));
+                ResourceRepoArgs, RootUrl, HttpRequestRetries, HttpRequestDelayBetweenRetries, WhatIf, FullScan, UrlPattern));
         }
 
         public JobDefinition ToJobDefinition(string? rootUrl)
         {
             return new JobDefinition(new JobDefinitionDto(
                 AdjacencyXPath, AdjacencyAttribute, ResourceXPath, ResourceAttribute,
-                ResourceRepoArgs, RootUrl, HttpRequestRetries, HttpRequestDelayBetweenRetries, WhatIf), rootUrl);
+                ResourceRepoArgs, RootUrl, HttpRequestRetries, HttpRequestDelayBetweenRetries, WhatIf, FullScan, UrlPattern), rootUrl);
         }
 
         public string Id { get; set; } = null!;
@@ -47,5 +47,7 @@ namespace Scrap.JobDefinitions
         public int HttpRequestRetries { get; set; }
         public TimeSpan HttpRequestDelayBetweenRetries { get; set; }
         public bool WhatIf { get; set; }
+        public bool FullScan { get; set; }
+        public string? UrlPattern { get; set; } = null!;
     }
 }

@@ -1,3 +1,6 @@
+using Hangfire;
+using Hangfire.Console;
+using Hangfire.LiteDB;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -27,9 +30,16 @@ namespace API
                 jsonConverters.Add(new ResourceRepositoryConfigurationJsonConverter());
                 jsonConverters.Add(new TimeSpanJsonConverter());
             });
-
+                
+            services.AddHangfire(config =>
+            {
+                config.UseSqlServerStorage(Configuration["Hangfire:Database"]);
+                config.UseConsole();
+            });
+            services.AddHangfireServer();
             services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" }); });
             services.AddScoped(_ => DependencyInjection.BuildJobDefinitionsApplicationService(Configuration));
+            services.AddScoped(_ => DependencyInjection.BuildScrapperApplicationService(Configuration));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -41,6 +51,7 @@ namespace API
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
             }
+            app.UseHangfireDashboard();
 
             app.UseHttpsRedirection();
 

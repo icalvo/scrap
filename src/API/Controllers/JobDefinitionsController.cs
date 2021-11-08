@@ -33,6 +33,14 @@ namespace API.Controllers
             name = Uri.UnescapeDataString(name);
             return _applicationService.GetJobAsync(name);
         }
+
+        [HttpGet]
+        [Route("ByUrl/{url}")]
+        public Task<JobDefinitionDto> GetByUrl(string url)
+        {
+            url = Uri.UnescapeDataString(url);
+            return _applicationService.FindJobByRootUrlAsync(url);
+        }
         
         [HttpPost]
         [Route("{name}")]

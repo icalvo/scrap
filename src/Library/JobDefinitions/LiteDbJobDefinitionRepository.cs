@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using LiteDB;
 using Microsoft.Extensions.Logging;
@@ -20,10 +21,10 @@ namespace Scrap.JobDefinitions
             _collection = _db.GetCollection<LiteDbJobDefinition>();
         }
 
-        public Task<JobDefinition> GetByNameAsync(string jobName)
+        public Task<JobDefinition?> GetByNameAsync(string jobName)
         {
             _logger.LogInformation("Getting job def. {JobName}", jobName);
-            return Task.FromResult(_collection.FindById(jobName).ToJobDefinition());
+            return Task.FromResult(_collection.FindById(jobName)?.ToJobDefinition());
         }
 
         public Task AddAsync(string jobName, JobDefinition jobDefinition)
@@ -33,14 +34,18 @@ namespace Scrap.JobDefinitions
             return Task.CompletedTask;
         }
 
-        public Task<JobDefinition> FindJobByRootUrlAsync(string rootUrl)
+        public Task<JobDefinition?> FindJobByRootUrlAsync(string rootUrl)
         {
             _logger.LogInformation("Getting job def. by URL {RootUrl}", rootUrl);
 
-            return Task.FromResult(_collection.Query()
-                .Where(x => rootUrl.Contains(x.Id))
-                .Single()
-                .ToJobDefinition(rootUrl));
+            var definitionsWithPatterns = _collection.Query()
+                .Where(x => x.UrlPattern != null)
+                .ToEnumerable();
+            
+            return Task.FromResult(
+                definitionsWithPatterns
+                    .SingleOrDefault(x => Regex.IsMatch(rootUrl, x.UrlPattern!))
+                    ?.ToJobDefinition(rootUrl));
         }
 
         public Task DeleteJobAsync(string jobName)

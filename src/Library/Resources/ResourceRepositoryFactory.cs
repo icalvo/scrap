@@ -17,7 +17,7 @@ namespace Scrap.Resources
             _loggerFactory = loggerFactory;
         }
 
-        public IResourceRepository? Build(IAsyncPolicy httpPolicy, IResourceRepositoryConfiguration args, bool whatIf)
+        public IResourceRepository Build(IAsyncPolicy httpPolicy, IResourceRepositoryConfiguration args, bool whatIf)
         {
             switch (args)
             {

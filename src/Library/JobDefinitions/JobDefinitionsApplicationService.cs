@@ -27,9 +27,9 @@ namespace Scrap.JobDefinitions
             return _definitionRepository.AddAsync(name, jobDefinition);
         }
 
-        public async Task<JobDefinitionDto> GetJobAsync(string name)
+        public async Task<JobDefinitionDto?> GetJobAsync(string name)
         {
-            return (await _definitionRepository.GetByNameAsync(name)).ToDto();
+            return (await _definitionRepository.GetByNameAsync(name))?.ToDto();
         }
 
         public async Task<ImmutableArray<JobDefinitionDto>> GetJobsAsync()
@@ -37,9 +37,9 @@ namespace Scrap.JobDefinitions
             return (await _definitionRepository.ListAsync()).Select(x => x.ToDto()).ToImmutableArray();
         }
 
-        public async Task<JobDefinitionDto> FindJobByRootUrlAsync(string rootUrl)
+        public async Task<JobDefinitionDto?> FindJobByRootUrlAsync(string rootUrl)
         {
-            return (await _definitionRepository.FindJobByRootUrlAsync(rootUrl)).ToDto();
+            return (await _definitionRepository.FindJobByRootUrlAsync(rootUrl))?.ToDto();
         }
 
         public Task DeleteJobAsync(string name)

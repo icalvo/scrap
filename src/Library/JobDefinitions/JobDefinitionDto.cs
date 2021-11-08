@@ -18,7 +18,9 @@ namespace Scrap.JobDefinitions
         string? RootUrl,
         int? HttpRequestRetries,
         TimeSpan? HttpRequestDelayBetweenRetries,
-        bool? WhatIf)
+        bool? WhatIf,
+        bool? FullScan,
+        string? UrlPattern)
     {
         public void Log(ILogger logger)
         {
@@ -29,6 +31,8 @@ namespace Scrap.JobDefinitions
             logger.LogDebug("Resource attribute: {ResourceAttribute}", ResourceAttribute);
             logger.LogDebug("Resource repo args: {ResourceRepoArgs}", ResourceRepoArgs);
             logger.LogDebug("What if flag: {WhatIf}", WhatIf);
+            logger.LogDebug("Full scan flag: {FullScan}", FullScan);
+            logger.LogDebug("Url Pattern: {UrlPattern}", UrlPattern);
         }
     }
 }

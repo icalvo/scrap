@@ -6,21 +6,23 @@ namespace Scrap.JobDefinitions
 {
     public class JobDefinition
     {
-        public JobDefinition(JobDefinitionDto jobDefinition)
+        public JobDefinition(JobDefinitionDto dto)
         {
-            AdjacencyXPath = jobDefinition.AdjacencyXPath;
-            AdjacencyAttribute = jobDefinition.AdjacencyAttribute ?? "href";
-            ResourceXPath = jobDefinition.ResourceXPath;
-            ResourceAttribute = jobDefinition.ResourceAttribute;
-            ResourceRepoArgs = jobDefinition.ResourceRepoArgs;
-            RootUrl = jobDefinition.RootUrl;
-            HttpRequestRetries = jobDefinition.HttpRequestRetries ?? 5;
-            HttpRequestDelayBetweenRetries = jobDefinition.HttpRequestDelayBetweenRetries ?? TimeSpan.FromSeconds(1);
-            WhatIf = jobDefinition.WhatIf ?? false;
+            AdjacencyXPath = dto.AdjacencyXPath;
+            AdjacencyAttribute = dto.AdjacencyAttribute ?? "href";
+            ResourceXPath = dto.ResourceXPath;
+            ResourceAttribute = dto.ResourceAttribute;
+            ResourceRepoArgs = dto.ResourceRepoArgs;
+            UrlPattern = dto.UrlPattern;
+            RootUrl = dto.RootUrl;
+            HttpRequestRetries = dto.HttpRequestRetries ?? 5;
+            HttpRequestDelayBetweenRetries = dto.HttpRequestDelayBetweenRetries ?? TimeSpan.FromSeconds(1);
+            WhatIf = dto.WhatIf ?? false;
+            FullScan = dto.FullScan ?? false;
         }
 
-        public JobDefinition(JobDefinitionDto jobDefinition, string? rootUrl)
-            : this(jobDefinition with { RootUrl = rootUrl ?? jobDefinition.RootUrl })
+        public JobDefinition(JobDefinitionDto dto, string? rootUrl)
+            : this(dto with { RootUrl = rootUrl ?? dto.RootUrl })
         {
         }
 
@@ -35,7 +37,9 @@ namespace Scrap.JobDefinitions
                 RootUrl,
                 HttpRequestRetries,
                 HttpRequestDelayBetweenRetries,
-                WhatIf);            
+                WhatIf,
+                FullScan,
+                UrlPattern);            
         }
 
         public void Log(ILogger logger)
@@ -46,6 +50,8 @@ namespace Scrap.JobDefinitions
             logger.LogDebug("Resource X-Path: {ResourceXPath}", ResourceXPath);
             logger.LogDebug("Resource attribute: {ResourceAttribute}", ResourceAttribute);
             logger.LogDebug("Resource repo args: {ResourceRepoArgs}", ResourceRepoArgs);
+            logger.LogDebug("What if flag: {WhatIf}", WhatIf);
+            logger.LogDebug("Full scan flag: {FullScan}", FullScan);
         }
 
         public string? RootUrl { get; }
@@ -57,5 +63,7 @@ namespace Scrap.JobDefinitions
         public int HttpRequestRetries { get; }
         public TimeSpan HttpRequestDelayBetweenRetries { get; }
         public bool WhatIf { get; }
+        public bool FullScan { get; }
+        public string? UrlPattern { get; }
     }
 }

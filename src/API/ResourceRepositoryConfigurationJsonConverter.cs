@@ -4,30 +4,37 @@ using System.Text.Json.Serialization;
 using Scrap.Resources;
 using Scrap.Resources.FileSystem;
 
-namespace API
+namespace Scrap.API
 {
-    public class ResourceRepositoryConfigurationJsonConverter : JsonConverter<IResourceRepositoryConfiguration>
+    public class ResourceRepositoryConfigurationJsonConverter : JsonConverter<IResourceProcessorConfiguration>
     {
         public override bool CanConvert(Type typeToConvert)
         {
-            return typeof(IResourceRepositoryConfiguration).IsAssignableFrom(typeToConvert);
+            return typeof(IResourceProcessorConfiguration).IsAssignableFrom(typeToConvert);
         }
 
-        public override IResourceRepositoryConfiguration Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override IResourceProcessorConfiguration Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return JsonSerializer.Deserialize<FileSystemResourceRepositoryConfiguration>(
-                ref reader,
-                new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-        }
-
-        public override void Write(Utf8JsonWriter writer, IResourceRepositoryConfiguration value, JsonSerializerOptions options)
-        {
-            if (value is null)
+            var cfg = JsonSerializer.Deserialize<JsonElement>(
+                       ref reader,
+                       new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            var json = cfg.GetRawText();
+            return cfg.GetProperty("type").GetString() switch
             {
-                writer.WriteNullValue();
-                return;
-            }
+                "filesystem" => JsonSerializer.Deserialize<FileSystemResourceProcessorConfiguration>(
+                                    json,
+                                    new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
+                                ?? throw new InvalidOperationException("Couldn't deserialize resource repo config"),
+                "list" => JsonSerializer.Deserialize<ListResourceProcessorConfiguration>(
+                              json,
+                              new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
+                          ?? throw new InvalidOperationException("Couldn't deserialize resource repo config"),
+                _ => throw new InvalidOperationException("Couldn't deserialize resource repo config"),
+            };
+        }
 
+        public override void Write(Utf8JsonWriter writer, IResourceProcessorConfiguration value, JsonSerializerOptions options)
+        {
             writer.WriteStartObject();
             foreach (var property in value.GetType().GetProperties())
             {

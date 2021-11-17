@@ -1,0 +1,52 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Scrap.Pages;
+
+namespace Scrap.Resources.FileSystem
+{
+    public class FileSystemResourceRepository : ResourceRepositoryBase<FileSystemResourceId>
+    {
+        private readonly IDestinationProvider _destinationProvider;
+        private readonly string _destinationRootFolder;
+        private readonly ILogger<FileSystemResourceRepository> _logger;
+
+        public FileSystemResourceRepository(IDestinationProvider destinationProvider, string destinationRootFolder, ILogger<FileSystemResourceRepository> logger)
+        {
+            _destinationProvider = destinationProvider;
+            _destinationRootFolder = destinationRootFolder;
+            _logger = logger;
+        }
+
+        public override async Task<FileSystemResourceId> GetIdAsync(Page page, int pageIndex, Uri resourceUrl, int resourceIndex)
+        {
+            var destinationPath = await _destinationProvider.GetDestinationAsync(
+                _destinationRootFolder,
+                page, pageIndex,
+                resourceUrl, resourceIndex);
+            var description = Path.GetRelativePath(_destinationRootFolder, destinationPath);
+
+            return new FileSystemResourceId(destinationPath, description);
+        }
+
+        public override Task<bool> ExistsAsync(FileSystemResourceId id)
+        {
+            var destinationPath = id.FullPath;
+            return Task.FromResult(File.Exists(destinationPath));
+        }
+
+        public override async Task UpsertAsync(FileSystemResourceId id, Stream resourceStream)
+        {
+            var destinationPath = id.FullPath;
+            var directoryName = Path.GetDirectoryName(destinationPath)
+                                ?? throw new InvalidOperationException($"Could not get directory name from destination path {destinationPath}");
+            Directory.CreateDirectory(directoryName);
+            _logger.LogTrace("WRITE {RelativePath}", Path.GetRelativePath(_destinationRootFolder, destinationPath));
+
+            await using var outputStream = File.Open(destinationPath, FileMode.Create);
+            await resourceStream.CopyToAsync(outputStream);
+
+        }
+    }
+}

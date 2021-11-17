@@ -1,37 +1,28 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
-using Scrap.JobDefinitions;
+using Scrap.Graphs;
 using Xunit;
 
-namespace LiteDB.Tests.Mapper
+namespace Scrap.Tests
 {
-    public class CustomMapping_Tests
+    public class GraphSearchTests
     {
-        public class ClassWithArray
-        {
-            [BsonCtor]
-            public ClassWithArray(string id, string[] stringArray)
-            {
-                Id = id;
-                StringArray = stringArray;
-            }
-
-
-            public string Id { get; }
-            public string[] StringArray { get; }
-        }
-
-        private readonly BsonMapper _mapper = new();
-
         [Fact]
-        public void Custom_Ctor2()
+        public void DepthFirstSearch_Test1()
         {
-            var doc = new BsonDocument { ["_id"] = "trol", ["stringArray"] = new BsonArray("First", "Second")  };
+            var adj = new Dictionary<string, string[]>
+            {
+                { "a", new[] { "b", "c" } },
+                { "b", new[] { "a" } },
+                { "c", Array.Empty<string>() }
+            };
+            var dfs = new DepthFirstGraphSearch();
+            var result = dfs.SearchAsync("a", Task.FromResult, s => adj[s].ToAsyncEnumerable()).ToEnumerable();
 
-            Func<ClassWithArray> action = () => _mapper.ToObject<ClassWithArray>(doc);
-
-            action.Should().Throw<LiteException>().WithMessage($"They seem to have fixed this. Change {nameof(LiteDbJobDefinition)}'s constructor to accept string[] directly instead of BsonArray, and remove this test.");
+            result.Should().BeEquivalentTo("a", "b", "c");
         }
     }
 }

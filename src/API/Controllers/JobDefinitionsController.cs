@@ -1,61 +1,94 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Scrap.JobDefinitions;
+using static Scrap.API.Controllers.ControllerResults;
 
-namespace API.Controllers
+namespace Scrap.API.Controllers
 {
     [ApiController]
     [Route("[controller]")]
     public class JobDefinitionsController : ControllerBase
     {
-        private readonly ILogger<JobDefinitionsController> _logger;
         private readonly JobDefinitionsApplicationService _applicationService;
 
-        public JobDefinitionsController(JobDefinitionsApplicationService applicationService, ILogger<JobDefinitionsController> logger)
+        public JobDefinitionsController(JobDefinitionsApplicationService applicationService)
         {
-            _logger = logger;
             _applicationService = applicationService;
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<JobDefinitionDto>), 200)]
         public Task<ImmutableArray<JobDefinitionDto>> Search()
         {
             return _applicationService.GetJobsAsync();
         }
 
         [HttpGet]
-        [Route("{name}")]
-        public Task<JobDefinitionDto> Get(string name)
+        [Route("{nameOrId}")]
+        [ProducesResponseType(typeof(JobDefinitionDto), 200)]
+        public async Task<IActionResult> Get(string nameOrId)
         {
-            name = Uri.UnescapeDataString(name);
-            return _applicationService.GetJobAsync(name);
+            if (Guid.TryParse(nameOrId, out var id))
+            {
+                return OkOrNotFound(await _applicationService.GetJobAsync(id));
+            }
+
+            var name = Uri.UnescapeDataString(nameOrId);
+            return OkOrNotFound(await _applicationService.FindJobByNameAsync(name));
         }
 
         [HttpGet]
         [Route("ByUrl/{url}")]
-        public Task<JobDefinitionDto> GetByUrl(string url)
+        [ProducesResponseType(typeof(JobDefinitionDto), 200)]
+        public async Task<IActionResult> GetByUrl(string url)
         {
             url = Uri.UnescapeDataString(url);
-            return _applicationService.FindJobByRootUrlAsync(url);
+            return OkOrNotFound(await _applicationService.FindJobByRootUrlAsync(url));
         }
         
         [HttpPost]
-        [Route("{name}")]
-        public Task Post(string name, [FromBody]JobDefinitionDto definition)
+        [ProducesResponseType(typeof(string), 200)]
+        public async Task<IActionResult> Post([FromBody]NewJobDefinitionDto definition)
         {
-            name = Uri.UnescapeDataString(name);
-            return _applicationService.AddJobAsync(name, definition);
+            return Ok(await _applicationService.AddJobAsync(definition));
+        }
+
+        [HttpPut]
+        [Route("{nameOrId}")]
+        [ProducesResponseType(typeof(string), 200)]
+        public async Task<IActionResult> Put(string nameOrId, [FromBody]NewJobDefinitionDto definition)
+        {
+            if (!Guid.TryParse(nameOrId, out var id))
+            {
+                var name = Uri.UnescapeDataString(nameOrId);
+                return Ok(await _applicationService.UpsertAsync(name, definition));
+            }
+            
+            return Ok(await _applicationService.UpsertAsync(id, definition));
         }        
-        
+
         [HttpDelete]
-        [Route("{name}")]
-        public Task Delete(string name)
+        [Route("{nameOrId}")]
+        [ProducesResponseType(typeof(string), 200)]
+        public async Task<IActionResult> Delete(string nameOrId)
         {
-            name = Uri.UnescapeDataString(name);
-            return _applicationService.DeleteJobAsync(name);
+            if (!Guid.TryParse(nameOrId, out var id))
+            {
+                var name = Uri.UnescapeDataString(nameOrId);
+                var jobDef = await _applicationService.FindJobByNameAsync(name);
+                if (jobDef == null)
+                {
+                    return NotFound();
+                }
+
+                id = jobDef.Id;
+            }
+
+            await _applicationService.DeleteJobAsync(id);
+            return Ok(id.ToString());
         }
     }
 }

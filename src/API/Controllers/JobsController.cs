@@ -1,31 +1,82 @@
 using System.Threading.Tasks;
 using Hangfire;
-using Hangfire.Server;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Scrap;
+using Scrap.Jobs;
+using Scrap.Resources;
 
-namespace API.Controllers
+namespace Scrap.API.Controllers
 {
     [ApiController]
     [Route("[controller]")]
     public class JobsController : ControllerBase
     {
-        private readonly ILogger<JobsController> _logger;
-        private readonly ScrapperApplicationService _applicationService;
+        private readonly JobApplicationService _applicationService;
+        private readonly JobDefinitionsApplicationService _definitionsApplicationService;
 
-        public JobsController(ScrapperApplicationService applicationService, ILogger<JobsController> logger)
+        public JobsController(JobApplicationService applicationService, JobDefinitionsApplicationService definitionsApplicationService)
         {
-            _logger = logger;
             _applicationService = applicationService;
+            _definitionsApplicationService = definitionsApplicationService;
         }
 
         [HttpPost]
         [Route("{name}")]
-        public Task<string> Run(string name, [FromQuery]string? rootUrl, [FromQuery]bool? fullScan, [FromQuery]bool? whatIf)
+        [ProducesResponseType(typeof(string), 200)]
+        public async Task<IActionResult> Run(string name, JobOptionsWithRootUrl optionsOverride)
         {
-            return Task.FromResult(BackgroundJob.Enqueue(
-                () => _applicationService.ScrapAsync(name, rootUrl, fullScan, whatIf)));
+            var (configuration, fullScan, whatIf, rootUrl) = optionsOverride;
+
+            var jobDef = await _definitionsApplicationService.FindJobByNameAsync(name);
+            if (jobDef == null)
+            {
+                return NotFound();
+            }
+
+            var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, configuration);
+            return Ok(BackgroundJob.Enqueue(() => _applicationService.RunAsync(newJob)));
+        }
+
+        public class JobOptionsBasic
+        {
+            public IResourceProcessorConfiguration? Configuration { get; }
+            public bool? FullScan { get; }
+            public bool? WhatIf { get; }
+
+            public void Deconstruct(out IResourceProcessorConfiguration? configuration, out bool? fullScan, out bool? whatIf)
+            {
+                configuration = Configuration;
+                fullScan = FullScan;
+                whatIf = WhatIf;
+            }
+        }
+
+        public class JobOptionsWithRootUrl : JobOptionsBasic
+        {
+            public string? RootUrl { get; }
+
+            public void Deconstruct(out IResourceProcessorConfiguration? configuration, out bool? fullScan, out bool? whatIf, out string? rootUrl)
+            {
+                configuration = Configuration;
+                fullScan = FullScan;
+                whatIf = WhatIf;
+                rootUrl = RootUrl;
+            }
+        }
+
+        [HttpPost]
+        [Route("ByUrl/{rootUrl}")]
+        [ProducesResponseType(typeof(string), 200)]
+        public async Task<IActionResult> RunFromUrl(string rootUrl, [FromBody]JobOptionsBasic optionsOverride)
+        {
+            var (configuration, fullScan, whatIf) = optionsOverride;
+            var jobDef = await _definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
+            if (jobDef == null)
+            {
+                return NotFound();
+            }
+
+            var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, configuration);
+            return Ok(BackgroundJob.Enqueue(() => _applicationService.RunAsync(newJob)));
         }
     }
 }

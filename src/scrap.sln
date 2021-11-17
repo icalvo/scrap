@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandLine", "CommandLine\CommandLine.csproj", "{7440D748-611F-4627-9AFA-F04675720952}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Library", "Library\Library.csproj", "{DC01283F-FFD4-4DC8-8E86-C3B2E7A5D6CC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csproj", "{DC01283F-FFD4-4DC8-8E86-C3B2E7A5D6CC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{AB361935-0956-4346-8464-6B455C5FE236}"
 EndProject

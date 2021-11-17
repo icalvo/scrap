@@ -1,16 +1,14 @@
 using Hangfire;
 using Hangfire.Console;
-using Hangfire.LiteDB;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using Scrap.DependencyInjection;
-using Scrap.Resources;
 
-namespace API
+namespace Scrap.API
 {
     public class Startup
     {
@@ -38,8 +36,8 @@ namespace API
             });
             services.AddHangfireServer();
             services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" }); });
-            services.AddScoped(_ => DependencyInjection.BuildJobDefinitionsApplicationService(Configuration));
-            services.AddScoped(_ => DependencyInjection.BuildScrapperApplicationService(Configuration));
+            services.AddScoped(sc => DependencyInjection.DependencyInjection.BuildJobDefinitionsApplicationService(Configuration, sc.GetRequiredService<ILoggerFactory>()));
+            services.AddScoped(sc => DependencyInjection.DependencyInjection.BuildScrapperApplicationService(Configuration, sc.GetRequiredService<ILoggerFactory>()));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

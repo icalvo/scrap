@@ -3,61 +3,51 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Polly.Caching.Memory;
-using Scrap.JobDefinitions;
+using Scrap.Downloads;
+using Scrap.Graphs;
+using Scrap.JobDefinitions.LiteDb;
+using Scrap.Jobs.LiteDb;
 using Scrap.Pages;
+using Scrap.ResourceDownloaders;
 using Scrap.Resources;
 
 namespace Scrap.DependencyInjection
 {
     public static class DependencyInjection
     {
-        public static readonly ILoggerFactory LoggerFactoryInstance = BuildLoggerFactory();
-
-        public static JobDefinitionsApplicationService BuildJobDefinitionsApplicationService(IConfiguration config)
+        public static JobDefinitionsApplicationService BuildJobDefinitionsApplicationService(
+            IConfiguration config,
+            ILoggerFactory loggerFactory)
         {
             return
                 new JobDefinitionsApplicationService(
                     new LiteDbJobDefinitionRepository(
                         new LiteDatabase(new ConnectionString(config["Database"])),
-                        new Logger<LiteDbJobDefinitionRepository>(LoggerFactoryInstance)),
-                    new ResourceRepositoryConfigurationValidator(LoggerFactoryInstance));
+                        new Logger<LiteDbJobDefinitionRepository>(loggerFactory)),
+                    new Logger<JobDefinitionsApplicationService>(loggerFactory),
+                    loggerFactory);
         }
 
-        public static ScrapperApplicationService BuildScrapperApplicationService(
-            IConfiguration config)
+        public static JobApplicationService BuildScrapperApplicationService(
+            IConfiguration config,
+            ILoggerFactory loggerFactory)
         {
             var liteDatabase = new LiteDatabase(new ConnectionString(config["Database"]));
-            return new ScrapperApplicationService(
-                GraphSearch.DepthFirstSearchAsync,
-                new PageRetrieverFactory(LoggerFactoryInstance, BuildMemoryCacheProvider()),
-                new ResourceRepositoryFactory(
-                    new ResourceDownloaderFactory(LoggerFactoryInstance),
-                    LoggerFactoryInstance),
-                new Logger<ScrapperApplicationService>(LoggerFactoryInstance),
-                new PageMarkerRepositoryFactory(liteDatabase, LoggerFactoryInstance),
-                new HttpPolicyFactory(LoggerFactoryInstance, BuildMemoryCacheProvider()),
-                new LiteDbJobDefinitionRepository(
-                    liteDatabase,
-                    new Logger<LiteDbJobDefinitionRepository>(LoggerFactoryInstance)));
+            return new JobApplicationService(
+                new DepthFirstGraphSearch(),
+                new Logger<JobApplicationService>(loggerFactory),
+                new PageMarkerRepositoryFactory(liteDatabase, loggerFactory),
+                new HttpPolicyFactory(loggerFactory, BuildMemoryCacheProvider(loggerFactory)),
+                new DownloadStreamProviderFactory(),
+                new ResourceProcessorFactory(loggerFactory),
+                loggerFactory);
         }
 
-        private static MemoryCacheProvider BuildMemoryCacheProvider()
+        private static MemoryCacheProvider BuildMemoryCacheProvider(ILoggerFactory loggerFactory)
         {
             var cacheProvider = new MemoryCacheProvider(
-                new MemoryCache(new MemoryCacheOptions(), LoggerFactoryInstance));
+                new MemoryCache(new MemoryCacheOptions(), loggerFactory));
             return cacheProvider;
-        }
-
-        private static ILoggerFactory BuildLoggerFactory()
-        {
-            return LoggerFactory.Create(builder =>
-            {
-                builder
-                    .SetMinimumLevel(LogLevel.Trace)
-                    .AddFilter("Microsoft", LogLevel.Warning)
-                    .AddFilter("System", LogLevel.Warning)
-                    .AddSimpleConsole(options => options.SingleLine = true);
-            });
         }
     }
 }

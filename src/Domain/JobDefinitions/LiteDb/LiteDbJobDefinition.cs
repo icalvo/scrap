@@ -40,13 +40,13 @@ namespace Scrap.JobDefinitions.LiteDb
         }
 
         public Guid Id { get; set; }
-        public string? Name { get; set; } = null!;
+        public string Name { get; set; } = null!;
         public string? RootUrl { get; set; }
         public string AdjacencyXPath { get; set; } = null!;
-        public string? AdjacencyAttribute { get; set; } = null!;
+        public string? AdjacencyAttribute { get; set; }
         public string ResourceXPath { get; set; } = null!;
         public string ResourceAttribute { get; set; } = null!;
-        public IResourceProcessorConfiguration ResourceRepoArgs { get; set; } = null!;
+        public IResourceRepositoryConfiguration ResourceRepoArgs { get; set; } = null!;
         public int? HttpRequestRetries { get; set; }
         public TimeSpan? HttpRequestDelayBetweenRetries { get; set; }
         public string? UrlPattern { get; set; }

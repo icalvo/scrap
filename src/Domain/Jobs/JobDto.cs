@@ -10,7 +10,7 @@ namespace Scrap.Jobs
         string AdjacencyAttribute,
         string ResourceXPath,
         string ResourceAttribute,
-        IResourceProcessorConfiguration ResourceRepoArgs,
+        IResourceRepositoryConfiguration ResourceRepoArgs,
         string RootUrl,
         int HttpRequestRetries,
         TimeSpan HttpRequestDelayBetweenRetries,

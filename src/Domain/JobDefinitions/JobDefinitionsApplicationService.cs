@@ -2,9 +2,8 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Scrap.JobDefinitions;
 
-namespace Scrap
+namespace Scrap.JobDefinitions
 {
     public class JobDefinitionsApplicationService
     {

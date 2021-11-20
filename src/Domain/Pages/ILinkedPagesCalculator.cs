@@ -8,7 +8,6 @@ namespace Scrap.Pages
         IAsyncEnumerable<Uri> GetLinkedPagesAsync(
             Page page,
             string adjacencyXPath,
-            string adjacencyAttribute,
-            Uri baseUrl);
+            string adjacencyAttribute);
     }
 }

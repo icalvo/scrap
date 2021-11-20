@@ -1,152 +1,41 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Reflection;
+using System.Linq;
 using System.Threading.Tasks;
 using CLAP;
 using CLAP.Interception;
+using Hangfire;
+using Hangfire.SqlServer;
+using Hangfire.States;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scrap.JobDefinitions;
 using Scrap.Jobs;
-using Scrap.Resources;
-using Scrap.Resources.FileSystem;
-using static Scrap.DependencyInjection.DependencyInjection;
+using Scrap.DependencyInjection;
 
 namespace Scrap.CommandLine
 {
     public class ScrapCommandLine
     {
         private static readonly IConfiguration Configuration;
-        private static readonly ILoggerFactory LoggerFactoryInstance = BuildLoggerFactory();
-
-        private static ILoggerFactory BuildLoggerFactory()
-        {
-            return LoggerFactory.Create(builder =>
-            {
-                builder
-                    .SetMinimumLevel(LogLevel.Trace)
-                    .AddFilter("Microsoft", LogLevel.Warning)
-                    .AddFilter("System", LogLevel.Warning)
-                    .AddSimpleConsole(options => options.SingleLine = true);
-            });
-        }
+        private static readonly ILoggerFactory LoggerFactoryInstance;
 
         static ScrapCommandLine()
         {
-            var directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ?? throw new Exception("Cannot find entry assembly path");
-            var dbPath = Path.Combine(directoryName, "jobs.db");
-            Console.WriteLine("DB dir: {0}", dbPath);
+
             Configuration =
                 new ConfigurationBuilder()
-                    .AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Database", $"Filename={dbPath};Connection=shared") })
+                    .AddJsonFile("appsettings.json", optional: false)
                     .Build();
-        }
-        [Verb(Description = "Executes a job definition provided with the arguments")]
-        [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static async Task Literal(
-            [Required]
-            [Description("X-Path that locates tags (usually <a>) that contains links to be navigated by Scrap.")]
-            string adjacencyXPath,
-            [Required]
-            [Description("X-Path that locates tags (usually <a>) that contains links to be navigated by Scrap.")]
-            string resourceXPath,
-            [Required]
-            string resourceAttribute,
-            [Required]
-            string destinationRootFolder,
-            [Required]string[] destinationExpression,
-            [Required]
-            string rootUrl,
-            string? adjacencyAttribute = null,
-            int? httpRequestRetries = null,
-            TimeSpan? httpRequestDelayBetweenRetries = null,
-            bool whatIf = false,
-            bool fullScan = false)
-        {
-            var appService = BuildScrapperApplicationService(Configuration, LoggerFactoryInstance);
 
-            await appService.RunAsync(
-                new NewJobDto(
-                    adjacencyXPath,
-                    adjacencyAttribute ?? "href",
-                    resourceXPath,
-                    resourceAttribute,
-                    new FileSystemResourceProcessorConfiguration(
-                        destinationExpression,
-                        destinationRootFolder),
-                    rootUrl,
-                    httpRequestRetries,
-                    httpRequestDelayBetweenRetries,
-                    whatIf,
-                    fullScan));
-        }
-
-        [Verb(Description = "Adds to the database a job definition provided with the arguments")]
-        [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static Task Add(
-            [Required]string name,
-            [Required]string adjacencyXPath,
-            [Required]string resourceXPath,
-            [Required]string resourceAttribute,
-            [Required]string destinationRootFolder,
-            [Required]string[] destinationExpression,
-            string? adjacencyAttribute = null,
-            int? httpRequestRetries = null,
-            TimeSpan? httpRequestDelayBetweenRetries = null,
-            string? rootUrl = null,
-            string? urlPattern = null)
-        {
-            var defsAppService = BuildJobDefinitionsApplicationService(Configuration, LoggerFactoryInstance);
-            
-            var jobDefinition = new NewJobDefinitionDto(
-                name,
-                adjacencyXPath,
-                adjacencyAttribute ?? "href",
-                resourceXPath,
-                resourceAttribute,
-                new FileSystemResourceProcessorConfiguration(
-                    destinationExpression,
-                    destinationRootFolder),
-                rootUrl,
-                httpRequestRetries,
-                httpRequestDelayBetweenRetries,
-                urlPattern);
-
-            jobDefinition.Log(LoggerFactoryInstance.CreateLogger("Console"));
-            
-            return defsAppService.AddJobAsync(jobDefinition);
-        }
-
-        [Verb(Aliases = "del", Description = "Deletes a job definition from the database")]
-        [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static async Task Delete(string name)
-        {
-            var defsAppService = BuildJobDefinitionsApplicationService(Configuration, LoggerFactoryInstance);
-            var jobDef = await defsAppService.FindJobByNameAsync(name);
-            if (jobDef != null)
+            LoggerFactoryInstance = LoggerFactory.Create(builder =>
             {
-                await defsAppService.DeleteJobAsync(jobDef.Id);
-            }
-        }
-
-        [Verb(Description = "Shows a job definition from the database")]
-        [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static async Task Show(string name)
-        {
-            var defsAppService = BuildJobDefinitionsApplicationService(Configuration, LoggerFactoryInstance);
+                builder
+                    .AddConfiguration(Configuration.GetSection("Logging"))
+                    .AddSimpleConsole(options => options.SingleLine = true);
+            });
             
-            var jobDefinition = await defsAppService.FindJobByNameAsync(name);
-            var logger = LoggerFactoryInstance.CreateLogger("Console");
-            if (jobDefinition == null)
-            {
-                logger.LogInformation("Not found!");                
-            }
-            else
-            {
-                jobDefinition.Log(logger);
-            }
+            Console.WriteLine("Scrap DB: {0}", Configuration["Scrap:Database"]);
         }
 
         [Verb(IsDefault = true, Description = "Executes a job definition from the database")]
@@ -155,10 +44,12 @@ namespace Scrap.CommandLine
             string? name = null,
             string? rootUrl = null,
             bool whatIf = false,
-            bool fullScan = false)
+            bool fullScan = false,
+            bool async = false)
         {
-            var definitionsApplicationService = BuildJobDefinitionsApplicationService(Configuration, LoggerFactoryInstance);
-            var scrapAppService = BuildScrapperApplicationService(Configuration, LoggerFactoryInstance);
+            var serviceResolver = new ServicesResolver(LoggerFactoryInstance, Configuration);
+            var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
+            var scrapAppService = serviceResolver.BuildScrapperApplicationService();
             JobDefinitionDto? jobDef = null;
             if (name != null)
             {
@@ -175,20 +66,33 @@ namespace Scrap.CommandLine
             }
 
             var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null);
-            await scrapAppService.RunAsync(newJob);
+            if (async)
+            {
+                var jobStorage = new SqlServerStorage("Data Source=(localdb)\\MSSQLLocalDB");
+                var client = new BackgroundJobClient(jobStorage);
+
+                var jobId = client.Create(() => scrapAppService.RunAsync(newJob), new EnqueuedState());
+                Console.WriteLine("Job created with Id: " + jobId);
+            }
+            else
+            {
+                await scrapAppService.RunAsync(newJob);
+            }
         }
 
-        [Verb(Description = "Executes a job definition from the database, but only lists resources (no download)")]
+
+        [Verb(Description = "Executes a job definition from the database")]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static async Task List(
+        public static async Task Resources(
             string? name = null,
             string? rootUrl = null,
             bool whatIf = false,
-            bool fullScan = false)
+            bool fullScan = false,
+            bool async = false)
         {
-            var loggerFactory = LoggerFactory.Create(_ => { });
-            var definitionsApplicationService = BuildJobDefinitionsApplicationService(Configuration, loggerFactory);
-            var scrapAppService = BuildScrapperApplicationService(Configuration, loggerFactory);
+            var serviceResolver = new ServicesResolver(LoggerFactoryInstance, Configuration);
+            var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
+            var scrapAppService = serviceResolver.BuildScrapperApplicationService();
             JobDefinitionDto? jobDef = null;
             if (name != null)
             {
@@ -204,8 +108,97 @@ namespace Scrap.CommandLine
                 return;
             }
 
-            var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, new ListResourceProcessorConfiguration(""));
-            await scrapAppService.RunAsync(newJob);
+            var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null);
+            if (async)
+            {
+                var jobStorage = new SqlServerStorage("Data Source=(localdb)\\MSSQLLocalDB");
+                var client = new BackgroundJobClient(jobStorage);
+
+                var jobId = client.Create(() => scrapAppService.RunAsync(newJob), new EnqueuedState());
+                Console.WriteLine("Job created with Id: " + jobId);
+            }
+            else
+            {
+                await scrapAppService.RunAsync(newJob);
+            }
+        }
+        
+        [Verb(Description = "Lists jobs")]
+        [SuppressMessage("ReSharper", "UnusedMember.Global")]
+        public static Task List()
+        {
+            var jobStorage = new SqlServerStorage("Data Source=(localdb)\\MSSQLLocalDB");
+            var monitoringApi = jobStorage.GetMonitoringApi();
+
+            monitoringApi.ScheduledJobs(0, 100).ForEach(
+                job =>
+                {
+                    var (key, value) = job;
+                    Console.WriteLine($"JOB {key}:");
+                    Console.WriteLine($"  Status: Scheduled");
+                    Console.WriteLine($"  Enqueued: {value.EnqueueAt}");
+                    Console.WriteLine($"  Scheduled: {value.ScheduledAt}");
+                },
+                () => Console.WriteLine("No scheduled jobs"));
+
+            var jobsInQueue =
+                from queue in monitoringApi.Queues()
+                from job in queue.FirstJobs
+                where job.Value.State != "Deleted"
+                select (queue.Name, job.Key, job.Value);
+
+            jobsInQueue.ForEach(x =>
+                {
+                    var (queue, jobId, job) = x;
+                    Console.WriteLine($"JOB {jobId}:");
+                    Console.WriteLine($"  Status: Enqueued");
+                    Console.WriteLine($"  Queue: {queue}");
+                    Console.WriteLine($"  Enqueued: {job.EnqueuedAt}");
+                    Console.WriteLine($"  State: {job.State}");
+                    var details = monitoringApi.JobDetails(jobId);
+                    foreach (var (propKey, propValue) in details.Properties)
+                    {
+                        Console.WriteLine($"  {propKey}: {propValue}");
+                    }
+                },
+                () => Console.WriteLine("No enqueued jobs"));
+
+            monitoringApi.SucceededJobs(0, 100).ForEach(x =>
+                {
+                    var (jobId, job) = x;
+                    TimeSpan? duration = job.TotalDuration == null
+                        ? null
+                        : TimeSpan.FromMilliseconds(job.TotalDuration.Value);
+                    Console.WriteLine($"JOB {jobId}:");
+                    Console.WriteLine($"  Status: Succeeded");
+                    Console.WriteLine($"  Succeeded: {job.SucceededAt}");
+                    Console.WriteLine($"  Result: {job.Result}");
+                    Console.WriteLine($"  Duration: {duration}");
+                    var details = monitoringApi.JobDetails(jobId);
+                    Console.WriteLine($"  History:");
+                    foreach (var historyDto in details.History)
+                    {
+                        Console.WriteLine($"    Changed: {historyDto.CreatedAt}");
+                        Console.WriteLine($"    State: {historyDto.StateName}");
+                        Console.WriteLine($"    Reason: {historyDto.Reason}");
+                        
+                    }
+                },
+                () => Console.WriteLine("No succeeded jobs"));
+
+            return Task.CompletedTask;
+        }
+
+        [Verb(Description = "Cancels a job")]
+        [SuppressMessage("ReSharper", "UnusedMember.Global")]
+        public static Task Cancel(string jobId)
+        {
+            var jobStorage = new SqlServerStorage("Data Source=(localdb)\\MSSQLLocalDB");
+            var client = new BackgroundJobClient(jobStorage);
+            client.Delete(jobId);
+            Console.WriteLine("Job deleted with Id: " + jobId);
+
+            return Task.CompletedTask;
         }
 
         [PostVerbExecution]

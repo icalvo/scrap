@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Scrap.Graphs
+namespace Scrap.Jobs.Graphs
 {
     public class DepthFirstGraphSearch : IGraphSearch
     {
@@ -25,7 +25,8 @@ namespace Scrap.Graphs
                 visitedRefs.Add(currentRef);
                 yield return currentNode;
 
-                await foreach (var adjacentNode in adj(currentNode).Where(n => !visitedRefs.Contains(n)).Reverse())
+                var unvisitedAdjacent = adj(currentNode).Where(n => !visitedRefs.Contains(n)).Reverse();
+                await foreach (var adjacentNode in unvisitedAdjacent)
                 {
                     stack.Push(adjacentNode);
                 }

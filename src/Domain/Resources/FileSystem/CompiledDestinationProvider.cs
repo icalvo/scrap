@@ -14,7 +14,7 @@ using Scrap.Pages;
 
 namespace Scrap.Resources.FileSystem
 {
-    internal class CompiledDestinationProvider : IDestinationProvider
+    public class CompiledDestinationProvider : IDestinationProvider
     {
         private readonly string[] _destinationFolderPattern;
         private IDestinationProvider _compiledDestinationProvider = null!;

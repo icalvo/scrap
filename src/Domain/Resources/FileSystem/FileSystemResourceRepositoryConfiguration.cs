@@ -1,16 +1,16 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using Scrap.Downloads;
-using Scrap.ResourceDownloaders;
 
 namespace Scrap.Resources.FileSystem
 {
-    public class FileSystemResourceProcessorConfiguration : IResourceProcessorConfiguration
+    public class FileSystemResourceRepositoryConfiguration : IResourceRepositoryConfiguration
     {
-        private FileSystemResourceProcessorConfiguration()
+        [SuppressMessage("ReSharper", "UnusedMember.Local", Justification = "Deserialization by Hangfire")]
+        private FileSystemResourceRepositoryConfiguration()
         {
         }
 
-        public FileSystemResourceProcessorConfiguration(string[] destinationExpression, string destinationRootFolder)
+        public FileSystemResourceRepositoryConfiguration(string[] destinationExpression, string destinationRootFolder)
         {
             DestinationExpression = destinationExpression;
             DestinationRootFolder = destinationRootFolder;

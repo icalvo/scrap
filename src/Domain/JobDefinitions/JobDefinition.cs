@@ -69,13 +69,13 @@ namespace Scrap.JobDefinitions
         }
 
         public JobDefinitionId Id { get; }
-        public string? Name { get; private set; }
+        public string Name { get; private set; }
         public string? RootUrl { get; private set; }
         public string AdjacencyXPath { get; private set; }
         public string? AdjacencyAttribute { get; private set; }
         public string ResourceXPath { get; private set; }
         public string ResourceAttribute { get; private set; }
-        public IResourceProcessorConfiguration ResourceRepoArgs { get; private set; }
+        public IResourceRepositoryConfiguration ResourceRepoArgs { get; private set; }
         public int? HttpRequestRetries { get; private set; }
         public TimeSpan? HttpRequestDelayBetweenRetries { get; private set; }
         public string? UrlPattern { get; private set; }

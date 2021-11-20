@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace Scrap.Pages
@@ -18,10 +19,16 @@ namespace Scrap.Pages
         public async IAsyncEnumerable<Uri> GetLinkedPagesAsync(
             Page page,
             string adjacencyXPath,
-            string adjacencyAttribute,
-            Uri baseUrl)
+            string adjacencyAttribute)
         {
-            foreach (var link in page.Links(adjacencyXPath, adjacencyAttribute, baseUrl))
+            var links = page.Links(adjacencyXPath, adjacencyAttribute).ToArray();
+            if (links.Length == 0)
+            {
+                _logger.LogTrace("No links at {PageUri}", page.Uri);
+                yield break;
+            }
+
+            foreach (var link in links)
             {
                 if (await _pageMarkerRepository.ExistsAsync(link))
                 {

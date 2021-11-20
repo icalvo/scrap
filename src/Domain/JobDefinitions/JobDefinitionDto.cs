@@ -6,12 +6,12 @@ namespace Scrap.JobDefinitions
 {
     public record JobDefinitionDto(
         Guid Id,
-        string? Name,
+        string Name,
         string AdjacencyXPath,
         string? AdjacencyAttribute,
         string ResourceXPath,
         string ResourceAttribute,
-        IResourceProcessorConfiguration ResourceRepoArgs,
+        IResourceRepositoryConfiguration ResourceRepoArgs,
         string? RootUrl,
         int? HttpRequestRetries,
         TimeSpan? HttpRequestDelayBetweenRetries,

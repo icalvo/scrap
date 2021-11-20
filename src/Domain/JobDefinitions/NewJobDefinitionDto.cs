@@ -5,12 +5,12 @@ using Scrap.Resources;
 namespace Scrap.JobDefinitions
 {
     public record NewJobDefinitionDto(
-        string? Name,
+        string Name,
         string AdjacencyXPath,
         string? AdjacencyAttribute,
         string ResourceXPath,
         string ResourceAttribute,
-        IResourceProcessorConfiguration ResourceRepoArgs,
+        IResourceRepositoryConfiguration ResourceRepoArgs,
         string? RootUrl,
         int? HttpRequestRetries,
         TimeSpan? HttpRequestDelayBetweenRetries,

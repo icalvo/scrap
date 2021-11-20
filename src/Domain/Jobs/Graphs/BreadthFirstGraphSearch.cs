@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Scrap.Graphs
+namespace Scrap.Jobs.Graphs
 {
     public class BreadthFirstGraphSearch : IGraphSearch
     {

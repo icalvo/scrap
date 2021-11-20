@@ -4,16 +4,16 @@ using System.Text.Json.Serialization;
 using Scrap.Resources;
 using Scrap.Resources.FileSystem;
 
-namespace Scrap.API
+namespace Scrap.JobDefinitions.JsonFile
 {
-    public class ResourceRepositoryConfigurationJsonConverter : JsonConverter<IResourceProcessorConfiguration>
+    public class ResourceRepositoryConfigurationJsonConverter : JsonConverter<IResourceRepositoryConfiguration>
     {
         public override bool CanConvert(Type typeToConvert)
         {
-            return typeof(IResourceProcessorConfiguration).IsAssignableFrom(typeToConvert);
+            return typeof(IResourceRepositoryConfiguration).IsAssignableFrom(typeToConvert);
         }
 
-        public override IResourceProcessorConfiguration Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override IResourceRepositoryConfiguration Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var cfg = JsonSerializer.Deserialize<JsonElement>(
                        ref reader,
@@ -21,11 +21,11 @@ namespace Scrap.API
             var json = cfg.GetRawText();
             return cfg.GetProperty("type").GetString() switch
             {
-                "filesystem" => JsonSerializer.Deserialize<FileSystemResourceProcessorConfiguration>(
+                "filesystem" => JsonSerializer.Deserialize<FileSystemResourceRepositoryConfiguration>(
                                     json,
                                     new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
                                 ?? throw new InvalidOperationException("Couldn't deserialize resource repo config"),
-                "list" => JsonSerializer.Deserialize<ListResourceProcessorConfiguration>(
+                "list" => JsonSerializer.Deserialize<ListResourceRepositoryConfiguration>(
                               json,
                               new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
                           ?? throw new InvalidOperationException("Couldn't deserialize resource repo config"),
@@ -33,7 +33,7 @@ namespace Scrap.API
             };
         }
 
-        public override void Write(Utf8JsonWriter writer, IResourceProcessorConfiguration value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, IResourceRepositoryConfiguration value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
             foreach (var property in value.GetType().GetProperties())

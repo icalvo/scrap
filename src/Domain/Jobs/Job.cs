@@ -1,4 +1,5 @@
 using System;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Scrap.Resources;
 
@@ -6,6 +7,9 @@ namespace Scrap.Jobs
 {
     public class Job
     {
+        private static readonly Regex AttributeRegex = new("/@[a-z-_]+$", RegexOptions.Compiled);
+        private static readonly Regex FunctionRegex = new(@"/[a-z-_]+\(\)$", RegexOptions.Compiled);
+
         public const int DefaultHttpRequestRetries = 5;
         public const string DefaultAdjacencyAttribute = "href";
         public static readonly TimeSpan DefaultHttpRequestDelayBetweenRetries = TimeSpan.FromSeconds(1);
@@ -18,7 +22,7 @@ namespace Scrap.Jobs
             ResourceXPath = dto.ResourceXPath;
             ResourceAttribute = dto.ResourceAttribute;
             ResourceRepoArgs = dto.ResourceRepoArgs;
-            RootUrl = dto.RootUrl;
+            RootUrl = new Uri(dto.RootUrl ?? throw new ArgumentException("Root URL must not be null", nameof(dto)));
             HttpRequestRetries = dto.HttpRequestRetries ?? DefaultHttpRequestRetries;
             HttpRequestDelayBetweenRetries = dto.HttpRequestDelayBetweenRetries ?? DefaultHttpRequestDelayBetweenRetries;
             WhatIf = dto.WhatIf ?? false;
@@ -28,12 +32,27 @@ namespace Scrap.Jobs
         public Job(JobDto dto)
         {
             Id = dto.Id;
+            
+            var split = AttributeRegex.Split(dto.AdjacencyXPath, 2);
+            if (split.Length >= 2)
+            {
+                AdjacencyXPath = split[0];
+                AdjacencyAttribute = split[1];
+            }
+
+            split = FunctionRegex.Split(dto.AdjacencyXPath, 2);
+            if (split.Length >= 2)
+            {
+                AdjacencyXPath = split[0];
+                AdjacencyAttribute = split[1];
+            }
+
             AdjacencyXPath = dto.AdjacencyXPath;
             AdjacencyAttribute = dto.AdjacencyAttribute;
             ResourceXPath = dto.ResourceXPath;
             ResourceAttribute = dto.ResourceAttribute;
             ResourceRepoArgs = dto.ResourceRepoArgs;
-            RootUrl = dto.RootUrl;
+            RootUrl = new Uri(dto.RootUrl ?? throw new ArgumentException("Root URL must not be null", nameof(dto)));
             HttpRequestRetries = dto.HttpRequestRetries;
             HttpRequestDelayBetweenRetries = dto.HttpRequestDelayBetweenRetries;
             WhatIf = dto.WhatIf;
@@ -54,7 +73,7 @@ namespace Scrap.Jobs
                 ResourceXPath,
                 ResourceAttribute,
                 ResourceRepoArgs,
-                RootUrl,
+                RootUrl.AbsoluteUri,
                 HttpRequestRetries,
                 HttpRequestDelayBetweenRetries,
                 WhatIf,
@@ -74,12 +93,12 @@ namespace Scrap.Jobs
         }
 
         public JobId Id { get; }
-        public string RootUrl { get; }
+        public Uri RootUrl { get; }
         public string AdjacencyXPath { get; }
         public string AdjacencyAttribute { get; }
         public string ResourceXPath { get; }
         public string ResourceAttribute { get; }
-        public IResourceProcessorConfiguration ResourceRepoArgs { get; }
+        public IResourceRepositoryConfiguration ResourceRepoArgs { get; }
         public int HttpRequestRetries { get; }
         public TimeSpan HttpRequestDelayBetweenRetries { get; }
         public bool WhatIf { get; }

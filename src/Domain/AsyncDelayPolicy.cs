@@ -3,10 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Polly;
 
-namespace System.Runtime.CompilerServices
-{
-}
-
 namespace Scrap
 {
     public class AsyncDelayPolicy : AsyncPolicy

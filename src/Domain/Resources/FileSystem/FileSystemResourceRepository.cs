@@ -2,11 +2,10 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Scrap.Pages;
 
 namespace Scrap.Resources.FileSystem
 {
-    public class FileSystemResourceRepository : ResourceRepositoryBase<FileSystemResourceId>
+    public class FileSystemResourceRepository : BaseResourceRepository<FileSystemResourceId>
     {
         private readonly IDestinationProvider _destinationProvider;
         private readonly string _destinationRootFolder;
@@ -19,8 +18,9 @@ namespace Scrap.Resources.FileSystem
             _logger = logger;
         }
 
-        public override async Task<FileSystemResourceId> GetIdAsync(Page page, int pageIndex, Uri resourceUrl, int resourceIndex)
+        public override async Task<FileSystemResourceId> GetIdAsync(ResourceInfo resourceInfo)
         {
+            var (page, pageIndex, resourceUrl, resourceIndex) = resourceInfo;
             var destinationPath = await _destinationProvider.GetDestinationAsync(
                 _destinationRootFolder,
                 page, pageIndex,

@@ -58,28 +58,27 @@ namespace Scrap.Pages
             return Enumerable.Empty<HtmlNode>();
         }
         
-        public  IEnumerable<Uri> Links(string adjacencyXPath, string adjacencyAttribute, Uri? baseUrl = null)
+        public  IEnumerable<Uri> Links(string adjacencyXPath, string adjacencyAttribute)
         {
-            baseUrl ??= _baseUri ?? throw new ArgumentNullException(nameof(baseUrl));
             return
                 Attributes(adjacencyXPath, adjacencyAttribute)
                     .Where(url => !string.IsNullOrEmpty(url))
-                    .Select(url => new Uri(baseUrl, url!));
+                    .Select(url => new Uri(_baseUri, url!));
         }
 
-        public IEnumerable<Uri> Links(string adjacencyXPath, Uri? baseUrl = null)
+        public IEnumerable<Uri> Links(string adjacencyXPath)
         {
-            return Links(adjacencyXPath, "href", baseUrl);
+            return Links(adjacencyXPath, "href");
         }
 
         public Uri? Link(string adjacencyXPath, string adjacencyAttribute, Uri? baseUrl = null)
         {
-            return Links(adjacencyXPath, adjacencyAttribute, baseUrl).FirstOrDefault();
+            return Links(adjacencyXPath, adjacencyAttribute).FirstOrDefault();
         }
 
         public Uri? Link(string adjacencyXPath, Uri? baseUrl = null) 
         {
-            return Links(adjacencyXPath, "href", baseUrl).FirstOrDefault();
+            return Links(adjacencyXPath, "href").FirstOrDefault();
         }
 
         public IEnumerable<string?> Texts(string xPath)

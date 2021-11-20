@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Scrap.JobDefinitions;
 using Scrap.Resources;
@@ -7,12 +8,17 @@ namespace Scrap.Jobs
 {
     public class NewJobDto
     {
+        [SuppressMessage("ReSharper", "UnusedMember.Local")]
+        private NewJobDto()
+        {
+        }
+
         public NewJobDto(
             JobDefinitionDto jobDefinition,
             string? rootUrl,
             bool? whatIf,
             bool? fullScan,
-            IResourceProcessorConfiguration? configuration)
+            IResourceRepositoryConfiguration? configuration)
             : this(
                 jobDefinition.AdjacencyXPath,
                 jobDefinition.AdjacencyAttribute,
@@ -30,7 +36,7 @@ namespace Scrap.Jobs
             string? adjacencyAttribute,
             string resourceXPath,
             string resourceAttribute,
-            IResourceProcessorConfiguration resourceRepoArgs,
+            IResourceRepositoryConfiguration resourceRepoArgs,
             string rootUrl,
             int? httpRequestRetries,
             TimeSpan? httpRequestDelayBetweenRetries,
@@ -49,12 +55,12 @@ namespace Scrap.Jobs
             FullScan = fullScan;
         }
 
-        public string AdjacencyXPath { get; init; }
+        public string AdjacencyXPath { get; init; } = null!;
         public string? AdjacencyAttribute { get; init; }
-        public string ResourceXPath { get; init; }
-        public string ResourceAttribute { get; init; }
-        public IResourceProcessorConfiguration ResourceRepoArgs { get; init; }
-        public string RootUrl { get; init; }
+        public string ResourceXPath { get; init; } = null!;
+        public string ResourceAttribute { get; init; } = null!;
+        public IResourceRepositoryConfiguration ResourceRepoArgs { get; init; } = null!;
+        public string RootUrl { get; init; } = null!;
         public int? HttpRequestRetries { get; init; }
         public TimeSpan? HttpRequestDelayBetweenRetries { get; init; }
         public bool? WhatIf { get; init; }

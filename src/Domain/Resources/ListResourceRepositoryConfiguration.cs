@@ -1,16 +1,16 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using Scrap.Downloads;
-using Scrap.ResourceDownloaders;
 
 namespace Scrap.Resources
 {
-    public class ListResourceProcessorConfiguration : IResourceProcessorConfiguration
+    public class ListResourceRepositoryConfiguration : IResourceRepositoryConfiguration
     {
-        private ListResourceProcessorConfiguration()
+        [SuppressMessage("ReSharper", "UnusedMember.Local")]
+        private ListResourceRepositoryConfiguration()
         {
         }
 
-        public ListResourceProcessorConfiguration(string listPath)
+        public ListResourceRepositoryConfiguration(string listPath)
         {
             ListPath = listPath;
         }

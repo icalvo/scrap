@@ -2,6 +2,8 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Hangfire;
+using Hangfire.SqlServer;
 using LiteDB;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -31,14 +33,17 @@ namespace Scrap.DependencyInjection
         private readonly IAsyncCacheProvider _cacheProvider;
         private readonly ILiteDatabase _db;
         private readonly IConfiguration _config;
+        private readonly ILogger _logger;
 
         public ServicesResolver(ILoggerFactory loggerFactory, IConfiguration config)
         {
             _loggerFactory = loggerFactory;
+            _logger = new Logger<ServicesResolver>(_loggerFactory);
             _config = config;
             _cacheProvider = new MemoryCacheProvider(
                 new MemoryCache(new MemoryCacheOptions(), _loggerFactory));
             _db = new LiteDatabase(new ConnectionString(_config["Scrap:Database"]));
+            _logger.LogInformation("Scrap DB: {ConnectionString}", _config["Scrap:Database"]);
         }
 
         public async Task<JobDefinitionsApplicationService> BuildJobDefinitionsApplicationServiceAsync()
@@ -78,6 +83,20 @@ namespace Scrap.DependencyInjection
             var pageMarkerRepository = BuildPageMarkerRepository(job.FullScan, job.WhatIf);
 
             return (downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository);
+        }
+
+        public JobStorage BuildHangfireJobStorage()
+        {
+            var jobStorage = new SqlServerStorage(_config["Hangfire:Database"]);
+            _logger.LogInformation("Hangfire DB: {ConnectionString}", _config["Hangfire:Database"]);
+            return jobStorage;
+        }
+
+        public IBackgroundJobClient BuildHangfireBackgroundJobClient()
+        {
+            var jobStorage = new SqlServerStorage(_config["Hangfire:Database"]);
+            _logger.LogInformation("Hangfire DB: {ConnectionString}", _config["Hangfire:Database"]);
+            return new BackgroundJobClient(jobStorage);
         }
 
         private IAsyncPolicy BuildHttpPolicy(

@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using CLAP;
 using CLAP.Interception;
 using Hangfire;
-using Hangfire.SqlServer;
 using Hangfire.States;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -54,7 +53,6 @@ namespace Scrap.CommandLine
             });
 
             _logger = new Logger<ScrapCommandLine>(_loggerFactory);
-            _logger.LogInformation("Scrap DB: {ConnectionString}", _configuration["Scrap:Database"]);
         }
 
         [Global(Aliases="dbg")]
@@ -99,8 +97,7 @@ namespace Scrap.CommandLine
             var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null);
             if (async)
             {
-                var jobStorage = new SqlServerStorage("Data Source=(localdb)\\MSSQLLocalDB");
-                var client = new BackgroundJobClient(jobStorage);
+                var client = serviceResolver.BuildHangfireBackgroundJobClient();
 
                 var jobId = client.Create(() => scrapAppService.RunAsync(newJob), new EnqueuedState());
                 _logger.LogInformation("Hangfire job created with Id: {JobId}", jobId);
@@ -142,8 +139,7 @@ namespace Scrap.CommandLine
             var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null);
             if (async)
             {
-                var jobStorage = new SqlServerStorage(_configuration["Hangfire:Database"]);
-                var client = new BackgroundJobClient(jobStorage);
+                var client = serviceResolver.BuildHangfireBackgroundJobClient();
 
                 var jobId = client.Create(() => scrapAppService.ListResourcesAsync(newJob), new EnqueuedState());
                 _logger.LogInformation("Hangfire job created with Id: {JobId}", jobId);
@@ -158,7 +154,8 @@ namespace Scrap.CommandLine
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public Task List()
         {
-            var jobStorage = new SqlServerStorage(_configuration["Hangfire:Database"]);
+            var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+            var jobStorage = serviceResolver.BuildHangfireJobStorage();
             var monitoringApi = jobStorage.GetMonitoringApi();
 
             monitoringApi.ScheduledJobs(0, 100).ForEach(
@@ -224,8 +221,8 @@ namespace Scrap.CommandLine
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public Task Cancel(string jobId)
         {
-            var jobStorage = new SqlServerStorage(_configuration["Hangfire:Database"]);
-            var client = new BackgroundJobClient(jobStorage);
+            var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+            var client = serviceResolver.BuildHangfireBackgroundJobClient();
             client.Delete(jobId);
             _logger.LogInformation("Hangfire job deleted with Id: {JobId}", jobId);
 

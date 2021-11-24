@@ -7,7 +7,7 @@ namespace Scrap.JobDefinitions
     {
         Task<JobDefinition?> GetByIdAsync(JobDefinitionId id);
         Task<JobDefinition?> GetByNameAsync(string jobName);
-        Task<JobDefinition?> FindJobByRootUrlAsync(string rootUrl);
+        Task<JobDefinition?> FindByRootUrlAsync(string rootUrl);
         Task UpsertAsync(JobDefinition jobDefinition);
         Task DeleteJobAsync(JobDefinitionId id);
         Task<ImmutableArray<JobDefinition>> ListAsync();

@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Scrap.Downloads;
+using Scrap.JobDefinitions;
 using Scrap.Jobs;
 using Scrap.Jobs.Graphs;
 using Scrap.Pages;
@@ -16,122 +18,187 @@ namespace Scrap
     {
         private readonly IGraphSearch _graphSearch;
         private readonly ILogger<JobApplicationService> _logger;
-        private readonly IJobServicesResolver _jobServicesResolver;
+        private readonly IJobServicesResolver _servicesResolver;
         private readonly IJobFactory _jobFactory;
 
         public JobApplicationService(
             IGraphSearch graphSearch,
-            IJobServicesResolver jobServicesResolver,
+            IJobServicesResolver servicesResolver,
             IJobFactory jobFactory,
             ILogger<JobApplicationService> logger)
         {
             _graphSearch = graphSearch;
             _logger = logger;
-            _jobServicesResolver = jobServicesResolver;
+            _servicesResolver = servicesResolver;
             _jobFactory = jobFactory;
-        }
-
-        public async Task ListResourcesAsync(NewJobDto jobDto)
-        {
-            var job = _jobFactory.Create(jobDto);
-            job.Log(_logger);
-
-            var (rootUri, adjacencyXPath, adjacencyAttribute, resourceXPath, resourceAttribute) =
-                (job.RootUrl, job.AdjacencyXPath, job.AdjacencyAttribute, job.ResourceXPath, job.ResourceAttribute);
-
-            var (_, resourceRepository, linkedPagesCalculator, pageRetriever) = _jobServicesResolver.Build(job);
-
-            var pipeline =
-                Pages(rootUri, pageRetriever, linkedPagesCalculator, adjacencyXPath, adjacencyAttribute)
-                .SelectMany((page, crawlPageIndex) => ResourceLinks(page, crawlPageIndex, resourceXPath, resourceAttribute))
-                .WhereAwait(x => IsNotDownloadedAsync(x, resourceRepository))
-                .ForEachAsync(x => _logger.LogWarning("{Uri}", x.ResourceUrl.AbsoluteUri));
-
-            await pipeline;
-            _logger.LogInformation("Finished!");
         }
 
         public async Task RunAsync(NewJobDto jobDto)
         {
-            var job = _jobFactory.Create(jobDto);
-            job.Log(_logger);
+            _logger.LogTrace("Trace enabled");
+            _logger.LogInformation("Starting...");
+            await (jobDto.ResourceType switch
+            {
+                ResourceType.DownloadLink => DownloadLinksAsync(jobDto),
+                ResourceType.Text => ScrapTextAsync(jobDto),
+                _ => throw new ArgumentOutOfRangeException()
+            });
+            _logger.LogInformation("Finished!");
+        }
 
-            var (rootUri, adjacencyXPath, adjacencyAttribute, resourceXPath, resourceAttribute) =
-                (job.RootUrl, job.AdjacencyXPath, job.AdjacencyAttribute, job.ResourceXPath, job.ResourceAttribute);
+        public Task ListResourcesAsync(NewJobDto jobDto)
+        {
+            var (rootUri, adjacencyXPath, resourceXPath, _, resourceRepository, pageRetriever, pageMarkerRepository) =
+                GetJobInfoAndCreateDependencies(jobDto);
 
-            var (downloadStreamProvider, resourceRepository, linkedPagesCalculator, pageRetriever) = _jobServicesResolver.Build(job);            
+            var pipeline =
+                Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
+                .SelectMany((page, crawlPageIndex) => ResourceLinks(page, crawlPageIndex, resourceXPath))
+                .WhereAwait(x => IsNotDownloadedAsync(x, resourceRepository))
+                .ForEachAsync(x => _logger.LogWarning("{Uri}", x.ResourceUrl.AbsoluteUri));
+
+            return pipeline;
+        }
+
+        private Task DownloadLinksAsync(NewJobDto jobDto)
+        {
+            var (rootUri, adjacencyXPath, resourceXPath, downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository) =
+                GetJobInfoAndCreateDependencies(jobDto);
 
             async Task Download((ResourceInfo info, Stream stream) x)
             {
                 var (info, stream) = x;
                 await resourceRepository.UpsertAsync(info, stream);
+                _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl, await resourceRepository.GetKeyAsync(info));
             }
+
             IAsyncEnumerable<ResourceInfo> GetResourceLinks(Page page, int crawlPageIndex)
-                => ResourceLinks(page, crawlPageIndex, resourceXPath, resourceAttribute);
-            ValueTask<bool> IsNotDownloaded(ResourceInfo info) => this.IsNotDownloadedAsync(info, resourceRepository);
+                => ResourceLinks(page, crawlPageIndex, resourceXPath);
+
+            ValueTask<bool> IsNotDownloaded(ResourceInfo info)
+                => this.IsNotDownloadedAsync(info, resourceRepository);
 
             var pipeline =
-                Pages(rootUri, pageRetriever, linkedPagesCalculator, adjacencyXPath, adjacencyAttribute)
-                .SelectMany(GetResourceLinks)
-                .WhereAwait(IsNotDownloaded)
-                .SelectAwait(async resourceLink => (
-                    x: resourceLink,
-                    stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
-                .ForEachAwaitAsync(Download);
+                Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
+                    .ForEachAwaitAsync(async (page, pageIndex) =>
+                    {
+                        _logger.LogInformation("Processing page {PageUrl}", page.Uri);
+                        await GetResourceLinks(page, pageIndex)
+                            .WhereAwait(IsNotDownloaded)
+                            .SelectAwait(async resourceLink => (
+                                x: resourceLink,
+                                stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
+                            .ForEachAwaitAsync(Download);
+                        await pageMarkerRepository.UpsertAsync(page.Uri);
+                    });
 
-            await pipeline;
-
-            _logger.LogInformation("Finished!");
+            return pipeline;
         }
 
-        private static IAsyncEnumerable<ResourceInfo> ResourceLinks(
-            Page page, int crawlPageIndex, string resourceXPath, string resourceAttribute)
+        private async Task ScrapTextAsync(NewJobDto jobDto)
         {
-            var links = page.Links(resourceXPath, resourceAttribute).ToArray();
-            return links.Select((resourceUrl, resourceIndex) => new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex))
-                .ToAsyncEnumerable();
-        }
-
-        public async Task ScrapTextAsync(NewJobDto jobDto)
-        {
-            var job = _jobFactory.Create(jobDto);
-
-            var (rootUri, adjacencyXPath, adjacencyAttribute, resourceXPath) =
-                (job.RootUrl, job.AdjacencyXPath, job.AdjacencyAttribute, job.ResourceXPath);
-
-            job.Log(_logger);
-            var (_, resourceRepository, linkedPagesCalculator, pageRetriever) = _jobServicesResolver.Build(job);            
-
+            var (rootUri, adjacencyXPath,resourceXPath,_, resourceRepository, pageRetriever, pageMarkerRepository) =
+                GetJobInfoAndCreateDependencies(jobDto);
+            
             IAsyncEnumerable<(ResourceInfo info, string text)> PageTexts(Page page, int crawlPageIndex) =>
-                page.Texts(resourceXPath)
+                page.Contents(resourceXPath)
                     .Where(text => text != null)
                     .Select((text, textIndex) => (
                         info: new ResourceInfo(page, crawlPageIndex, page.Uri, textIndex),
                         text: text ?? ""))
                     .ToAsyncEnumerable();
 
+            _logger.LogDebug("Defining pipeline...");
             var pipeline =
-                Pages(rootUri, pageRetriever, linkedPagesCalculator, adjacencyXPath, adjacencyAttribute)
-                .SelectMany(PageTexts)
-                .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository))
-                .Select(x => (
-                    x.info,
-                    stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
-                .ForEachAwaitAsync(async y => await resourceRepository.UpsertAsync(y.info, y.stream));
+                Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
+                    .ForEachAwaitAsync(async (page, pageIndex) =>
+                    {
+                        await PageTexts(page, pageIndex)
+                            .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository))
+                            .Select(x => (
+                                x.info,
+                                stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
+                            .ForEachAwaitAsync(async y =>
+                            {
+                                var (info, stream) = y;
+                                await resourceRepository.UpsertAsync(info, stream);
+                                _logger.LogInformation("Downloaded text from {Url} to {Key}", info.ResourceUrl, await resourceRepository.GetKeyAsync(info));
+                            });
+                        await pageMarkerRepository.UpsertAsync(page.Uri);
+                    });
 
             await pipeline;
-
             _logger.LogInformation("Finished!");
         }
 
-        private IAsyncEnumerable<Page> Pages(Uri rootUri, IPageRetriever pageRetriever,
-            LinkedPagesCalculator linkedPagesCalculator, string adjacencyXPath, string adjacencyAttribute)
+        private (
+            Uri rootUri,
+            XPath? adjacencyXPath,
+            XPath resourceXPath,
+            IDownloadStreamProvider downloadStreamProvider,
+            IResourceRepository resourceRepository,
+            IPageRetriever pageRetriever,
+            IPageMarkerRepository pageMarkerRepository) GetJobInfoAndCreateDependencies(NewJobDto jobDto)
         {
-            var pages = _graphSearch.SearchAsync(
+            var job = _jobFactory.Create(jobDto);
+
+            var (rootUri, adjacencyXPath, resourceXPath) =
+                (job.RootUrl, job.AdjacencyXPath, job.ResourceXPath);
+
+            job.Log(_logger);
+
+            _logger.LogDebug("Building job-specific dependencies...");
+            var (downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository) = _servicesResolver.BuildJobDependencies(job);
+            
+            return (rootUri, adjacencyXPath, resourceXPath, downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository);
+        }
+
+        private static IAsyncEnumerable<ResourceInfo> ResourceLinks(
+            Page page, int crawlPageIndex, XPath resourceXPathExpression)
+        {
+            var links = page.Links(resourceXPathExpression).ToArray();
+            return links.Select((resourceUrl, resourceIndex) => new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex))
+                .ToAsyncEnumerable();
+        }
+
+        private async IAsyncEnumerable<Uri> CalculateLinks(
+            Page page,
+            XPath? adjacencyXPath,
+            IPageMarkerRepository pageMarkerRepository)
+        {
+            if (adjacencyXPath == null)
+            {
+                yield break;
+            }
+
+            var links = page.Links(adjacencyXPath).ToArray();
+            if (links.Length == 0)
+            {
+                _logger.LogTrace("No links at {PageUri}", page.Uri);
+                yield break;
+            }
+
+            foreach (var link in links)
+            {
+                if (await pageMarkerRepository.ExistsAsync(link))
+                {
+                    _logger.LogTrace("Page {Link} already visited", link);
+                    continue;
+                }
+
+                yield return link;
+            }
+        }
+        private IAsyncEnumerable<Page> Pages(
+            Uri rootUri,
+            IPageRetriever pageRetriever,
+            XPath? adjacencyXPath,
+            IPageMarkerRepository pageMarkerRepository)
+        {
+            return _graphSearch.SearchAsync(
                 rootUri,
-                uri => pageRetriever.GetPageAsync(uri),
-                page => linkedPagesCalculator.GetLinkedPagesAsync(page, adjacencyXPath, adjacencyAttribute));
-            return pages;
+                pageRetriever.GetPageAsync,
+                page => CalculateLinks(page, adjacencyXPath, pageMarkerRepository));
         }
 
         private async ValueTask<bool> IsNotDownloadedAsync(ResourceInfo info, IResourceRepository resourceRepository)

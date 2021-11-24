@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,37 +18,67 @@ namespace Scrap.CommandLine
 {
     public class ScrapCommandLine
     {
-        private static readonly IConfiguration Configuration;
-        private static readonly ILoggerFactory LoggerFactoryInstance;
+        private bool _verbose;
+        private bool _debug;
+        private IConfiguration _configuration = null!;
+        private ILoggerFactory _loggerFactory = null!;
+        private ILogger<ScrapCommandLine> _logger = null!;
 
-        static ScrapCommandLine()
+        [PreVerbExecution]
+        [SuppressMessage("ReSharper", "UnusedMember.Local")]
+        [SuppressMessage("ReSharper", "UnusedParameter.Local")]
+        void Before(PreVerbExecutionContext context)
         {
+            if (_debug)
+            {
+                Debugger.Launch();
+            }
 
-            Configuration =
+            _configuration =
                 new ConfigurationBuilder()
-                    .AddJsonFile("appsettings.json", optional: false)
+                    .AddJsonFile("scrap.json", optional: false)
                     .Build();
 
-            LoggerFactoryInstance = LoggerFactory.Create(builder =>
+            _loggerFactory = LoggerFactory.Create(builder =>
             {
-                builder
-                    .AddConfiguration(Configuration.GetSection("Logging"))
-                    .AddSimpleConsole(options => options.SingleLine = true);
+                if (_verbose)
+                {
+                    builder.SetMinimumLevel(LogLevel.Trace);
+                }
+                else
+                {
+                    builder.AddConfiguration(_configuration.GetSection("Logging"));
+                }
+
+                builder.AddSimpleConsole(options => options.SingleLine = true);
             });
-            
-            Console.WriteLine("Scrap DB: {0}", Configuration["Scrap:Database"]);
+
+            _logger = new Logger<ScrapCommandLine>(_loggerFactory);
+            _logger.LogInformation("Scrap DB: {ConnectionString}", _configuration["Scrap:Database"]);
+        }
+
+        [Global(Aliases="dbg")]
+        public void Debug()
+        {
+            _debug = true;
+        }
+
+        [Global(Aliases="v")]
+        public void Verbose()
+        {
+            _verbose = true;
         }
 
         [Verb(IsDefault = true, Description = "Executes a job definition from the database")]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static async Task Scrap(
+        public async Task Scrap(
             string? name = null,
             string? rootUrl = null,
             bool whatIf = false,
             bool fullScan = false,
             bool async = false)
         {
-            var serviceResolver = new ServicesResolver(LoggerFactoryInstance, Configuration);
+            var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
             var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
             var scrapAppService = serviceResolver.BuildScrapperApplicationService();
             JobDefinitionDto? jobDef = null;
@@ -72,7 +103,7 @@ namespace Scrap.CommandLine
                 var client = new BackgroundJobClient(jobStorage);
 
                 var jobId = client.Create(() => scrapAppService.RunAsync(newJob), new EnqueuedState());
-                Console.WriteLine("Job created with Id: " + jobId);
+                _logger.LogInformation("Hangfire job created with Id: {JobId}", jobId);
             }
             else
             {
@@ -83,14 +114,14 @@ namespace Scrap.CommandLine
 
         [Verb(Description = "Executes a job definition from the database")]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static async Task Resources(
+        public async Task Resources(
             string? name = null,
             string? rootUrl = null,
             bool whatIf = false,
             bool fullScan = false,
             bool async = false)
         {
-            var serviceResolver = new ServicesResolver(LoggerFactoryInstance, Configuration);
+            var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
             var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
             var scrapAppService = serviceResolver.BuildScrapperApplicationService();
             JobDefinitionDto? jobDef = null;
@@ -111,23 +142,23 @@ namespace Scrap.CommandLine
             var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null);
             if (async)
             {
-                var jobStorage = new SqlServerStorage("Data Source=(localdb)\\MSSQLLocalDB");
+                var jobStorage = new SqlServerStorage(_configuration["Hangfire:Database"]);
                 var client = new BackgroundJobClient(jobStorage);
 
-                var jobId = client.Create(() => scrapAppService.RunAsync(newJob), new EnqueuedState());
-                Console.WriteLine("Job created with Id: " + jobId);
+                var jobId = client.Create(() => scrapAppService.ListResourcesAsync(newJob), new EnqueuedState());
+                _logger.LogInformation("Hangfire job created with Id: {JobId}", jobId);
             }
             else
             {
-                await scrapAppService.RunAsync(newJob);
+                await scrapAppService.ListResourcesAsync(newJob);
             }
         }
         
         [Verb(Description = "Lists jobs")]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static Task List()
+        public Task List()
         {
-            var jobStorage = new SqlServerStorage("Data Source=(localdb)\\MSSQLLocalDB");
+            var jobStorage = new SqlServerStorage(_configuration["Hangfire:Database"]);
             var monitoringApi = jobStorage.GetMonitoringApi();
 
             monitoringApi.ScheduledJobs(0, 100).ForEach(
@@ -191,21 +222,29 @@ namespace Scrap.CommandLine
 
         [Verb(Description = "Cancels a job")]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static Task Cancel(string jobId)
+        public Task Cancel(string jobId)
         {
-            var jobStorage = new SqlServerStorage("Data Source=(localdb)\\MSSQLLocalDB");
+            var jobStorage = new SqlServerStorage(_configuration["Hangfire:Database"]);
             var client = new BackgroundJobClient(jobStorage);
             client.Delete(jobId);
-            Console.WriteLine("Job deleted with Id: " + jobId);
+            _logger.LogInformation("Hangfire job deleted with Id: {JobId}", jobId);
 
             return Task.CompletedTask;
         }
 
         [PostVerbExecution]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static void After(PostVerbExecutionContext context)
+        public void After(PostVerbExecutionContext context)
         {
-            Console.WriteLine(context.Exception);
+            if (context.Failed)
+            {
+                _logger.LogCritical(context.Exception, "Critical error");
+            }
+
+            if (_debug)
+            {
+                Console.ReadKey();
+            }
         }
     }
 }

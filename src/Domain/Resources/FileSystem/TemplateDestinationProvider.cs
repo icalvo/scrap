@@ -15,7 +15,8 @@ namespace Scrap.Resources.FileSystem
     // ReSharper disable once UnusedType.Global
     public class TemplateDestinationProvider: IDestinationProvider
     {
-        public async Task<string> GetDestinationAsync(string destinationRootFolder,
+        public async Task<string> GetDestinationAsync(
+            string rootFolder,
             Page page,
             int pageIndex,
             Uri resourceUrl,

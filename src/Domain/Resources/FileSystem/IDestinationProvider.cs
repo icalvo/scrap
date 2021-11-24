@@ -6,9 +6,11 @@ namespace Scrap.Resources.FileSystem
 {
     public interface IDestinationProvider
     {
-        Task<string> GetDestinationAsync(string destinationRootFolder,
+        Task<string> GetDestinationAsync(
+            string rootFolder,
             Page page,
-            int pageIndex, Uri resourceUrl,
+            int pageIndex,
+            Uri resourceUrl,
             int resourceIndex);
     }
 }

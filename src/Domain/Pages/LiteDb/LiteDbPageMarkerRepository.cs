@@ -9,12 +9,15 @@ namespace Scrap.Pages.LiteDb
     {
         private readonly ILogger<LiteDbPageMarkerRepository> _logger;
         private readonly bool _disableExists;
+        private readonly bool _disableWrites;
         private readonly ILiteCollection<PageMarker> _collection;
 
-        public LiteDbPageMarkerRepository(ILiteDatabase db, ILogger<LiteDbPageMarkerRepository> logger, bool disableExists)
+        public LiteDbPageMarkerRepository(ILiteDatabase db, ILogger<LiteDbPageMarkerRepository> logger,
+            bool disableExists, bool disableWrites)
         {
             _logger = logger;
             _disableExists = disableExists;
+            _disableWrites = disableWrites;
             _collection = db.GetCollection<PageMarker>();
         }
         
@@ -29,16 +32,16 @@ namespace Scrap.Pages.LiteDb
             return Task.FromResult(findById != null);
         }
 
-        public Task AddAsync(Uri link)
+        public Task UpsertAsync(Uri link)
         {
-            _logger.LogTrace("Inserted {Page}", link.AbsoluteUri);
-            if (_disableExists)
+            if (!_disableWrites)
             {
                 _collection.Upsert(link.AbsoluteUri, new PageMarker(link.AbsoluteUri));
+                _logger.LogTrace("Inserted {Page}", link.AbsoluteUri);
             }
             else
             {
-                _collection.Insert(link.AbsoluteUri, new PageMarker(link.AbsoluteUri));
+                _logger.LogTrace("FAKE. Inserted {Page}", link.AbsoluteUri);
             }
 
             return Task.CompletedTask;

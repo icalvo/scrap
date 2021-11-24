@@ -6,6 +6,6 @@ namespace Scrap.Pages
     public interface IPageMarkerRepository
     {
         Task<bool> ExistsAsync(Uri uri);
-        Task AddAsync(Uri link);
+        Task UpsertAsync(Uri link);
     }
 }

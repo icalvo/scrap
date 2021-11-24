@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -26,7 +27,12 @@ namespace Scrap.JobDefinitions.JsonFile
                                         new JsonSerializerOptions
                                         {
                                             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                                            Converters = { new ResourceRepositoryConfigurationJsonConverter(), new TimeSpanJsonConverter() }
+                                            Converters =
+                                            {
+                                                new ResourceRepositoryConfigurationJsonConverter(),
+                                                new TimeSpanJsonConverter(),
+                                                new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
+                                            }
                                         })
                                         ?? Array.Empty<JobDefinitionDto>();
             return new MemoryJobDefinitionRepository(
@@ -44,7 +50,7 @@ namespace Scrap.JobDefinitions.JsonFile
             return Task.FromResult(result);
         }
 
-        public Task<JobDefinition?> FindJobByRootUrlAsync(string rootUrl)
+        public Task<JobDefinition?> FindByRootUrlAsync(string rootUrl)
         {
             var x = _store.Values.FirstOrDefault(x => x.UrlPattern != null && Regex.IsMatch(rootUrl, x.UrlPattern));
             return Task.FromResult((JobDefinition?)x);

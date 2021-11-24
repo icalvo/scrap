@@ -20,7 +20,6 @@ parser.Register.HelpHandler("help,h,?", s =>
     Console.WriteLine("SCRAP is a tool for generic web scrapping. To set it up, head to the project docs: https://ignaciocalvo.com/scrap");
     Console.WriteLine(s);
 });
-parser.Register.ParameterHandler("debug", (Action) (() => Debugger.Launch()));
 parser.Register.ErrorHandler((Action<ExceptionContext>) (c =>
 {
     Console.Error.WriteLine("Parsing error: {0}", c.Exception.Message);
@@ -31,4 +30,12 @@ parser.Register.ErrorHandler((Action<ExceptionContext>) (c =>
     }
 }));
 
-await parser.RunTargetsAsync(args, (TargetResolver) null!);
+try
+{
+    await parser.RunAsync(args, new ScrapCommandLine());
+}
+catch (Exception ex)
+{
+    Console.WriteLine(ex.Demystify().ToString());
+    throw;
+}

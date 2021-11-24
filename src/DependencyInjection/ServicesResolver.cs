@@ -34,10 +34,10 @@ namespace Scrap.DependencyInjection
 
         public ServicesResolver(ILoggerFactory loggerFactory, IConfiguration config)
         {
-            
             _loggerFactory = loggerFactory;
             _config = config;
-            _cacheProvider = BuildMemoryCacheProvider(_loggerFactory);
+            _cacheProvider = new MemoryCacheProvider(
+                new MemoryCache(new MemoryCacheOptions(), _loggerFactory));
             _db = new LiteDatabase(new ConnectionString(_config["Scrap:Database"]));
         }
 
@@ -59,14 +59,11 @@ namespace Scrap.DependencyInjection
                 new Logger<JobApplicationService>(_loggerFactory));
         }
 
-        private static MemoryCacheProvider BuildMemoryCacheProvider(ILoggerFactory loggerFactory)
-        {
-            var cacheProvider = new MemoryCacheProvider(
-                new MemoryCache(new MemoryCacheOptions(), loggerFactory));
-            return cacheProvider;
-        }
-
-        public (IDownloadStreamProvider downloadStreamProvider, IResourceRepository resourceRepository, LinkedPagesCalculator adjacencyCalculator, IPageRetriever pageRetriever) Build(Job job)
+        public (
+            IDownloadStreamProvider downloadStreamProvider,
+            IResourceRepository resourceRepository,
+            IPageRetriever pageRetriever,
+            IPageMarkerRepository pageMarkerRepository) BuildJobDependencies(Job job)
         {
             IAsyncPolicy httpPolicy = BuildHttpPolicy(
                 job.HttpRequestRetries,
@@ -74,16 +71,16 @@ namespace Scrap.DependencyInjection
             var downloadStreamProvider = BuildDownloadStreamProvider("http", httpPolicy);
             var pageRetriever = new HttpPageRetriever(
                 downloadStreamProvider,
+                httpPolicy,
                 new Logger<HttpPageRetriever>(_loggerFactory),
                 _loggerFactory);
-            var resourceRepository = BuildResourceRepository(job.ResourceRepoArgs);
-            var pageMarkerRepository = BuildPageMarkerRepository(job.FullScan);
-            var adjacencyCalculator = new LinkedPagesCalculator(pageMarkerRepository, new Logger<LinkedPagesCalculator>(_loggerFactory));
+            var resourceRepository = BuildResourceRepository(job.ResourceRepoArgs, job.WhatIf);
+            var pageMarkerRepository = BuildPageMarkerRepository(job.FullScan, job.WhatIf);
 
-            return (downloadStreamProvider, resourceRepository, adjacencyCalculator, pageRetriever);
+            return (downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository);
         }
-        
-        public IAsyncPolicy BuildHttpPolicy(
+
+        private IAsyncPolicy BuildHttpPolicy(
             int? httpRequestRetries,
             TimeSpan? httpDelay)
         {
@@ -113,26 +110,28 @@ namespace Scrap.DependencyInjection
 
         }
 
-        public IPageMarkerRepository BuildPageMarkerRepository(bool fullScan)
+        private IPageMarkerRepository BuildPageMarkerRepository(bool fullScan, bool whatIf)
         {
             return new LiteDbPageMarkerRepository(
                 _db,
                 _loggerFactory.CreateLogger<LiteDbPageMarkerRepository>(),
-                disableExists: fullScan);
+                disableExists: fullScan,
+                disableWrites: whatIf);
         }
         
-        public IResourceRepository BuildResourceRepository(IResourceRepositoryConfiguration configuration)
+        private IResourceRepository BuildResourceRepository(IResourceRepositoryConfiguration configuration, bool whatIf)
         {
             switch (configuration)
             {
                 case FileSystemResourceRepositoryConfiguration config:
                     var destinationProvider = CompiledDestinationProvider.CreateCompiled(
-                        config.DestinationExpression,
+                        config.PathFragments,
                         new Logger<CompiledDestinationProvider>(_loggerFactory));
                     return new FileSystemResourceRepository(
                         destinationProvider,
-                        config.DestinationRootFolder,
-                        new Logger<FileSystemResourceRepository>(_loggerFactory));
+                        config.RootFolder,
+                        new Logger<FileSystemResourceRepository>(_loggerFactory),
+                        disableWrites: whatIf);
                 default:
                     throw new ArgumentException(
                         "Unknown resource processor config type: " + configuration.GetType().Name,
@@ -140,7 +139,7 @@ namespace Scrap.DependencyInjection
             }
         }
 
-        public IDownloadStreamProvider BuildDownloadStreamProvider(string protocol, IAsyncPolicy policy)
+        private IDownloadStreamProvider BuildDownloadStreamProvider(string protocol, IAsyncPolicy policy)
         {
             switch (protocol)
             {

@@ -6,15 +6,16 @@ namespace Scrap.JobDefinitions
 {
     public record NewJobDefinitionDto(
         string Name,
-        string AdjacencyXPath,
+        string? AdjacencyXPath,
         string? AdjacencyAttribute,
         string ResourceXPath,
         string ResourceAttribute,
-        IResourceRepositoryConfiguration ResourceRepoArgs,
+        IResourceRepositoryConfiguration ResourceRepository,
         string? RootUrl,
         int? HttpRequestRetries,
         TimeSpan? HttpRequestDelayBetweenRetries,
-        string? UrlPattern)
+        string? UrlPattern,
+        ResourceType ResourceType)
     {
         public void Log(ILogger logger)
         {
@@ -24,7 +25,7 @@ namespace Scrap.JobDefinitions
             logger.LogDebug("Adjacency attribute: {AdjacencyAttribute}", AdjacencyAttribute);
             logger.LogDebug("Resource X-Path: {ResourceXPath}", ResourceXPath);
             logger.LogDebug("Resource attribute: {ResourceAttribute}", ResourceAttribute);
-            logger.LogDebug("Resource repo args: {ResourceRepoArgs}", ResourceRepoArgs);
+            logger.LogDebug("Resource repo: {ResourceRepoArgs}", ResourceRepository);
             logger.LogDebug("Url Pattern: {UrlPattern}", UrlPattern);
         }
     }

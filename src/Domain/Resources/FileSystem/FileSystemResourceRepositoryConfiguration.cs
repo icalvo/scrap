@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace Scrap.Resources.FileSystem
@@ -9,22 +10,29 @@ namespace Scrap.Resources.FileSystem
         private FileSystemResourceRepositoryConfiguration()
         {
         }
-
-        public FileSystemResourceRepositoryConfiguration(string[] destinationExpression, string destinationRootFolder)
+        
+        [SuppressMessage("ReSharper", "UnusedMember.Local", Justification = "Deserialization by MemoryRepo")]
+        public FileSystemResourceRepositoryConfiguration(string[] pathFragments, string rootFolder)
         {
-            DestinationExpression = destinationExpression;
-            DestinationRootFolder = destinationRootFolder;
+            PathFragments = pathFragments;
+            RootFolder = rootFolder;
         }
 
-        public string[] DestinationExpression { get; private set; } = null!;
-        public string DestinationRootFolder { get; private set; } = null!;
         public string Type => "filesystem";
+        public string RootFolder { get; private set; } = null!;
+        public string[] PathFragments { get; private set; } = null!;
 
         public void Validate(ILoggerFactory loggerFactory)
         {
             _ = CompiledDestinationProvider.CreateCompiled(
-                DestinationExpression,
+                PathFragments,
                 new Logger<CompiledDestinationProvider>(loggerFactory));
+        }
+
+        public override string ToString()
+        {
+            return $"Folder: {RootFolder}\n" +
+                   string.Join("\n", PathFragments.Select((exp, i) => $"Expression {i + 1}: {exp}"));
         }
     }
 }

@@ -80,9 +80,14 @@ namespace Scrap.JobDefinitions
 
         public async Task<JobDefinitionDto?> FindJobByRootUrlAsync(string rootUrl)
         {
-            _logger.LogInformation("Getting job def. by URL {RootUrl}", rootUrl);
+            var jobDefinition = (await _definitionRepository.FindByRootUrlAsync(rootUrl))?.ToDto();
+            if (jobDefinition == null)
+            {
+                return null;
+            }
 
-            return (await _definitionRepository.FindJobByRootUrlAsync(rootUrl))?.ToDto();
+            _logger.LogInformation("Got job def. by URL {RootUrl}: {Name}", rootUrl, jobDefinition.Name);
+            return jobDefinition;
         }
 
         public Task DeleteJobAsync(JobDefinitionId id)

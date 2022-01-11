@@ -143,6 +143,7 @@ namespace Scrap.DependencyInjection
             switch (configuration)
             {
                 case FileSystemResourceRepositoryConfiguration config:
+                    _logger.LogInformation("Destination root folder: {RootFolder}", config.RootFolder);
                     var destinationProvider = CompiledDestinationProvider.CreateCompiled(
                         config.PathFragments,
                         new Logger<CompiledDestinationProvider>(_loggerFactory));
@@ -153,7 +154,7 @@ namespace Scrap.DependencyInjection
                         disableWrites: whatIf);
                 default:
                     throw new ArgumentException(
-                        "Unknown resource processor config type: " + configuration.GetType().Name,
+                        $"Unknown resource processor config type: {configuration.GetType().Name}",
                         nameof(configuration));
             }
         }

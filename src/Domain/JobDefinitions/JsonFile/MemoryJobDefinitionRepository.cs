@@ -66,9 +66,9 @@ namespace Scrap.JobDefinitions.JsonFile
             return Task.CompletedTask;
         }
 
-        public Task<ImmutableArray<JobDefinition>> ListAsync()
+        public IAsyncEnumerable<JobDefinition> ListAsync()
         {
-            return Task.FromResult(_store.Values.ToImmutableArray());
+            return _store.Values.ToAsyncEnumerable();
         }
     }
 }

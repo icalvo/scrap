@@ -21,6 +21,7 @@ namespace Scrap.Jobs
             HttpRequestDelayBetweenRetries = dto.HttpRequestDelayBetweenRetries ?? DefaultHttpRequestDelayBetweenRetries;
             WhatIf = dto.WhatIf ?? false;
             FullScan = dto.FullScan ?? false;
+            DownloadAlways = dto.DownloadAlways ?? false;
             ResourceType = dto.ResourceType;
         }
 
@@ -35,6 +36,7 @@ namespace Scrap.Jobs
             logger.LogDebug("Resource Type: {ResourceType}", ResourceType);
         }
 
+
         public JobId Id { get; }
         public Uri RootUrl { get; }
         public XPath? AdjacencyXPath { get; }
@@ -44,6 +46,7 @@ namespace Scrap.Jobs
         public TimeSpan HttpRequestDelayBetweenRetries { get; }
         public bool WhatIf { get; }
         public bool FullScan { get; }
+        public bool DownloadAlways { get; }
         public ResourceType ResourceType { get; }
     }
 }

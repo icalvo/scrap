@@ -1,6 +1,5 @@
 using System;
 using Microsoft.Extensions.Logging;
-using Scrap.Jobs;
 using Scrap.Resources;
 
 namespace Scrap.JobDefinitions

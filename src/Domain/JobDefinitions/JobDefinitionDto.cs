@@ -13,7 +13,5 @@ namespace Scrap.JobDefinitions
         int? HttpRequestRetries,
         TimeSpan? HttpRequestDelayBetweenRetries,
         string? UrlPattern,
-        ResourceType? ResourceType)
-    {
-    }
+        ResourceType? ResourceType);
 }

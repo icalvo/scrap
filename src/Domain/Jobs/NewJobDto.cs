@@ -17,7 +17,8 @@ namespace Scrap.Jobs
             string? rootUrl,
             bool? whatIf,
             bool? fullScan,
-            IResourceRepositoryConfiguration? configuration)
+            IResourceRepositoryConfiguration? configuration,
+            bool? downloadAlways)
             : this(
                 jobDefinition.AdjacencyXPath,
                 jobDefinition.ResourceXPath,
@@ -27,6 +28,7 @@ namespace Scrap.Jobs
                 jobDefinition.HttpRequestDelayBetweenRetries,
                 whatIf,
                 fullScan,
+                downloadAlways,
                 jobDefinition.ResourceType ?? default(ResourceType))
         {}
 
@@ -39,6 +41,7 @@ namespace Scrap.Jobs
             TimeSpan? httpRequestDelayBetweenRetries,
             bool? whatIf,
             bool? fullScan,
+            bool? downloadAlways,
             ResourceType resourceType)
         {
             AdjacencyXPath = adjacencyXPath;
@@ -50,6 +53,7 @@ namespace Scrap.Jobs
             HttpRequestDelayBetweenRetries = httpRequestDelayBetweenRetries;
             WhatIf = whatIf;
             FullScan = fullScan;
+            DownloadAlways = downloadAlways;
         }
 
         public string? AdjacencyXPath { get; }
@@ -60,6 +64,7 @@ namespace Scrap.Jobs
         public TimeSpan? HttpRequestDelayBetweenRetries { get; }
         public bool? WhatIf { get; }
         public bool? FullScan { get; }
+        public bool? DownloadAlways { get; }
         public ResourceType ResourceType { get; }
     }
 }

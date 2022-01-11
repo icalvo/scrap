@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Scrap.JobDefinitions
@@ -10,6 +10,6 @@ namespace Scrap.JobDefinitions
         Task<JobDefinition?> FindByRootUrlAsync(string rootUrl);
         Task UpsertAsync(JobDefinition jobDefinition);
         Task DeleteJobAsync(JobDefinitionId id);
-        Task<ImmutableArray<JobDefinition>> ListAsync();
+        IAsyncEnumerable<JobDefinition> ListAsync();
     }
 }

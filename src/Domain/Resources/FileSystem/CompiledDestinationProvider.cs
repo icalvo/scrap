@@ -65,7 +65,7 @@ namespace Scrap.Resources.FileSystem
 
             // define source code, then parse it (to the type used for compilation)
             string sourceCode = File.ReadAllText(sourcePath);
-            var pattern = "destinationRootFolder" + string.Join("", _destinationFolderPattern.Select(p => $".C({p})")) +
+            var pattern = "rootFolder" + string.Join("", _destinationFolderPattern.Select(p => $".C({p})")) +
                           ".ToPath()";
             sourceCode = sourceCode.Replace("\"destinationFolderPattern\"", pattern);
             return sourceCode;

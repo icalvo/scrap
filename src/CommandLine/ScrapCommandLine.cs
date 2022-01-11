@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -72,32 +73,65 @@ namespace Scrap.CommandLine
         public async Task Scrap(
             string? name = null,
             string? rootUrl = null,
+            bool all = false,
             bool whatIf = false,
             bool fullScan = false,
-            bool async = false)
+            bool async = false,
+            bool downloadAlways = false)
         {
             var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
             var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
-            var scrapAppService = serviceResolver.BuildScrapperApplicationService();
-            JobDefinitionDto? jobDef = null;
-            if (name != null)
+            var jobDefs = new List<JobDefinitionDto>();
+
+            if (all)
             {
-                jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
+                if (name != null || rootUrl != null)
+                {
+                    throw new ArgumentException("'all' switch is incompatible with 'name' or 'rootUrl' options");
+                }
+
+                await foreach (var jobDef in definitionsApplicationService.GetJobsAsync().Where(x => x.RootUrl != null))
+                {
+                    jobDefs.Add(jobDef);
+                }
+            }
+            else if (name != null)
+            {
+                var jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
+                if (jobDef != null)
+                {
+                    jobDefs.Add(jobDef);
+                }
             }
             else if (rootUrl != null)
             {
-                jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
+                var jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
+                if (jobDef != null)
+                {
+                    jobDefs.Add(jobDef);
+                }
             }
 
-            if (jobDef == null)
+            if (jobDefs.Count == 0)
             {
+                _logger.LogWarning("No job definition found, nothing will be done");
                 return;
             }
 
-            var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null);
+            _logger.LogInformation("The following job def(s). will be run: {JobDefs}", string.Join(", ", jobDefs.Select(x => x.Name)));
+            foreach (var jobDef in jobDefs)
+            {
+                var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null, downloadAlways);
+                await ExecuteJob(newJob, async, serviceResolver);
+            }
+        }
+
+        private async Task ExecuteJob(NewJobDto newJob, bool async, ServicesResolver serviceResolver)
+        {
+            var scrapAppService = serviceResolver.BuildScrapperApplicationService();
             if (async)
             {
-                var client = serviceResolver.BuildHangfireBackgroundJobClient();
+                IBackgroundJobClient? client = serviceResolver.BuildHangfireBackgroundJobClient();
 
                 var jobId = client.Create(() => scrapAppService.RunAsync(newJob), new EnqueuedState());
                 _logger.LogInformation("Hangfire job created with Id: {JobId}", jobId);
@@ -115,8 +149,7 @@ namespace Scrap.CommandLine
             string? name = null,
             string? rootUrl = null,
             bool whatIf = false,
-            bool fullScan = false,
-            bool async = false)
+            bool fullScan = false)
         {
             var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
             var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
@@ -136,18 +169,8 @@ namespace Scrap.CommandLine
                 return;
             }
 
-            var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null);
-            if (async)
-            {
-                var client = serviceResolver.BuildHangfireBackgroundJobClient();
-
-                var jobId = client.Create(() => scrapAppService.ListResourcesAsync(newJob), new EnqueuedState());
-                _logger.LogInformation("Hangfire job created with Id: {JobId}", jobId);
-            }
-            else
-            {
-                await scrapAppService.ListResourcesAsync(newJob);
-            }
+            var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null, false);
+            await scrapAppService.ListResourcesAsync(newJob);
         }
         
         [Verb(Description = "Lists jobs")]

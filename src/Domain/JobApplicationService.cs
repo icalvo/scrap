@@ -48,22 +48,30 @@ namespace Scrap
 
         public Task ListResourcesAsync(NewJobDto jobDto)
         {
+            var job = _jobFactory.Create(jobDto);
             var (rootUri, adjacencyXPath, resourceXPath, _, resourceRepository, pageRetriever, pageMarkerRepository) =
-                GetJobInfoAndCreateDependencies(jobDto);
+                GetJobInfoAndCreateDependencies(job);
+
+            IAsyncEnumerable<ResourceInfo> GetResourceLinks(Page page, int crawlPageIndex)
+                => ResourceLinks(page, crawlPageIndex, resourceXPath);
+
+            ValueTask<bool> IsNotDownloaded(ResourceInfo info)
+                => this.IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways);
 
             var pipeline =
                 Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
-                .SelectMany((page, crawlPageIndex) => ResourceLinks(page, crawlPageIndex, resourceXPath))
-                .WhereAwait(x => IsNotDownloadedAsync(x, resourceRepository))
-                .ForEachAsync(x => _logger.LogWarning("{Uri}", x.ResourceUrl.AbsoluteUri));
+                .SelectMany(GetResourceLinks)
+                .WhereAwait(IsNotDownloaded)
+                .Do(x => _logger.LogWarning("{Uri}", x.ResourceUrl.AbsoluteUri));
 
-            return pipeline;
+            return pipeline.ExecuteAsync();
         }
 
         private Task DownloadLinksAsync(NewJobDto jobDto)
         {
+            var job = _jobFactory.Create(jobDto);
             var (rootUri, adjacencyXPath, resourceXPath, downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository) =
-                GetJobInfoAndCreateDependencies(jobDto);
+                GetJobInfoAndCreateDependencies(job);
 
             async Task Download((ResourceInfo info, Stream stream) x)
             {
@@ -76,29 +84,28 @@ namespace Scrap
                 => ResourceLinks(page, crawlPageIndex, resourceXPath);
 
             ValueTask<bool> IsNotDownloaded(ResourceInfo info)
-                => this.IsNotDownloadedAsync(info, resourceRepository);
+                => this.IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways);
 
             var pipeline =
                 Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
-                    .ForEachAwaitAsync(async (page, pageIndex) =>
-                    {
-                        _logger.LogInformation("Processing page {PageUrl}", page.Uri);
-                        await GetResourceLinks(page, pageIndex)
-                            .WhereAwait(IsNotDownloaded)
-                            .SelectAwait(async resourceLink => (
-                                x: resourceLink,
-                                stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
-                            .ForEachAwaitAsync(Download);
-                        await pageMarkerRepository.UpsertAsync(page.Uri);
-                    });
+                    .Do(page => _logger.LogInformation("Processing page {PageUrl}", page.Uri))
+                    .DoAwait((page, pageIndex) =>
+                        GetResourceLinks(page, pageIndex)
+                        .WhereAwait(IsNotDownloaded)
+                        .SelectAwait(async resourceLink => (
+                            x: resourceLink,
+                            stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
+                        .DoAwait(Download))
+                    .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
-            return pipeline;
+            return pipeline.ExecuteAsync();
         }
 
         private async Task ScrapTextAsync(NewJobDto jobDto)
         {
-            var (rootUri, adjacencyXPath,resourceXPath,_, resourceRepository, pageRetriever, pageMarkerRepository) =
-                GetJobInfoAndCreateDependencies(jobDto);
+            var job = _jobFactory.Create(jobDto);
+            var (rootUri, adjacencyXPath,resourceXPath, _, resourceRepository, pageRetriever, pageMarkerRepository) =
+                GetJobInfoAndCreateDependencies(job);
             
             IAsyncEnumerable<(ResourceInfo info, string text)> PageTexts(Page page, int crawlPageIndex) =>
                 page.Contents(resourceXPath)
@@ -111,23 +118,21 @@ namespace Scrap
             _logger.LogDebug("Defining pipeline...");
             var pipeline =
                 Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
-                    .ForEachAwaitAsync(async (page, pageIndex) =>
-                    {
-                        await PageTexts(page, pageIndex)
-                            .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository))
-                            .Select(x => (
-                                x.info,
-                                stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
-                            .ForEachAwaitAsync(async y =>
-                            {
-                                var (info, stream) = y;
-                                await resourceRepository.UpsertAsync(info, stream);
-                                _logger.LogInformation("Downloaded text from {Url} to {Key}", info.ResourceUrl, await resourceRepository.GetKeyAsync(info));
-                            });
-                        await pageMarkerRepository.UpsertAsync(page.Uri);
-                    });
+                    .DoAwait((page, pageIndex) =>
+                        PageTexts(page, pageIndex)
+                        .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository, job.DownloadAlways))
+                        .Select(x => (
+                            x.info,
+                            stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
+                        .DoAwait(y => resourceRepository.UpsertAsync(y.info, y.stream))
+                        .DoAwait(async x =>
+                            _logger.LogInformation(
+                                "Downloaded text from {Url} to {Key}",
+                                x.info.ResourceUrl,
+                                await resourceRepository.GetKeyAsync(x.info))))
+                    .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
-            await pipeline;
+            await pipeline.ExecuteAsync();
             _logger.LogInformation("Finished!");
         }
 
@@ -138,10 +143,8 @@ namespace Scrap
             IDownloadStreamProvider downloadStreamProvider,
             IResourceRepository resourceRepository,
             IPageRetriever pageRetriever,
-            IPageMarkerRepository pageMarkerRepository) GetJobInfoAndCreateDependencies(NewJobDto jobDto)
+            IPageMarkerRepository pageMarkerRepository) GetJobInfoAndCreateDependencies(Job job)
         {
-            var job = _jobFactory.Create(jobDto);
-
             var (rootUri, adjacencyXPath, resourceXPath) =
                 (job.RootUrl, job.AdjacencyXPath, job.ResourceXPath);
 
@@ -201,16 +204,23 @@ namespace Scrap
                 page => CalculateLinks(page, adjacencyXPath, pageMarkerRepository));
         }
 
-        private async ValueTask<bool> IsNotDownloadedAsync(ResourceInfo info, IResourceRepository resourceRepository)
+        private async ValueTask<bool> IsNotDownloadedAsync(ResourceInfo info, IResourceRepository resourceRepository, bool downloadAlways)
         {
-            var exists = await resourceRepository.ExistsAsync(info);
-            if (exists)
+            if (downloadAlways)
             {
-                var key = await resourceRepository.GetKeyAsync(info);
-                _logger.LogInformation("{Resource} already downloaded", key);
+                return true;
             }
 
-            return !exists;
+            var exists = await resourceRepository.ExistsAsync(info);
+            if (!exists)
+            {
+                return true;
+            }
+
+            var key = await resourceRepository.GetKeyAsync(info);
+            _logger.LogInformation("{Resource} already downloaded", key);
+
+            return false;
         }
     }
 }

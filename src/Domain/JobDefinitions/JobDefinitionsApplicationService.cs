@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -72,10 +72,10 @@ namespace Scrap.JobDefinitions
             return (await _definitionRepository.GetByNameAsync(name))?.ToDto();
         }
 
-        public async Task<ImmutableArray<JobDefinitionDto>> GetJobsAsync()
+        public IAsyncEnumerable<JobDefinitionDto> GetJobsAsync()
         {
             _logger.LogInformation("Getting all job defs");
-            return (await _definitionRepository.ListAsync()).Select(x => x.ToDto()).ToImmutableArray();
+            return _definitionRepository.ListAsync().Select(x => x.ToDto());
         }
 
         public async Task<JobDefinitionDto?> FindJobByRootUrlAsync(string rootUrl)

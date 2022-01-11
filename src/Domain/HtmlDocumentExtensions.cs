@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Xml.XPath;
 using HtmlAgilityPack;
-using Scrap.Jobs;
 
 namespace Scrap
 {

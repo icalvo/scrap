@@ -12,8 +12,11 @@ namespace Scrap.Resources.FileSystem
         private readonly ILogger<FileSystemResourceRepository> _logger;
         private readonly bool _disableWrites;
 
-        public FileSystemResourceRepository(IDestinationProvider destinationProvider, string destinationRootFolder,
-            ILogger<FileSystemResourceRepository> logger, bool disableWrites)
+        public FileSystemResourceRepository(
+            IDestinationProvider destinationProvider,
+            string destinationRootFolder,
+            ILogger<FileSystemResourceRepository> logger,
+            bool disableWrites)
         {
             _destinationProvider = destinationProvider;
             _destinationRootFolder = destinationRootFolder;
@@ -44,7 +47,6 @@ namespace Scrap.Resources.FileSystem
             var destinationPath = id.FullPath;
             var directoryName = Path.GetDirectoryName(destinationPath)
                                 ?? throw new InvalidOperationException($"Could not get directory name from destination path {destinationPath}");
-            
 
             if (!_disableWrites)
             {

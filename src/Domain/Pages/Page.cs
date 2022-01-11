@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Xml.XPath;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
-using Scrap.Jobs;
 
 namespace Scrap.Pages
 {

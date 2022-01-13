@@ -12,7 +12,7 @@ jobs:
         working-directory: ./src
     steps:
       - uses: actions/checkout@v2
-      - name: Setup .NET
+      - name: ✨ Setup .NET
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 6.0.x

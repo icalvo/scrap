@@ -37,5 +37,7 @@ jobs:
           NUGET_AUTH_TOKEN: ${{ secrets.NUGET_TOKEN }}
       - name: 🏷 Tag commit and push
         run: |
-          git tag -a v${{ github.event.inputs.version }}
+          git config --global user.email "ignacio.calvo@gmail.com"
+          git config --global user.name "Your Name"
+          git tag v${{ github.event.inputs.version }}
           git push origin --tags

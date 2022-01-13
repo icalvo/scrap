@@ -9,9 +9,5 @@
   },
   "Hangfire": {
     "Database": "Data Source=(localdb)\\MSSQLLocalDB"
-  },
-  "Scrap": {
-    "Database": "Filename=C:\\Users\\ignacio.calvo\\Dropbox\\Ignacio\\Scrap\\scrap.db;Connection=shared",
-    "Definitions": "C:\\Users\\ignacio.calvo\\Dropbox\\Ignacio\\Scrap\\jobDefinitions.json"
   }
 }

@@ -120,5 +120,15 @@ namespace Scrap
                 await noElementsAction();
             }
         }
+
+        public static IEnumerable<T> RemoveNulls<T>(this IEnumerable<T?> source) where T: struct
+        {
+            return from item in source where item != null select item.Value;
+        }
+ 
+        public static IEnumerable<T> RemoveNulls<T>(this IEnumerable<T?> source) where T: class
+        {
+            return from item in source where item != null select item;
+        }       
     }
 }

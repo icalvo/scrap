@@ -48,6 +48,7 @@ namespace Scrap.DependencyInjection
 
         public async Task<JobDefinitionsApplicationService> BuildJobDefinitionsApplicationServiceAsync()
         {
+            _logger.LogInformation("Definitions file: {DefinitionsPath}", _config["Scrap:Definitions"]);
             return
                 new JobDefinitionsApplicationService(
                     await MemoryJobDefinitionRepository.FromJsonFileAsync(_config["Scrap:Definitions"]),

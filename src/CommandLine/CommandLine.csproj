@@ -6,8 +6,8 @@
     <Nullable>enable</Nullable>
     <AssemblyName>scrap</AssemblyName>
     <RootNamespace>Scrap.CommandLine</RootNamespace>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PackAsTool>true</PackAsTool>
+    <IsPackable>true</IsPackable>
     <ToolCommandName>scrap</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
   </PropertyGroup>
@@ -31,10 +31,6 @@
     <None Update="scrap.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Ranges.cs" />
   </ItemGroup>
 
 </Project>

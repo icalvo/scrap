@@ -1,0 +1,37 @@
+name: Publish NuGet
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'NuGet version'
+        required: true
+
+# github.event.inputs.version
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: 🧱 Build
+        run: dotnet build --no-restore
+      - name: 🐛 Test
+        run: dotnet test --no-build --verbosity normal
+      - name: 📆 Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y%m%d%H%M%S')"
+      - name: 📦 NuGet Pack
+        run: dotnet pack -p:PackageVersion=${{ github.event.inputs.version }}
+      - name: 📢 NuGet Push
+        run: dotnet nuget push ./CommandLine/nupkg/scrap.*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.NUGET_TOKEN }}

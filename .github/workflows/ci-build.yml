@@ -27,6 +27,6 @@ jobs:
       - name: NuGet Pack
         run: dotnet pack --version-suffix ${{ steps.date.outputs.date }}
       - name: NuGet Push
-        run: dotnet nuget push .\CommandLine\nupkg\scrap.*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
+        run: dotnet nuget push ./CommandLine/nupkg/scrap.*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.NUGET_TOKEN }}

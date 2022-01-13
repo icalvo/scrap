@@ -23,7 +23,7 @@ namespace Scrap.JobDefinitions.JsonFile
         {
             if (!File.Exists(jsonFilePath))
             {
-                await File.WriteAllTextAsync(jsonFilePath, "{}");
+                await File.WriteAllTextAsync(jsonFilePath, "[]");
             }
 
             await using var stream = File.OpenRead(jsonFilePath);

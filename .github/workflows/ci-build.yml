@@ -23,9 +23,9 @@ jobs:
         run: dotnet test --no-build --verbosity normal
       - name: Get current date
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+        run: echo "::set-output name=date::$(date +'%Y%m%d')"
       - name: NuGet Pack
-        run: dotnet pack --version-suffix ${{ steps.date.outputs.date }}
+        run: dotnet pack --version-suffix ci${{ steps.date.outputs.date }}
       - name: NuGet Push
         run: dotnet nuget push ./CommandLine/nupkg/scrap.*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
         env:

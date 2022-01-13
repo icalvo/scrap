@@ -16,11 +16,11 @@ jobs:
         working-directory: ./src
     steps:
       - uses: actions/checkout@v2
-      - name: Setup .NET
+      - name: ✨ Setup .NET
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 6.0.x
-      - name: Restore dependencies
+      - name: 🏭 Restore dependencies
         run: dotnet restore
       - name: 🧱 Build
         run: dotnet build --no-restore
@@ -35,3 +35,7 @@ jobs:
         run: dotnet nuget push ./CommandLine/nupkg/scrap.*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.NUGET_TOKEN }}
+      - name: 🏷 Tag commit and push
+        run: |
+          git tag -a v${{ github.event.inputs.version }}
+          git push origin --tags

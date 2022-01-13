@@ -39,24 +39,14 @@ namespace Scrap.CommandLine
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
             var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
 
-            Directory.CreateDirectory(globalUserConfigFolder);
-            if (!File.Exists(globalUserConfigPath))
-            {
-                Console.WriteLine("Global config file not found.");
-                File.WriteAllText(globalUserConfigPath, "{}");
-                Console.WriteLine("Created global config at: " + globalUserConfigPath);
-            }
+            EnsureGlobalConfiguration(globalUserConfigFolder, globalUserConfigPath);
 
             _configuration =
                 new ConfigurationBuilder()
                     .AddJsonFile("scrap.json", optional: false, reloadOnChange: false)
-                    .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: true)
+                    .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
                     .Build();
-            if (!_configuration.GetSection("Scrap").Exists())
-            {
-                CreateGlobalConfiguration(globalUserConfigFolder, globalUserConfigPath);
-            }
-
+            
             _loggerFactory = LoggerFactory.Create(builder =>
             {
                 if (_verbose)
@@ -72,32 +62,6 @@ namespace Scrap.CommandLine
             });
 
             _logger = new Logger<ScrapCommandLine>(_loggerFactory);
-        }
-
-        private static void CreateGlobalConfiguration(string globalUserConfigFolder, string globalUserConfigPath)
-        {
-            var defaultJobDefsPath = Path.Combine(globalUserConfigFolder, "jobDefinitions.json");
-            Console.Write($"Path for job definitions JSON [{defaultJobDefsPath}]: ");
-            var jobDefsPath = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(jobDefsPath))
-            {
-                jobDefsPath = defaultJobDefsPath;
-            }
-
-            var defaultDbPath = Path.Combine(globalUserConfigFolder, "scrap.db");
-            Console.Write($"Path for  database [{defaultDbPath}]: ");
-            var dbPath = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(dbPath))
-            {
-                dbPath = defaultDbPath;
-            }
-
-            var updater = new JsonUpdater(globalUserConfigPath);
-            updater.AddOrUpdate(new Dictionary<string, object>
-            {
-                { "Scrap:Database", $"Filename={dbPath};Connection=shared" },
-                { "Scrap:Definitions", jobDefsPath }
-            });
         }
 
         [Global(Aliases="dbg")]
@@ -123,15 +87,19 @@ namespace Scrap.CommandLine
             bool async = false,
             bool downloadAlways = false)
         {
+            if (!all && name == null && rootUrl == null)
+            {
+                throw new ArgumentException($"At least one of these options must be present: '{nameof(all)}', '{nameof(name)}', '{nameof(rootUrl)}'");
+            }
+
             var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
             var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
             var jobDefs = new List<JobDefinitionDto>();
-
             if (all)
             {
                 if (name != null || rootUrl != null)
                 {
-                    throw new ArgumentException("'all' switch is incompatible with 'name' or 'rootUrl' options");
+                    throw new ArgumentException($"'{nameof(all)}' switch is incompatible with '{nameof(name)}' or '{nameof(rootUrl)}' options");
                 }
 
                 await foreach (var jobDef in definitionsApplicationService.GetJobsAsync().Where(x => x.RootUrl != null))
@@ -308,6 +276,68 @@ namespace Scrap.CommandLine
             if (_debug)
             {
                 Console.ReadKey();
+            }
+        }
+
+        private static void EnsureGlobalConfiguration(string globalUserConfigFolder, string globalUserConfigPath)
+        {
+            Directory.CreateDirectory(globalUserConfigFolder);
+            if (!File.Exists(globalUserConfigPath))
+            {
+                Console.WriteLine($"Global config file not found. We are going to create a global config file and ask some values. " +
+                                  "This file is located at: {globalUserConfigPath}");
+                Console.WriteLine($"The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
+                File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
+                Console.WriteLine("Created global config at: " + globalUserConfigPath);
+            }
+
+            var cfg =
+                new ConfigurationBuilder()
+                    .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
+                    .Build();
+            EnsureGlobalConfigValues(globalUserConfigFolder, globalUserConfigPath, cfg);
+        }
+
+        private static void EnsureGlobalConfigValues(
+            string globalUserConfigFolder,
+            string globalUserConfigPath,
+            IConfiguration cfg)
+        {
+            var updates = new[]
+            {
+                EnsureGlobalConfigValue(
+                    "Scrap:Definitions",
+                    Path.Combine(globalUserConfigFolder, "jobDefinitions.json"),
+                    "Path for job definitions JSON"),
+                EnsureGlobalConfigValue(
+                    "Scrap:Database",
+                    Path.Combine(globalUserConfigFolder, "scrap.db"),
+                    "Path for  database",
+                    "Filename={0};Connection=shared")
+            }.RemoveNulls();
+            var updater = new JsonUpdater(globalUserConfigPath);
+            updater.AddOrUpdate(updates);
+            
+            KeyValuePair<string, object>? EnsureGlobalConfigValue(
+                string key,
+                string defaultValue,
+                string prompt,
+                string valueFormat = "{0}"
+            )
+            {
+                if (cfg[key] != null)
+                {
+                    return null;
+                }
+
+                Console.Write($"{prompt} [{defaultValue}]: ");
+                var value = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    value = defaultValue;
+                }
+
+                return new KeyValuePair<string, object>(key, string.Format(valueFormat, value));
             }
         }
     }

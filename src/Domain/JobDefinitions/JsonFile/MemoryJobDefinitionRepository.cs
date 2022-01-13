@@ -21,6 +21,11 @@ namespace Scrap.JobDefinitions.JsonFile
 
         public static async Task<MemoryJobDefinitionRepository> FromJsonFileAsync(string jsonFilePath)
         {
+            if (!File.Exists(jsonFilePath))
+            {
+                await File.WriteAllTextAsync(jsonFilePath, "{}");
+            }
+
             await using var stream = File.OpenRead(jsonFilePath);
             var jobDefinitionDtos = await JsonSerializer.DeserializeAsync<IEnumerable<JobDefinitionDto>>(
                                         stream,

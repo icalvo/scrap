@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CLAP;
@@ -34,10 +35,27 @@ namespace Scrap.CommandLine
                 Debugger.Launch();
             }
 
+            var globalUserConfigFolder =
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
+            var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
+
+            Directory.CreateDirectory(globalUserConfigFolder);
+            if (!File.Exists(globalUserConfigPath))
+            {
+                Console.WriteLine("Global config file not found.");
+                File.WriteAllText(globalUserConfigPath, "{}");
+                Console.WriteLine("Created global config at: " + globalUserConfigPath);
+            }
+
             _configuration =
                 new ConfigurationBuilder()
-                    .AddJsonFile("scrap.json", optional: false)
+                    .AddJsonFile("scrap.json", optional: false, reloadOnChange: false)
+                    .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: true)
                     .Build();
+            if (!_configuration.GetSection("Scrap").Exists())
+            {
+                CreateGlobalConfiguration(globalUserConfigFolder, globalUserConfigPath);
+            }
 
             _loggerFactory = LoggerFactory.Create(builder =>
             {
@@ -54,6 +72,32 @@ namespace Scrap.CommandLine
             });
 
             _logger = new Logger<ScrapCommandLine>(_loggerFactory);
+        }
+
+        private static void CreateGlobalConfiguration(string globalUserConfigFolder, string globalUserConfigPath)
+        {
+            var defaultJobDefsPath = Path.Combine(globalUserConfigFolder, "jobDefinitions.json");
+            Console.Write($"Path for job definitions JSON [{defaultJobDefsPath}]: ");
+            var jobDefsPath = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(jobDefsPath))
+            {
+                jobDefsPath = defaultJobDefsPath;
+            }
+
+            var defaultDbPath = Path.Combine(globalUserConfigFolder, "scrap.db");
+            Console.Write($"Path for  database [{defaultDbPath}]: ");
+            var dbPath = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(dbPath))
+            {
+                dbPath = defaultDbPath;
+            }
+
+            var updater = new JsonUpdater(globalUserConfigPath);
+            updater.AddOrUpdate(new Dictionary<string, object>
+            {
+                { "Scrap:Database", $"Filename={dbPath};Connection=shared" },
+                { "Scrap:Definitions", jobDefsPath }
+            });
         }
 
         [Global(Aliases="dbg")]

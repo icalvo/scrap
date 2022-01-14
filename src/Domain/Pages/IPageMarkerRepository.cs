@@ -1,6 +1,3 @@
-using System;
-using System.Threading.Tasks;
-
 namespace Scrap.Pages;
 
 public interface IPageMarkerRepository

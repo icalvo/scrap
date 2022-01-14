@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>scrap</AssemblyName>
     <RootNamespace>Scrap.CommandLine</RootNamespace>
+    <ImplicitUsings>true</ImplicitUsings>
     <PackAsTool>true</PackAsTool>
     <IsPackable>true</IsPackable>
     <ToolCommandName>scrap</ToolCommandName>

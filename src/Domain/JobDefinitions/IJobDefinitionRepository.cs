@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace Scrap.JobDefinitions;
 
 public interface IJobDefinitionRepository

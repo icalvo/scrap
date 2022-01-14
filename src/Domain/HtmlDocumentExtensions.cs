@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Xml.XPath;
+﻿using System.Xml.XPath;
 using HtmlAgilityPack;
 
 namespace Scrap;

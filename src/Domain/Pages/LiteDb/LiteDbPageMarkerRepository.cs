@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using LiteDB;
 using Microsoft.Extensions.Logging;
 

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Figgle;
+﻿using Figgle;
 using Hangfire;
 using Hangfire.Logging;
 using Hangfire.SqlServer;

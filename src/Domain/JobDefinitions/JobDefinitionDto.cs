@@ -1,4 +1,3 @@
-using System;
 using Scrap.Resources;
 
 namespace Scrap.JobDefinitions;

@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace Scrap.Resources.FileSystem;

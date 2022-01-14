@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using Scrap.Pages;
 
 namespace Scrap.Resources.FileSystem;

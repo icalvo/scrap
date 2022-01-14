@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <RootNamespace>Scrap.JobServer</RootNamespace>
         <IsPackable>false</IsPackable>
+        <ImplicitUsings>true</ImplicitUsings>
     </PropertyGroup>
 
     <ItemGroup>

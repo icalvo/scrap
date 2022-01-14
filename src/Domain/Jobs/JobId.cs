@@ -1,5 +1,3 @@
-using System;
-
 namespace Scrap.Jobs;
 
 public class JobId

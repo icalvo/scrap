@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Extensions.Logging;
 using Scrap.JobDefinitions;
 using Scrap.Resources;

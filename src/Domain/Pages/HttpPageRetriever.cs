@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
 using Polly;

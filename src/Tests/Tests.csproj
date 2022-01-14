@@ -5,6 +5,7 @@
         <IsPackable>false</IsPackable>
         <AssemblyName>Scrap.Tests</AssemblyName>
         <RootNamespace>Scrap.Tests</RootNamespace>
+        <ImplicitUsings>true</ImplicitUsings>
     </PropertyGroup>
 
     <ItemGroup>

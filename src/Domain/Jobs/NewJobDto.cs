@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics.CodeAnalysis;
 using Scrap.JobDefinitions;
 using Scrap.Resources;

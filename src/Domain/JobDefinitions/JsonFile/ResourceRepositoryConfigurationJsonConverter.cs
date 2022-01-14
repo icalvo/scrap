@@ -16,8 +16,8 @@ namespace Scrap.JobDefinitions.JsonFile
         public override IResourceRepositoryConfiguration Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var cfg = JsonSerializer.Deserialize<JsonElement>(
-                       ref reader,
-                       new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                ref reader,
+                new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
             var json = cfg.GetRawText();
             return cfg.GetProperty("type").GetString() switch
             {

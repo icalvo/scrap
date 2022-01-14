@@ -39,7 +39,7 @@ namespace Scrap.JobDefinitions.JsonFile
                                                 new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
                                             }
                                         })
-                                        ?? Array.Empty<JobDefinitionDto>();
+                                    ?? Array.Empty<JobDefinitionDto>();
             return new MemoryJobDefinitionRepository(
                 jobDefinitionDtos.Select(x => new JobDefinition(x)));
         }

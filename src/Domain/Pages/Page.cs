@@ -45,32 +45,32 @@ namespace Scrap.Pages
             return Uri.AbsoluteUri.GetHashCode();
         }
         
-        public  IEnumerable<Uri> Links(XPath xPathExpression)
+        public  IEnumerable<Uri> Links(XPath xPath)
         {
             return
-                Contents(xPathExpression)
+                Contents(xPath)
                     .Where(url => !string.IsNullOrEmpty(url))
                     .Select(url => new Uri(_baseUri, url!));
         }
 
-        public Uri? Link(XPath xPathExpression)
+        public Uri? Link(XPath xPath)
         {
-            return Links(xPathExpression).FirstOrDefault();
+            return Links(xPath).FirstOrDefault();
         }
 
-        public string Concat(XPathExpression xPathExpression)
+        public string Concat(XPathExpression xPath)
         {
-            return string.Join("", Contents(xPathExpression));
+            return string.Join("", Contents(xPath));
         }
 
-        public string? ContentOrNull(XPath xPathExpression)
+        public string? ContentOrNull(XPath xPath)
         {
-            return Contents(xPathExpression).FirstOrDefault();
+            return Contents(xPath).FirstOrDefault();
         }
 
-        public IEnumerable<string?> Contents(XPath xpath)
+        public IEnumerable<string?> Contents(XPath xPath)
         {
-            var result = Document.Contents(xpath).ToArray();
+            var result = Document.Contents(xPath).ToArray();
 
             string?[] elementsToDisplay = result;
             string suffix = "";
@@ -83,26 +83,35 @@ namespace Scrap.Pages
             }
 
             string output = string.Join(",", elementsToDisplay.Select(x => x == null ? "" : x.Length <= maxCharsPerElement ? x : x[..(maxCharsPerElement - 3)] + "...")) + suffix;
-            _logger.LogDebug("Eval XPath {XPath} => [{Result}]", xpath, output);
+            _logger.LogDebug("Eval XPath {XPath} => [{Result}]", xPath, output);
             
             return result;
         }
         
-        public string Content(XPath xPathExpression)
+        public string Content(XPath xPath)
         {
-            var result = Contents(xPathExpression).FirstOrDefault();
+            var result = Contents(xPath).FirstOrDefault();
             if (string.IsNullOrEmpty(result))
             {
-                throw new ArgumentException($"XPath {xPathExpression} has no content.", nameof(xPathExpression));
+                throw new ArgumentException($"XPath {xPath} has no content.", nameof(xPath));
             }
 
             return result;
         }
 
-        public Task<Page?> LinkedDoc(string adjacencyXPath)
+        public async Task<Page?> LinkedDoc(string xPath)
         {
-            var link = Link(adjacencyXPath);
-            return Doc(link);
+            var link = Link(xPath);
+            try
+            {
+                return await Doc(link);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(
+                    $"An error happened when getting a linked doc from XPath {xPath}",
+                    ex);
+            }
         }
 
         private async Task<Page?> Doc(Uri? link)

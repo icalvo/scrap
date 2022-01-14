@@ -1,8 +1,7 @@
 using System;
 
-namespace Scrap.JobDefinitions
+namespace Scrap.JobDefinitions;
+
+public class DuplicateKeyException : Exception
 {
-    public class DuplicateKeyException : Exception
-    {
-    }
 }

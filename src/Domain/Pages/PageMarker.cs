@@ -1,12 +1,11 @@
-namespace Scrap.Pages
-{
-    public class PageMarker
-    {
-        public PageMarker(string uri)
-        {
-            Uri = uri;
-        }
+namespace Scrap.Pages;
 
-        public string Uri { get; }    
+public class PageMarker
+{
+    public PageMarker(string uri)
+    {
+        Uri = uri;
     }
+
+    public string Uri { get; }    
 }

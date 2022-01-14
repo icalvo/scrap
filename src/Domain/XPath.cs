@@ -1,41 +1,40 @@
 ﻿using System.Xml.XPath;
 
-namespace Scrap
+namespace Scrap;
+
+public class XPath
 {
-    public class XPath
+    private readonly XPathExpression _expression;
+    public bool IsHtml { get; }
+
+    public XPath(string xpath)
     {
-        private readonly XPathExpression _expression;
-        public bool IsHtml { get; }
-
-        public XPath(string xpath)
+        const string htmlPrefix = "html:";
+        if (xpath.StartsWith(htmlPrefix))
         {
-            const string htmlPrefix = "html:";
-            if (xpath.StartsWith(htmlPrefix))
-            {
-                IsHtml = true;
-                _expression = XPathExpression.Compile(xpath[htmlPrefix.Length..]);
-            }
-            else
-            {
-                _expression = XPathExpression.Compile(xpath);
-            }
+            IsHtml = true;
+            _expression = XPathExpression.Compile(xpath[htmlPrefix.Length..]);
         }
-
-        public XPath(XPathExpression xpath)
+        else
         {
-            _expression = xpath;
+            _expression = XPathExpression.Compile(xpath);
         }
-
-        public override string ToString()
-        {
-            return IsHtml ? "html:" + _expression.Expression : _expression.Expression;
-        }
-
-        public static implicit operator XPath(string x) => new(x);
-
-        public static implicit operator XPathExpression(XPath x) => x._expression;
-
-        public static implicit operator XPath(XPathExpression x) => new(x);
-
     }
+
+    public XPath(XPathExpression xpath)
+    {
+        _expression = xpath;
+    }
+
+    public override string ToString()
+    {
+        return IsHtml ? "html:" + _expression.Expression : _expression.Expression;
+    }
+
+    public static implicit operator XPath(string x) => new(x);
+
+    public static implicit operator XPathExpression(XPath x) => x._expression;
+
+    public static implicit operator XPath(XPathExpression x) => new(x);
+
 }

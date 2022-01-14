@@ -1,9 +1,8 @@
 using Microsoft.Extensions.Logging;
-namespace Scrap.Resources
+namespace Scrap.Resources;
+
+public interface IResourceRepositoryConfiguration
 {
-    public interface IResourceRepositoryConfiguration
-    {
-        void Validate(ILoggerFactory loggerFactory);
-        string Type { get; }
-    }
+    void Validate(ILoggerFactory loggerFactory);
+    string Type { get; }
 }

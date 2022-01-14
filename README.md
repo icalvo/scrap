@@ -130,3 +130,60 @@ A full example of `pathFragments`:
 }
 ```
 This spec has three fragments. All of them return a single string, therefore the path will have three elements (`folder1/folder2/file`). The first two navigate back to a gallery page to pick up different elements. The third one gets the last segment of the current page URL and then appends the resource file extension to it.
+
+### Request Retries (`httpRequestRetries`)
+HTTP requests will be retried a number of times. By default it is 5 times.
+
+```
+"httpRequestRetries": 4
+```
+
+### Request Delay (`httpRequestDelayBetweenRetries`) 
+In order to avoid IP bans and overloading servers, it is advisable to introduce a delay between HTTP requests. Here you can set a duration in the format **d.hh:mm:ss**.
+```
+"httpRequestDelayBetweenRetries": "0.00:30:00"
+```
+
+## Command line options
+To run a job definition:
+```text
+scrap /n jobDefName
+```
+
+To run a job definition based on URL:
+```shell
+scrap /r http://example.com/gallery/3430
+```
+
+To run all job definitions that have defined a root URL:
+```shell
+scrap /all
+```
+
+Reference of the tool, taken from the help (`scrap /h`):
+```
+   scrap|s (Default): Executes a job definition from the database
+        /all            : Starts all the job definitions with a root URL set
+        /async          : Launch the job asynchronously
+        /downloadalways : Download resources even if they are already downloaded
+        /fullscan       : Navigate through already visited pages
+        /name           : Job definition name (String)
+        /rooturl        : URL where the scrapping starts (String)
+        /whatif         : Do everything except actually downloading resources
+
+   resources|r: Navigates the site and lists the resources that will be downloaded
+        /f /fullscan : Navigate through already visited pages
+        /n /name     : Job definition name (String)
+        /r /rooturl  : URL where the scrapping starts (String)
+        /w /whatif   : Do everything except actually downloading resources
+
+   list|l: Lists jobs being executed asynchronously
+
+   cancel|c: Cancels a job
+        /j /jobid : Navigate through already visited pages (String)
+
+   Global Parameters:
+        /dbg|debug : Runs a debugger session at the beginning
+        /help|h|?  : Help
+        /v|verbose : Verbose output
+```

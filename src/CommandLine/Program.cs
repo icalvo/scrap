@@ -17,7 +17,7 @@ Console.ForegroundColor = currentColor;
 var parser = new Parser<ScrapCommandLine>();
 parser.Register.HelpHandler("help,h,?", s =>
 {
-    Console.WriteLine("SCRAP is a tool for generic web scrapping. To set it up, head to the project docs: https://ignaciocalvo.com/scrap");
+    Console.WriteLine("SCRAP is a tool for generic web scrapping. To set it up, head to the project docs: https://github.com/icalvo/scrap");
     Console.WriteLine(s);
 });
 parser.Register.ErrorHandler((Action<ExceptionContext>) (c =>

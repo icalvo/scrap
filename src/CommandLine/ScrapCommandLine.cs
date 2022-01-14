@@ -64,13 +64,13 @@ namespace Scrap.CommandLine
             _logger = new Logger<ScrapCommandLine>(_loggerFactory);
         }
 
-        [Global(Aliases="dbg")]
+        [Global(Aliases="dbg", Description = "Runs a debugger session at the beginning")]
         public void Debug()
         {
             _debug = true;
         }
 
-        [Global(Aliases="v")]
+        [Global(Aliases="v", Description = "Verbose output")]
         public void Verbose()
         {
             _verbose = true;
@@ -79,13 +79,13 @@ namespace Scrap.CommandLine
         [Verb(IsDefault = true, Description = "Executes a job definition from the database")]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public async Task Scrap(
-            string? name = null,
-            string? rootUrl = null,
-            bool all = false,
-            bool whatIf = false,
-            bool fullScan = false,
-            bool async = false,
-            bool downloadAlways = false)
+            [Description("Job definition name")]string? name = null,
+            [Description("URL where the scrapping starts")]string? rootUrl = null,
+            [Description("Starts all the job definitions with a root URL set")]bool all = false,
+            [Description("Do everything except actually downloading resources")]bool whatIf = false,
+            [Description("Navigate through already visited pages")]bool fullScan = false,
+            [Description("Launch the job asynchronously")]bool async = false,
+            [Description("Download resources even if they are already downloaded")]bool downloadAlways = false)
         {
             if (!all && name == null && rootUrl == null)
             {
@@ -138,30 +138,13 @@ namespace Scrap.CommandLine
             }
         }
 
-        private async Task ExecuteJob(NewJobDto newJob, bool async, ServicesResolver serviceResolver)
-        {
-            var scrapAppService = serviceResolver.BuildScrapperApplicationService();
-            if (async)
-            {
-                IBackgroundJobClient? client = serviceResolver.BuildHangfireBackgroundJobClient();
-
-                var jobId = client.Create(() => scrapAppService.RunAsync(newJob), new EnqueuedState());
-                _logger.LogInformation("Hangfire job created with Id: {JobId}", jobId);
-            }
-            else
-            {
-                await scrapAppService.RunAsync(newJob);
-            }
-        }
-
-
-        [Verb(Description = "Executes a job definition from the database")]
+        [Verb(Description = "Navigates the site and lists the resources that will be downloaded")]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public async Task Resources(
-            string? name = null,
-            string? rootUrl = null,
-            bool whatIf = false,
-            bool fullScan = false)
+            [Description("Job definition name")]string? name = null,
+            [Description("URL where the scrapping starts")]string? rootUrl = null,
+            [Description("Do everything except actually downloading resources")]bool whatIf = false,
+            [Description("Navigate through already visited pages")]bool fullScan = false)
         {
             var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
             var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
@@ -184,8 +167,8 @@ namespace Scrap.CommandLine
             var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null, false);
             await scrapAppService.ListResourcesAsync(newJob);
         }
-        
-        [Verb(Description = "Lists jobs")]
+
+        [Verb(Description = "Lists jobs being executed asynchronously")]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
         public Task List()
         {
@@ -254,7 +237,8 @@ namespace Scrap.CommandLine
 
         [Verb(Description = "Cancels a job")]
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public Task Cancel(string jobId)
+        public Task Cancel(
+            [Description("Navigate through already visited pages")]string jobId)
         {
             var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
             var client = serviceResolver.BuildHangfireBackgroundJobClient();
@@ -262,6 +246,22 @@ namespace Scrap.CommandLine
             _logger.LogInformation("Hangfire job deleted with Id: {JobId}", jobId);
 
             return Task.CompletedTask;
+        }
+
+        private async Task ExecuteJob(NewJobDto newJob, bool async, ServicesResolver serviceResolver)
+        {
+            var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+            if (async)
+            {
+                IBackgroundJobClient? client = serviceResolver.BuildHangfireBackgroundJobClient();
+
+                var jobId = client.Create(() => scrapAppService.RunAsync(newJob), new EnqueuedState());
+                _logger.LogInformation("Hangfire job created with Id: {JobId}", jobId);
+            }
+            else
+            {
+                await scrapAppService.RunAsync(newJob);
+            }
         }
 
         [PostVerbExecution]

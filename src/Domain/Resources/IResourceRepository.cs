@@ -62,7 +62,7 @@ namespace Scrap.Resources
 
         public virtual async Task<string> GetKeyAsync(ResourceInfo resourceInfo)
         {
-            return (await GetIdAsync(resourceInfo)).ToString();
+            return (await GetIdAsync(resourceInfo)).ToText();
         }
 
         public abstract Task<TResourceId> GetIdAsync(ResourceInfo resourceInfo);

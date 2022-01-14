@@ -9,7 +9,7 @@ namespace Scrap
     {
         private readonly TimeSpan _delay;
 
-        public AsyncDelayPolicy(TimeSpan delay)
+        private AsyncDelayPolicy(TimeSpan delay)
         {
             _delay = delay;
         }

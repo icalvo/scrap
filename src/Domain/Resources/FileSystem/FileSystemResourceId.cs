@@ -10,10 +10,8 @@ namespace Scrap.Resources.FileSystem
 
         public string FullPath { get; }
         public string RelativePath { get; }
-
-        public override string ToString()
-        {
-            return RelativePath;
-        }
+        
+        public string ToText() => RelativePath;
+        public override string ToString() => ToText();
     }
 }

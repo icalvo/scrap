@@ -126,7 +126,7 @@ namespace Scrap.DependencyInjection
             return Policy.WrapAsync(
                 cachePolicy,
                 retryPolicy,
-                new AsyncDelayPolicy(httpDelay ?? DefaultHttpRequestDelayBetweenRetries));
+                AsyncDelayPolicy.Create(httpDelay ?? DefaultHttpRequestDelayBetweenRetries));
 
         }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -114,7 +115,7 @@ namespace Scrap.DependencyInjection
                 (_, _, _) => {  },
                 (_, _, _) => {  });
             var retryPolicy = Policy
-                .Handle<Exception>()
+                .Handle<Exception>(ex => ex is not HttpRequestException { StatusCode: >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError })
                 .WaitAndRetryAsync(
                     httpRequestRetries ?? DefaultHttpRequestRetries,
                     _ => TimeSpan.Zero,

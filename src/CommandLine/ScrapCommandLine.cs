@@ -2,9 +2,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using CLAP;
 using CLAP.Interception;
-using Hangfire;
-using Hangfire.SqlServer;
-using Hangfire.States;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scrap.JobDefinitions;
@@ -80,7 +77,6 @@ public class ScrapCommandLine
         [Description("Starts all the job definitions with a root URL set")]bool all = false,
         [Description("Do everything except actually downloading resources")]bool whatIf = false,
         [Description("Navigate through already visited pages")]bool fullScan = false,
-        [Description("Launch the job asynchronously")]bool async = false,
         [Description("Download resources even if they are already downloaded")]bool downloadAlways = false)
     {
         if (!all && name == null && rootUrl == null)
@@ -130,7 +126,8 @@ public class ScrapCommandLine
         foreach (var jobDef in jobDefs)
         {
             var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null, downloadAlways);
-            await ExecuteJob(newJob, async, serviceResolver);
+            var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+            await scrapAppService.RunAsync(newJob);
         }
     }
 
@@ -162,117 +159,6 @@ public class ScrapCommandLine
 
         var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null, false);
         await scrapAppService.ListResourcesAsync(newJob);
-    }
-
-    [Verb(Description = "Lists jobs being executed asynchronously")]
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public Task List()
-    {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
-        var jobStorage = serviceResolver.BuildHangfireJobStorage();
-        var monitoringApi = jobStorage.GetMonitoringApi();
-
-        monitoringApi.ScheduledJobs(0, 100).ForEach(
-            job =>
-            {
-                var (key, value) = job;
-                Console.WriteLine($"JOB {key}:");
-                Console.WriteLine($"  Status: Scheduled");
-                Console.WriteLine($"  Enqueued: {value.EnqueueAt}");
-                Console.WriteLine($"  Scheduled: {value.ScheduledAt}");
-            },
-            () => Console.WriteLine("No scheduled jobs"));
-
-        var jobsInQueue =
-            from queue in monitoringApi.Queues()
-            from job in queue.FirstJobs
-            where job.Value.State != "Deleted"
-            select (queue.Name, job.Key, job.Value);
-
-        jobsInQueue.ForEach(x =>
-            {
-                var (queue, jobId, job) = x;
-                Console.WriteLine($"JOB {jobId}:");
-                Console.WriteLine($"  Status: Enqueued");
-                Console.WriteLine($"  Queue: {queue}");
-                Console.WriteLine($"  Enqueued: {job.EnqueuedAt}");
-                Console.WriteLine($"  State: {job.State}");
-                var details = monitoringApi.JobDetails(jobId);
-                foreach (var (propKey, propValue) in details.Properties)
-                {
-                    Console.WriteLine($"  {propKey}: {propValue}");
-                }
-            },
-            () => Console.WriteLine("No enqueued jobs"));
-
-        monitoringApi.SucceededJobs(0, 100).ForEach(x =>
-            {
-                var (jobId, job) = x;
-                TimeSpan? duration = job.TotalDuration == null
-                    ? null
-                    : TimeSpan.FromMilliseconds(job.TotalDuration.Value);
-                Console.WriteLine($"JOB {jobId}:");
-                Console.WriteLine($"  Status: Succeeded");
-                Console.WriteLine($"  Succeeded: {job.SucceededAt}");
-                Console.WriteLine($"  Result: {job.Result}");
-                Console.WriteLine($"  Duration: {duration}");
-                var details = monitoringApi.JobDetails(jobId);
-                Console.WriteLine($"  History:");
-                foreach (var historyDto in details.History)
-                {
-                    Console.WriteLine($"    Changed: {historyDto.CreatedAt}");
-                    Console.WriteLine($"    State: {historyDto.StateName}");
-                    Console.WriteLine($"    Reason: {historyDto.Reason}");
-                        
-                }
-            },
-            () => Console.WriteLine("No succeeded jobs"));
-
-        return Task.CompletedTask;
-    }
-
-    [Verb(Description = "Cancels a job")]
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public Task Cancel(
-        [Description("Navigate through already visited pages")]string jobId)
-    {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
-        var client = serviceResolver.BuildHangfireBackgroundJobClient();
-        client.Delete(jobId);
-        _logger.LogInformation("Hangfire job deleted with Id: {JobId}", jobId);
-
-        return Task.CompletedTask;
-    }
-
-    [Verb(Description = "Starts a job server")]
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public void Server()
-    {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
-        var options = new BackgroundJobServerOptions
-        {
-            Activator = new CustomJobActivator(serviceResolver),
-            WorkerCount = 1
-        };
-        var storage = new SqlServerStorage(_configuration["Hangfire:Database"]);
-        using var server = new BackgroundJobServer(options, storage);
-        Console.ReadKey();
-    }    
-
-    private async Task ExecuteJob(NewJobDto newJob, bool async, ServicesResolver serviceResolver)
-    {
-        var scrapAppService = serviceResolver.BuildScrapperApplicationService();
-        if (async)
-        {
-            IBackgroundJobClient? client = serviceResolver.BuildHangfireBackgroundJobClient();
-
-            var jobId = client.Create(() => scrapAppService.RunAsync(newJob), new EnqueuedState());
-            _logger.LogInformation("Hangfire job created with Id: {JobId}", jobId);
-        }
-        else
-        {
-            await scrapAppService.RunAsync(newJob);
-        }
     }
 
     [PostVerbExecution]

@@ -1,6 +1,4 @@
 ﻿using System.Net;
-using Hangfire;
-using Hangfire.SqlServer;
 using LiteDB;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -81,20 +79,6 @@ public class ServicesResolver : IJobServicesResolver
         var pageMarkerRepository = BuildPageMarkerRepository(job.FullScan, job.WhatIf);
 
         return (downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository);
-    }
-
-    public JobStorage BuildHangfireJobStorage()
-    {
-        var jobStorage = new SqlServerStorage(_config["Hangfire:Database"]);
-        _logger.LogInformation("Hangfire DB: {ConnectionString}", _config["Hangfire:Database"]);
-        return jobStorage;
-    }
-
-    public IBackgroundJobClient BuildHangfireBackgroundJobClient()
-    {
-        var jobStorage = new SqlServerStorage(_config["Hangfire:Database"]);
-        _logger.LogInformation("Hangfire DB: {ConnectionString}", _config["Hangfire:Database"]);
-        return new BackgroundJobClient(jobStorage);
     }
 
     private IAsyncPolicy BuildHttpPolicy(
@@ -182,7 +166,7 @@ public class ServicesResolver : IJobServicesResolver
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            return _policy.ExecuteAsync(_ => base.SendAsync(request, cancellationToken), new Context(request.RequestUri.AbsoluteUri));
+            return _policy.ExecuteAsync(_ => base.SendAsync(request, cancellationToken), new Context(request.RequestUri?.AbsoluteUri));
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using CLAP;
 using CLAP.Interception;
 using Hangfire;
+using Hangfire.SqlServer;
 using Hangfire.States;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -242,6 +243,21 @@ public class ScrapCommandLine
 
         return Task.CompletedTask;
     }
+
+    [Verb(Description = "Starts a job server")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public void Server()
+    {
+        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var options = new BackgroundJobServerOptions
+        {
+            Activator = new CustomJobActivator(serviceResolver),
+            WorkerCount = 1
+        };
+        var storage = new SqlServerStorage(_configuration["Hangfire:Database"]);
+        using var server = new BackgroundJobServer(options, storage);
+        Console.ReadKey();
+    }    
 
     private async Task ExecuteJob(NewJobDto newJob, bool async, ServicesResolver serviceResolver)
     {

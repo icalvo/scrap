@@ -11,8 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyInjection", "DependencyInjection\DependencyInjection.csproj", "{FBB009F0-D550-40FD-B5A1-BFE0171D4398}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobServer", "JobServer\JobServer.csproj", "{253A7982-5502-4103-B88D-060C3457EFED}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -74,17 +72,5 @@ Global
 		{FBB009F0-D550-40FD-B5A1-BFE0171D4398}.Release|x64.Build.0 = Release|Any CPU
 		{FBB009F0-D550-40FD-B5A1-BFE0171D4398}.Release|x86.ActiveCfg = Release|Any CPU
 		{FBB009F0-D550-40FD-B5A1-BFE0171D4398}.Release|x86.Build.0 = Release|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Debug|x64.Build.0 = Debug|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Debug|x86.Build.0 = Debug|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Release|Any CPU.Build.0 = Release|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Release|x64.ActiveCfg = Release|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Release|x64.Build.0 = Release|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Release|x86.ActiveCfg = Release|Any CPU
-		{253A7982-5502-4103-B88D-060C3457EFED}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

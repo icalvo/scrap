@@ -1,30 +1,26 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Polly;
 
-namespace Scrap
+namespace Scrap;
+
+public class AsyncDelayPolicy : AsyncPolicy
 {
-    public class AsyncDelayPolicy : AsyncPolicy
+    private readonly TimeSpan _delay;
+
+    private AsyncDelayPolicy(TimeSpan delay)
     {
-        private readonly TimeSpan _delay;
+        _delay = delay;
+    }
 
-        private AsyncDelayPolicy(TimeSpan delay)
-        {
-            _delay = delay;
-        }
+    public static AsyncDelayPolicy Create(TimeSpan delay)
+    {
+        return new AsyncDelayPolicy(delay);
+    }
 
-        public static AsyncDelayPolicy Create(TimeSpan delay)
-        {
-            return new AsyncDelayPolicy(delay);
-        }
-
-        protected override async Task<TResult> ImplementationAsync<TResult>(
-            Func<Context, CancellationToken, Task<TResult>> action, Context context, CancellationToken cancellationToken,
-            bool continueOnCapturedContext)
-        {
-            await Task.Delay(_delay, cancellationToken);
-            return await action(context, cancellationToken).ConfigureAwait(continueOnCapturedContext);
-        }
+    protected override async Task<TResult> ImplementationAsync<TResult>(
+        Func<Context, CancellationToken, Task<TResult>> action, Context context, CancellationToken cancellationToken,
+        bool continueOnCapturedContext)
+    {
+        await Task.Delay(_delay, cancellationToken);
+        return await action(context, cancellationToken).ConfigureAwait(continueOnCapturedContext);
     }
 }

@@ -164,7 +164,6 @@ Reference of the tool, taken from the help (`scrap /h`):
 ```
    scrap|s (Default): Executes a job definition from the database
         /all            : Starts all the job definitions with a root URL set
-        /async          : Launch the job asynchronously
         /downloadalways : Download resources even if they are already downloaded
         /fullscan       : Navigate through already visited pages
         /name           : Job definition name (String)
@@ -176,12 +175,7 @@ Reference of the tool, taken from the help (`scrap /h`):
         /n /name     : Job definition name (String)
         /r /rooturl  : URL where the scrapping starts (String)
         /w /whatif   : Do everything except actually downloading resources
-
-   list|l: Lists jobs being executed asynchronously
-
-   cancel|c: Cancels a job
-        /j /jobid : Navigate through already visited pages (String)
-
+   
    Global Parameters:
         /dbg|debug : Runs a debugger session at the beginning
         /help|h|?  : Help

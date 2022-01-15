@@ -1,27 +1,24 @@
-using System;
+namespace Scrap.Jobs;
 
-namespace Scrap.Jobs
+public class JobId
 {
-    public class JobId
+    private readonly Guid _guid;
+
+    public JobId()
     {
-        private readonly Guid _guid;
+        _guid = Guid.NewGuid();
+    }
 
-        public JobId()
-        {
-            _guid = Guid.NewGuid();
-        }
+    public JobId(Guid guid)
+    {
+        _guid = guid;
+    }
 
-        public JobId(Guid guid)
-        {
-            _guid = guid;
-        }
-
-        public static implicit operator Guid(JobId d) => d._guid;
-        public static implicit operator JobId(Guid b) => new(b);
+    public static implicit operator Guid(JobId d) => d._guid;
+    public static implicit operator JobId(Guid b) => new(b);
         
-        public override string ToString()
-        {
-            return _guid.ToString();
-        }
+    public override string ToString()
+    {
+        return _guid.ToString();
     }
 }

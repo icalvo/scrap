@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <RootNamespace>Scrap.DependencyInjection</RootNamespace>
-        <LangVersion>default</LangVersion>
-        <IsPackable>false</IsPackable>
+      <TargetFramework>net6.0</TargetFramework>
+      <RootNamespace>Scrap.DependencyInjection</RootNamespace>
+      <LangVersion>default</LangVersion>
+      <IsPackable>false</IsPackable>
+      <ImplicitUsings>true</ImplicitUsings>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Hangfire.SqlServer" Version="1.7.28" />
       <PackageReference Include="LiteDB" Version="5.0.11" />
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" />
       <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />

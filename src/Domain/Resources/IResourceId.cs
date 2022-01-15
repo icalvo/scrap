@@ -1,7 +1,6 @@
-namespace Scrap.Resources
+namespace Scrap.Resources;
+
+public interface IResourceId
 {
-    public interface IResourceId
-    {
-        string ToText();
-    }
+    string ToText();
 }

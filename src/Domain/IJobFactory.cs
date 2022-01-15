@@ -1,9 +1,8 @@
 ﻿using Scrap.Jobs;
 
-namespace Scrap
+namespace Scrap;
+
+public interface IJobFactory
 {
-    public interface IJobFactory
-    {
-        Job Create(NewJobDto newJobDto);
-    }
+    Job Create(NewJobDto newJobDto);
 }

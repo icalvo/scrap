@@ -36,6 +36,15 @@
     <None Update="scrap.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Remove="nupkg\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="nupkg\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="nupkg\**" />
   </ItemGroup>
 
 </Project>

@@ -15,6 +15,8 @@
     <PackageProjectUrl>https://github.com/icalvo/scrap</PackageProjectUrl>
     <RepositoryUrl>https://github.com/icalvo/scrap.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <Authors>Ignacio Calvo</Authors>
+    <PackageLicenseUrl>https://github.com/icalvo/scrap/blob/main/LICENSE</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>

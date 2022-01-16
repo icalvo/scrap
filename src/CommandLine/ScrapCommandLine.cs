@@ -457,7 +457,7 @@ public class ScrapCommandLine
         
         _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
         
-        return new NewJobDto(jobDef, rootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);        
+        return new NewJobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);        
     }
 
     private async Task<JobDefinitionDto?> GetJobDefinition(

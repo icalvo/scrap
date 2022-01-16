@@ -14,10 +14,11 @@ public class NewJobDto
     public NewJobDto(
         JobDefinitionDto jobDefinition,
         string? rootUrl,
-        bool? whatIf,
         bool? fullScan,
         IResourceRepositoryConfiguration? configuration,
-        bool? downloadAlways)
+        bool? downloadAlways, 
+        bool? disableMarkingVisited,
+        bool? disableResourceWrites)
         : this(
             jobDefinition.AdjacencyXPath,
             jobDefinition.ResourceXPath,
@@ -25,10 +26,9 @@ public class NewJobDto
             rootUrl ?? jobDefinition.RootUrl ?? throw new ArgumentException("No root URL provided"),
             jobDefinition.HttpRequestRetries,
             jobDefinition.HttpRequestDelayBetweenRetries,
-            whatIf,
             fullScan,
             downloadAlways,
-            jobDefinition.ResourceType ?? default(ResourceType))
+            jobDefinition.ResourceType ?? default(ResourceType), disableMarkingVisited, disableResourceWrites)
     {}
 
     public NewJobDto(
@@ -38,19 +38,19 @@ public class NewJobDto
         string rootUrl,
         int? httpRequestRetries,
         TimeSpan? httpRequestDelayBetweenRetries,
-        bool? whatIf,
         bool? fullScan,
         bool? downloadAlways,
-        ResourceType resourceType)
+        ResourceType resourceType, bool? disableMarkingVisited, bool? disableResourceWrites)
     {
         AdjacencyXPath = adjacencyXPath;
         ResourceType = resourceType;
+        DisableMarkingVisited = disableMarkingVisited;
+        DisableResourceWrites = disableResourceWrites;
         ResourceXPath = resourceXPath;
         ResourceRepository = resourceRepository;
         RootUrl = rootUrl;
         HttpRequestRetries = httpRequestRetries;
         HttpRequestDelayBetweenRetries = httpRequestDelayBetweenRetries;
-        WhatIf = whatIf;
         FullScan = fullScan;
         DownloadAlways = downloadAlways;
     }
@@ -61,8 +61,9 @@ public class NewJobDto
     public string RootUrl { get; } = null!;
     public int? HttpRequestRetries { get; }
     public TimeSpan? HttpRequestDelayBetweenRetries { get; }
-    public bool? WhatIf { get; }
     public bool? FullScan { get; }
     public bool? DownloadAlways { get; }
     public ResourceType ResourceType { get; }
+    public bool? DisableMarkingVisited { get; }
+    public bool? DisableResourceWrites { get; }
 }

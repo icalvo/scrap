@@ -75,8 +75,8 @@ public class ServicesResolver : IJobServicesResolver
             httpPolicy,
             new Logger<HttpPageRetriever>(_loggerFactory),
             _loggerFactory);
-        var resourceRepository = BuildResourceRepository(job.ResourceRepoArgs, job.WhatIf);
-        var pageMarkerRepository = BuildPageMarkerRepository(job.FullScan, job.WhatIf);
+        var resourceRepository = BuildResourceRepository(job.ResourceRepoArgs, job.DisableResourceWrites);
+        var pageMarkerRepository = BuildPageMarkerRepository(job.FullScan, job.DisableMarkingVisited);
 
         return (downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository);
     }
@@ -141,7 +141,7 @@ public class ServicesResolver : IJobServicesResolver
         }
     }
 
-    private IDownloadStreamProvider BuildDownloadStreamProvider(string protocol, IAsyncPolicy policy)
+    private static IDownloadStreamProvider BuildDownloadStreamProvider(string protocol, IAsyncPolicy policy)
     {
         switch (protocol)
         {

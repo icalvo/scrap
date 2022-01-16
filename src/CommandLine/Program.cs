@@ -1,15 +1,8 @@
 ﻿using System.Diagnostics;
 using CLAP;
-using Figgle;
 using Scrap.CommandLine;
 
-TaskScheduler.UnobservedTaskException += (_, eventArgs) => Console.WriteLine(eventArgs.Exception);
-
-var currentColor = Console.ForegroundColor;
-Console.ForegroundColor = ConsoleColor.Cyan;
-Console.WriteLine(FiggleFonts.Standard.Render("SCRAP"));
-Console.WriteLine("Command line tool for generic web scrapping");
-Console.ForegroundColor = currentColor;
+TaskScheduler.UnobservedTaskException += (_, eventArgs) => Console.Error.WriteLine("Unobserved: " + eventArgs.Exception);
 
 var parser = new Parser<ScrapCommandLine>();
 parser.Register.HelpHandler("help,h,?", s =>
@@ -19,7 +12,7 @@ parser.Register.HelpHandler("help,h,?", s =>
 });
 parser.Register.ErrorHandler((Action<ExceptionContext>) (c =>
 {
-    Console.Error.WriteLine("Parsing error: {0}", c.Exception.Message);
+    Console.Error.WriteLine("Parsing error: {0}", c.Exception.Demystify());
     Console.Error.WriteLine("Arguments:");
     foreach (var (arg, idx) in args.Select((arg, idx) => (arg, idx)))
     {
@@ -33,6 +26,6 @@ try
 }
 catch (Exception ex)
 {
-    Console.WriteLine(ex.Demystify().ToString());
+    Console.Error.WriteLine("Uncatched: " + ex.Demystify());
     throw;
 }

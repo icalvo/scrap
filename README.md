@@ -1,4 +1,4 @@
-[![Build status](https://github.com/icalvo/scrap/actions/workflows/ci-build.yml/badge.svg)](https://github.com/icalvo/scrap/actions/workflows/ci-build.yml)
+[![Build status](https://github.com/icalvo/scrap/actions/workflows/pull-request.yml/badge.svg)](https://github.com/icalvo/scrap/actions/workflows/pull-request.yml)
 ![Nuget](https://img.shields.io/nuget/v/scrap)
 ![Nuget (prerelease)](https://img.shields.io/nuget/vpre/scrap)
 

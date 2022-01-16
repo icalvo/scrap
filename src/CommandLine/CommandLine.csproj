@@ -17,6 +17,7 @@
     <RepositoryType>git</RepositoryType>
     <Authors>Ignacio Calvo</Authors>
     <PackageLicenseUrl>https://github.com/icalvo/scrap/blob/main/LICENSE</PackageLicenseUrl>
+    <InformationalVersion>0.0.0-dev</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

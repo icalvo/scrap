@@ -1,6 +1,6 @@
 [![Build status](https://github.com/icalvo/scrap/actions/workflows/pull-request.yml/badge.svg)](https://github.com/icalvo/scrap/actions/workflows/pull-request.yml)
 ![Nuget](https://img.shields.io/nuget/v/scrap)
-![Nuget (prerelease)](https://img.shields.io/nuget/vpre/scrap)
+![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/scrap?label=nuget%20pre)
 
 # 🐾 scrap
 **scrap** is a general purpose web scraper.

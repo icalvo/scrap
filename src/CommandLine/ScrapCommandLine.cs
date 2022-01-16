@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using CLAP;
 using CLAP.Interception;
+using Figgle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scrap.JobDefinitions;
@@ -31,8 +32,10 @@ public class ScrapCommandLine
         var globalUserConfigFolder =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
-
-        EnsureGlobalConfiguration(globalUserConfigFolder, globalUserConfigPath);
+        if (!context.Method.Names.Contains("configure"))
+        {
+            EnsureGlobalConfiguration(globalUserConfigFolder, globalUserConfigPath);
+        }
 
         _configuration =
             new ConfigurationBuilder()
@@ -40,21 +43,7 @@ public class ScrapCommandLine
                 .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
                 .Build();
             
-        _loggerFactory = LoggerFactory.Create(builder =>
-        {
-            if (_verbose)
-            {
-                builder.SetMinimumLevel(LogLevel.Trace);
-            }
-            else
-            {
-                builder.AddConfiguration(_configuration.GetSection("Logging"));
-            }
-
-            builder.AddSimpleConsole(options => options.SingleLine = true);
-        });
-
-        _logger = new Logger<ScrapCommandLine>(_loggerFactory);
+        SetupLogging(_verbose ? LogLevel.Trace : null);
     }
 
     [Global(Aliases="dbg", Description = "Runs a debugger session at the beginning")]
@@ -72,17 +61,21 @@ public class ScrapCommandLine
     [Verb(IsDefault = true, Description = "Executes a job definition from the database")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Scrap(
-        [Description("Job definition name")]string? name = null,
-        [Description("URL where the scrapping starts")]string? rootUrl = null,
-        [Description("Starts all the job definitions with a root URL set")]bool all = false,
-        [Description("Do everything except actually downloading resources")]bool whatIf = false,
-        [Description("Navigate through already visited pages")]bool fullScan = false,
-        [Description("Download resources even if they are already downloaded")]bool downloadAlways = false)
+        [Description("Job definition name"),Aliases("n")]string? name = null,
+        [Description("URL where the scrapping starts"),Aliases("r")]string? rootUrl = null,
+        [Description("Starts all the job definitions with a root URL set"),Aliases("a")]bool all = false,
+        [Description("Navigate through already visited pages"),Aliases("f")]bool fullScan = false,
+        [Description("Download resources even if they are already downloaded"),Aliases("d")]bool downloadAlways = false,
+        [Description("Disable mark as visited"),Aliases("dmv")]bool disableMarkingVisited = false,
+        [Description("Disable writing the resource"),Aliases("dwr")]bool disableResourceWrites = false
+        )
     {
         if (!all && name == null && rootUrl == null)
         {
             throw new ArgumentException($"At least one of these options must be present: '{nameof(all)}', '{nameof(name)}', '{nameof(rootUrl)}'");
         }
+
+        PrintHeader();
 
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
         var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
@@ -125,23 +118,33 @@ public class ScrapCommandLine
         _logger.LogInformation("The following job def(s). will be run: {JobDefs}", string.Join(", ", jobDefs.Select(x => x.Name)));
         foreach (var jobDef in jobDefs)
         {
-            var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null, downloadAlways);
+            var newJob = new NewJobDto(jobDef, rootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
             var scrapAppService = serviceResolver.BuildScrapperApplicationService();
-            await scrapAppService.RunAsync(newJob);
+            await scrapAppService.ScrapAsync(newJob);
         }
     }
 
-    [Verb(Description = "Navigates the site and lists the resources that will be downloaded")]
+    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public async Task Resources(
+    public async Task Traverse(
         [Description("Job definition name")]string? name = null,
         [Description("URL where the scrapping starts")]string? rootUrl = null,
-        [Description("Do everything except actually downloading resources")]bool whatIf = false,
         [Description("Navigate through already visited pages")]bool fullScan = false)
     {
+        if (!_verbose)
+        {
+            SetupLogging(LogLevel.Error);
+        }
+        
+        name ??= Environment.GetEnvironmentVariable("JOBDEF_NAME");
+        rootUrl ??= Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
+        if (name == null && rootUrl == null)
+        {
+            throw new ArgumentException($"At least one of these options must be present: '{nameof(name)}', '{nameof(rootUrl)}'");
+        }
+
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
         var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
-        var scrapAppService = serviceResolver.BuildScrapperApplicationService();
         JobDefinitionDto? jobDef = null;
         if (name != null)
         {
@@ -154,11 +157,208 @@ public class ScrapCommandLine
 
         if (jobDef == null)
         {
+            _logger.LogWarning("No job definition found, nothing will be done");
             return;
         }
 
-        var newJob = new NewJobDto(jobDef, rootUrl, whatIf, fullScan, null, false);
-        await scrapAppService.ListResourcesAsync(newJob);
+        _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
+        var newJob = new NewJobDto(jobDef, rootUrl, fullScan, null, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
+        var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+        await scrapAppService.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
+    }
+
+    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public async Task Resources(
+        [Description("Job definition name")]string? name = null,
+        [Description("URL where the scrapping starts")]string? rootUrl = null,
+        [Description("Pipeline")]string[]? pipeline = null,
+        [Description("Output only the resource link instead of the format expected by 'scrap download'")]bool onlyResourceLink = false)
+    {
+        if (!_verbose)
+        {
+            SetupLogging(LogLevel.Error);
+        }
+
+        name ??= Environment.GetEnvironmentVariable("JOBDEF_NAME");
+        rootUrl ??= Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
+        if (name == null && rootUrl == null)
+        {
+            throw new ArgumentException($"At least one of these options must be present: '{nameof(name)}', '{nameof(rootUrl)}'");
+        }
+
+        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
+        JobDefinitionDto? jobDef = null;
+        if (name != null)
+        {
+            jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
+        }
+        else if (rootUrl != null)
+        {
+            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
+        }
+
+        if (jobDef == null)
+        {
+            _logger.LogWarning("No job definition found, nothing will be done");
+            return;
+        }
+
+        _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
+        
+        var newJob = new NewJobDto(jobDef, rootUrl, false, null, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
+        var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+        var pageIndex = 0;
+        IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
+        foreach (var line in inputLines)
+        {
+            var pageUrl = new Uri(line);
+            await scrapAppService.GetResourcesAsync(newJob, pageUrl, pageIndex).ForEachAsync((resourceUrl, resourceIndex) =>
+            {
+                var format = onlyResourceLink ? "{3}" : "{0} {1} {2} {3}";
+                Console.WriteLine(format, pageIndex, pageUrl, resourceIndex, resourceUrl);
+            });
+            pageIndex++;
+        }
+    }
+
+    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public async Task Download(
+        [Description("Job definition name")]string? name = null,
+        [Description("URL where the scrapping starts")]string? rootUrl = null,
+        [Description("Download resources even if they are already downloaded")]bool downloadAlways = false,
+        [Description("Pipeline")]string[]? pipeline = null)
+    {
+        if (!_verbose)
+        {
+            SetupLogging(LogLevel.Error);
+        }
+
+        name ??= Environment.GetEnvironmentVariable("JOBDEF_NAME");
+        rootUrl ??= Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
+        if (name == null && rootUrl == null)
+        {
+            throw new ArgumentException($"At least one of these options must be present: '{nameof(name)}', '{nameof(rootUrl)}'");
+        }
+
+        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
+        JobDefinitionDto? jobDef = null;
+        if (name != null)
+        {
+            jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
+        }
+        else if (rootUrl != null)
+        {
+            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
+        }
+
+        if (jobDef == null)
+        {
+            _logger.LogWarning("No job definition found, nothing will be done");
+            return;
+        }
+
+        _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
+        
+        var newJob = new NewJobDto(jobDef, rootUrl, false, null, downloadAlways, disableMarkingVisited: true, disableResourceWrites: false);
+        var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+        IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
+        foreach (var line in inputLines)
+        {
+            var split = line.Split(" ");
+            var pageIndex = int.Parse(split[0]);
+            var pageUrl = new Uri(split[1]);
+            var resourceIndex = int.Parse(split[2]);
+            var resourceUrl = new Uri(split[3]);
+            await scrapAppService.DownloadAsync(newJob, pageUrl, pageIndex, resourceUrl, resourceIndex);
+            Console.WriteLine("Downloaded " + resourceUrl);
+        }
+    }
+
+    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public async Task MarkVisited(
+        [Description("Job definition name")]string? name = null,
+        [Description("URL where the scrapping starts")]string? rootUrl = null,
+        [Description("Pipeline")]string[]? pipeline = null)
+    {
+        if (!_verbose)
+        {
+            SetupLogging(LogLevel.Error);
+        }
+
+        name ??= Environment.GetEnvironmentVariable("JOBDEF_NAME");
+        rootUrl ??= Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
+        if (name == null && rootUrl == null)
+        {
+            throw new ArgumentException($"At least one of these options must be present: '{nameof(name)}', '{nameof(rootUrl)}'");
+        }
+
+        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
+        JobDefinitionDto? jobDef = null;
+        if (name != null)
+        {
+            jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
+        }
+        else if (rootUrl != null)
+        {
+            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
+        }
+
+        if (jobDef == null)
+        {
+            _logger.LogWarning("No job definition found, nothing will be done");
+            return;
+        }
+
+        _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
+        
+        var newJob = new NewJobDto(jobDef, rootUrl, false, null, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
+        var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+        IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
+        foreach (var line in inputLines)
+        {
+            var pageUrl = new Uri(line);
+            await scrapAppService.MarkVisitedPageAsync(newJob, pageUrl);
+            Console.WriteLine("Visited " + pageUrl);
+        }
+    }
+
+    [Verb(Description = "Configures the tool", Aliases = "c,config")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public static void Configure()
+    {
+        PrintHeader();
+
+        var globalUserConfigFolder =
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
+        var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
+        
+        Directory.CreateDirectory(globalUserConfigFolder);
+        if (File.Exists(globalUserConfigPath))
+        {
+            Console.WriteLine($"Global config file found at: {globalUserConfigPath}");
+        }
+        else
+        {
+            Console.WriteLine(
+                $"Global config file not found. We are going to create a global config file and ask some values. " +
+                "This file is located at: {globalUserConfigPath}");
+            Console.WriteLine(
+                $"The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
+            File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
+            Console.WriteLine($"Created global config at: {globalUserConfigPath}");
+        }
+
+        var cfg =
+            new ConfigurationBuilder()
+                .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
+                .Build();
+        SetUpGlobalConfigValues(globalUserConfigFolder, globalUserConfigPath, cfg);
     }
 
     [PostVerbExecution]
@@ -176,7 +376,42 @@ public class ScrapCommandLine
         }
     }
 
+    private record GlobalConfig(
+        string Key,
+        string DefaultValue,
+        string Prompt);
+
     private static void EnsureGlobalConfiguration(string globalUserConfigFolder, string globalUserConfigPath)
+    {
+        if (!File.Exists(globalUserConfigPath))
+        {
+            throw new Exception("The tool is not properly configured; call 'scrap config'.");
+        }
+
+        var cfg =
+            new ConfigurationBuilder()
+                .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
+                .Build();
+        if (GetGlobalConfigs(globalUserConfigFolder).Any(config => cfg[config.Key] == null))
+        {
+            throw new Exception("The tool is not properly configured; call 'scrap config'.");
+        }
+    }
+
+    private static IEnumerable<GlobalConfig> GetGlobalConfigs(string globalUserConfigFolder) => new []{
+        new GlobalConfig(
+            "Scrap:Definitions",
+            Path.Combine(globalUserConfigFolder, "jobDefinitions.json"),
+            "Path for job definitions JSON"),
+        new GlobalConfig(
+            "Scrap:Database",
+            $"Filename={Path.Combine(globalUserConfigFolder, "scrap.db")};Connection=shared",
+            "Connection string for page markings LiteDB database")
+    };
+    private static void SetUpGlobalConfigValues(
+        string globalUserConfigFolder,
+        string globalUserConfigPath,
+        IConfiguration cfg)
     {
         Directory.CreateDirectory(globalUserConfigFolder);
         if (!File.Exists(globalUserConfigPath))
@@ -187,44 +422,29 @@ public class ScrapCommandLine
             File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
             Console.WriteLine("Created global config at: " + globalUserConfigPath);
         }
-
-        var cfg =
-            new ConfigurationBuilder()
-                .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
-                .Build();
-        EnsureGlobalConfigValues(globalUserConfigFolder, globalUserConfigPath, cfg);
-    }
-
-    private static void EnsureGlobalConfigValues(
-        string globalUserConfigFolder,
-        string globalUserConfigPath,
-        IConfiguration cfg)
-    {
-        var updates = new[]
+        
+        var updates =
+            GetGlobalConfigs(globalUserConfigFolder)
+                .Select(EnsureGlobalConfigValue)
+                .RemoveNulls()
+                .ToArray();
+        if (updates.Length == 0)
         {
-            EnsureGlobalConfigValue(
-                "Scrap:Definitions",
-                Path.Combine(globalUserConfigFolder, "jobDefinitions.json"),
-                "Path for job definitions JSON"),
-            EnsureGlobalConfigValue(
-                "Scrap:Database",
-                Path.Combine(globalUserConfigFolder, "scrap.db"),
-                "Path for  database",
-                "Filename={0};Connection=shared")
-        }.RemoveNulls();
-        var updater = new JsonUpdater(globalUserConfigPath);
-        updater.AddOrUpdate(updates);
+            Console.WriteLine("Nothing changed!");
+        }
+        else
+        {
+            Console.WriteLine($"Adding or updating {updates.Length} config value(s)");
+            var updater = new JsonUpdater(globalUserConfigPath);
+            updater.AddOrUpdate(updates);
+        }
             
-        KeyValuePair<string, object>? EnsureGlobalConfigValue(
-            string key,
-            string defaultValue,
-            string prompt,
-            string valueFormat = "{0}"
-        )
+        KeyValuePair<string, object>? EnsureGlobalConfigValue(GlobalConfig globalConfig)
         {
+            var (key, defaultValue, prompt) = globalConfig;
             if (cfg[key] != null)
             {
-                return null;
+                defaultValue = cfg[key];
             }
 
             Console.Write($"{prompt} [{defaultValue}]: ");
@@ -234,7 +454,52 @@ public class ScrapCommandLine
                 value = defaultValue;
             }
 
-            return new KeyValuePair<string, object>(key, string.Format(valueFormat, value));
+            if (value == cfg[key])
+            {
+                return null;
+            }
+
+            return new KeyValuePair<string, object>(key, value);
+        }
+    }
+
+    private void SetupLogging(LogLevel? minimumLevel)
+    {
+        _loggerFactory = LoggerFactory.Create(builder =>
+        {
+            if (minimumLevel.HasValue)
+            {
+                builder.SetMinimumLevel(minimumLevel.Value);
+            }
+            else
+            {
+                builder.AddConfiguration(_configuration.GetSection("Logging"));
+            }
+
+            builder.AddConsole(options =>
+            {
+                options.LogToStandardErrorThreshold = LogLevel.Warning;
+            });
+        });
+
+        _logger = new Logger<ScrapCommandLine>(_loggerFactory);
+    }
+
+    private static void PrintHeader()
+    {
+        var currentColor = Console.ForegroundColor;
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine(FiggleFonts.Standard.Render("SCRAP"));
+        Console.WriteLine("Command line tool for generic web scrapping");
+        Console.ForegroundColor = currentColor;
+    }
+
+    private static IEnumerable<string> ConsoleInput()
+    {
+        string? line;
+        while ((line = Console.ReadLine()) != null)
+        {
+            yield return line;
         }
     }
 }

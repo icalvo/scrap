@@ -28,7 +28,7 @@ public class JobApplicationService
         _jobFactory = jobFactory;
     }
 
-    public async Task RunAsync(NewJobDto jobDto)
+    public async Task ScrapAsync(NewJobDto jobDto)
     {
         _logger.LogTrace("Trace enabled");
         _logger.LogInformation("Starting...");
@@ -41,25 +41,75 @@ public class JobApplicationService
         _logger.LogInformation("Finished!");
     }
 
-    public Task ListResourcesAsync(NewJobDto jobDto)
+    public IAsyncEnumerable<string> TraverseAsync(NewJobDto jobDto)
     {
+        _logger.LogTrace("Trace enabled");
         var job = _jobFactory.Create(jobDto);
-        var (rootUri, adjacencyXPath, resourceXPath, _, resourceRepository, pageRetriever, pageMarkerRepository) =
+
+        var (rootUri, adjacencyXPath, _, _, _, pageRetriever, pageMarkerRepository) =
+            GetJobInfoAndCreateDependencies(job);
+
+        return Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
+            .Select(x => x.Uri.AbsoluteUri);
+    }
+
+    public async IAsyncEnumerable<string> GetResourcesAsync(NewJobDto jobDto, Uri pageUrl, int pageIndex)
+    {
+        if (jobDto.ResourceType != ResourceType.DownloadLink)
+        {
+            throw new Exception();
+        }
+
+        _logger.LogTrace("Trace enabled");
+
+        var job = _jobFactory.Create(jobDto);
+        var (_, _, resourceXPath, _, _, pageRetriever, _) =
             GetJobInfoAndCreateDependencies(job);
 
         IAsyncEnumerable<ResourceInfo> GetResourceLinks(Page page, int crawlPageIndex)
             => ResourceLinks(page, crawlPageIndex, resourceXPath);
 
-        ValueTask<bool> IsNotDownloaded(ResourceInfo info)
-            => this.IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways);
+        var page = await pageRetriever.GetPageAsync(pageUrl);
+        var resources = GetResourceLinks(page, pageIndex)
+            .Select(x => x.ResourceUrl.AbsoluteUri);
 
-        var pipeline =
-            Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
-                .SelectMany(GetResourceLinks)
-                .WhereAwait(IsNotDownloaded)
-                .Do(x => _logger.LogWarning("{Uri}", x.ResourceUrl.AbsoluteUri));
+        await foreach (var resource in resources)
+        {
+            yield return resource;
+        }
+    }
 
-        return pipeline.ExecuteAsync();
+    public async Task DownloadAsync(NewJobDto jobDto, Uri pageUrl, int pageIndex, Uri resourceUrl, int resourceIndex)
+    {
+        if (jobDto.ResourceType != ResourceType.DownloadLink)
+        {
+            throw new Exception();
+        }
+
+        _logger.LogTrace("Trace enabled");
+
+        var job = _jobFactory.Create(jobDto);
+        var (_, _, _, downloadStreamProvider, resourceRepository, pageRetriever, _) =
+            GetJobInfoAndCreateDependencies(job);
+        
+        var page = await pageRetriever.GetPageAsync(pageUrl);
+
+        var info = new ResourceInfo(page, pageIndex, resourceUrl, resourceIndex);
+        if (await this.IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways))
+        {
+            var stream = await downloadStreamProvider.GetStreamAsync(resourceUrl);
+            await resourceRepository.UpsertAsync(info, stream);
+            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl, await resourceRepository.GetKeyAsync(info));
+        }
+    }
+
+    public Task MarkVisitedPageAsync(NewJobDto jobDto, Uri pageUrl)
+    {
+        var job = _jobFactory.Create(jobDto);
+        var (_, _, _, _, _, _, pageMarkerRepository) =
+            GetJobInfoAndCreateDependencies(job);
+        
+        return pageMarkerRepository.UpsertAsync(pageUrl);
     }
 
     private Task DownloadLinksAsync(NewJobDto jobDto)

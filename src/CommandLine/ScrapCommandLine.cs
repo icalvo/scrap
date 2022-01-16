@@ -292,6 +292,13 @@ public class ScrapCommandLine
         SetUpGlobalConfigValues(globalUserConfigFolder, globalUserConfigPath, cfg);
     }
 
+    [Verb(Description = "Show version")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public static void Version()
+    {
+        Console.WriteLine(GetVersion());
+    }
+
     [PostVerbExecution]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public void After(PostVerbExecutionContext context)
@@ -422,12 +429,15 @@ public class ScrapCommandLine
         var currentColor = Console.ForegroundColor;
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine(FiggleFonts.Standard.Render("SCRAP"));
-        var version = Assembly.GetExecutingAssembly()
-            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-            ?.InformationalVersion;
+        var version = GetVersion();
         Console.WriteLine("Command line tool for generic web scrapping, version " + version);
         Console.ForegroundColor = currentColor;
     }
+
+    private static string? GetVersion() =>
+        Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion;
 
     private static IEnumerable<string> ConsoleInput()
     {

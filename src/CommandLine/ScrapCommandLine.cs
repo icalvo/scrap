@@ -70,16 +70,13 @@ public class ScrapCommandLine
         [Description("Disable writing the resource"),Aliases("dwr")]bool disableResourceWrites = false
         )
     {
-        if (!all && name == null && rootUrl == null)
-        {
-            throw new ArgumentException($"At least one of these options must be present: '{nameof(all)}', '{nameof(name)}', '{nameof(rootUrl)}'");
-        }
-
         PrintHeader();
 
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
         var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
+        
         var jobDefs = new List<JobDefinitionDto>();
+        var envRootUrl = Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
         if (all)
         {
             if (name != null || rootUrl != null)
@@ -92,20 +89,15 @@ public class ScrapCommandLine
                 jobDefs.Add(jobDef);
             }
         }
-        else if (name != null)
+        else
         {
-            var jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
-            if (jobDef != null)
+            var envName = Environment.GetEnvironmentVariable("JOBDEF_NAME");
+            var jobDef = await GetJobDefinition(name, rootUrl, definitionsApplicationService, envName, envRootUrl);
+
+            if (jobDef == null)
             {
-                jobDefs.Add(jobDef);
-            }
-        }
-        else if (rootUrl != null)
-        {
-            var jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
-            if (jobDef != null)
-            {
-                jobDefs.Add(jobDef);
+                _logger.LogWarning("No job definition found, nothing will be done");
+                return;
             }
         }
 
@@ -118,7 +110,7 @@ public class ScrapCommandLine
         _logger.LogInformation("The following job def(s). will be run: {JobDefs}", string.Join(", ", jobDefs.Select(x => x.Name)));
         foreach (var jobDef in jobDefs)
         {
-            var newJob = new NewJobDto(jobDef, rootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
+            var newJob = new NewJobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
             var scrapAppService = serviceResolver.BuildScrapperApplicationService();
             await scrapAppService.ScrapAsync(newJob);
         }
@@ -136,33 +128,13 @@ public class ScrapCommandLine
             SetupLogging(LogLevel.Error);
         }
         
-        name ??= Environment.GetEnvironmentVariable("JOBDEF_NAME");
-        rootUrl ??= Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
-        if (name == null && rootUrl == null)
-        {
-            throw new ArgumentException($"At least one of these options must be present: '{nameof(name)}', '{nameof(rootUrl)}'");
-        }
-
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
-        var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
-        JobDefinitionDto? jobDef = null;
-        if (name != null)
+        var newJob = await BuildJobDto(serviceResolver, name, rootUrl,  fullScan, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
+        if (newJob == null)
         {
-            jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
-        }
-        else if (rootUrl != null)
-        {
-            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
-        }
-
-        if (jobDef == null)
-        {
-            _logger.LogWarning("No job definition found, nothing will be done");
             return;
         }
 
-        _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
-        var newJob = new NewJobDto(jobDef, rootUrl, fullScan, null, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
         var scrapAppService = serviceResolver.BuildScrapperApplicationService();
         await scrapAppService.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
     }
@@ -180,34 +152,20 @@ public class ScrapCommandLine
             SetupLogging(LogLevel.Error);
         }
 
-        name ??= Environment.GetEnvironmentVariable("JOBDEF_NAME");
-        rootUrl ??= Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
-        if (name == null && rootUrl == null)
-        {
-            throw new ArgumentException($"At least one of these options must be present: '{nameof(name)}', '{nameof(rootUrl)}'");
-        }
-
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
-        var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
-        JobDefinitionDto? jobDef = null;
-        if (name != null)
+        var newJob = await BuildJobDto(
+            serviceResolver,
+            name,
+            rootUrl,
+            fullScan: false,
+            downloadAlways: false,
+            disableMarkingVisited: true,
+            disableResourceWrites: true);
+        if (newJob == null)
         {
-            jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
-        }
-        else if (rootUrl != null)
-        {
-            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
-        }
-
-        if (jobDef == null)
-        {
-            _logger.LogWarning("No job definition found, nothing will be done");
             return;
         }
 
-        _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
-        
-        var newJob = new NewJobDto(jobDef, rootUrl, false, null, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
         var scrapAppService = serviceResolver.BuildScrapperApplicationService();
         var pageIndex = 0;
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
@@ -236,34 +194,20 @@ public class ScrapCommandLine
             SetupLogging(LogLevel.Error);
         }
 
-        name ??= Environment.GetEnvironmentVariable("JOBDEF_NAME");
-        rootUrl ??= Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
-        if (name == null && rootUrl == null)
-        {
-            throw new ArgumentException($"At least one of these options must be present: '{nameof(name)}', '{nameof(rootUrl)}'");
-        }
-
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
-        var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
-        JobDefinitionDto? jobDef = null;
-        if (name != null)
+        var newJob = await BuildJobDto(
+            serviceResolver,
+            name,
+            rootUrl,
+            fullScan: false,
+            downloadAlways,
+            disableMarkingVisited: true,
+            disableResourceWrites: false);
+        if (newJob == null)
         {
-            jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
-        }
-        else if (rootUrl != null)
-        {
-            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
-        }
-
-        if (jobDef == null)
-        {
-            _logger.LogWarning("No job definition found, nothing will be done");
             return;
         }
 
-        _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
-        
-        var newJob = new NewJobDto(jobDef, rootUrl, false, null, downloadAlways, disableMarkingVisited: true, disableResourceWrites: false);
         var scrapAppService = serviceResolver.BuildScrapperApplicationService();
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
@@ -289,35 +233,21 @@ public class ScrapCommandLine
         {
             SetupLogging(LogLevel.Error);
         }
-
-        name ??= Environment.GetEnvironmentVariable("JOBDEF_NAME");
-        rootUrl ??= Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
-        if (name == null && rootUrl == null)
-        {
-            throw new ArgumentException($"At least one of these options must be present: '{nameof(name)}', '{nameof(rootUrl)}'");
-        }
-
+        
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
-        var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
-        JobDefinitionDto? jobDef = null;
-        if (name != null)
+        var newJob = await BuildJobDto(
+            serviceResolver,
+            name,
+            rootUrl,
+            fullScan: false,
+            downloadAlways: false,
+            disableMarkingVisited: true,
+            disableResourceWrites: false);
+        if (newJob == null)
         {
-            jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
-        }
-        else if (rootUrl != null)
-        {
-            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
-        }
-
-        if (jobDef == null)
-        {
-            _logger.LogWarning("No job definition found, nothing will be done");
             return;
         }
 
-        _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
-        
-        var newJob = new NewJobDto(jobDef, rootUrl, false, null, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
         var scrapAppService = serviceResolver.BuildScrapperApplicationService();
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
@@ -408,6 +338,7 @@ public class ScrapCommandLine
             $"Filename={Path.Combine(globalUserConfigFolder, "scrap.db")};Connection=shared",
             "Connection string for page markings LiteDB database")
     };
+
     private static void SetUpGlobalConfigValues(
         string globalUserConfigFolder,
         string globalUserConfigPath,
@@ -501,5 +432,86 @@ public class ScrapCommandLine
         {
             yield return line;
         }
+    }
+
+    private async Task<NewJobDto?> BuildJobDto(
+        ServicesResolver serviceResolver,
+        string? name,
+        string? rootUrl,
+        bool? fullScan,
+        bool? downloadAlways,
+        bool? disableMarkingVisited,
+        bool? disableResourceWrites)
+    {
+        var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
+        var envName = Environment.GetEnvironmentVariable("JOBDEF_NAME");
+        var envRootUrl = Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
+        
+        var jobDef = await GetJobDefinition(name, rootUrl, definitionsApplicationService, envName, envRootUrl);
+
+        if (jobDef == null)
+        {
+            _logger.LogWarning("No job definition found, nothing will be done");
+            return null;
+        }
+        
+        _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
+        
+        return new NewJobDto(jobDef, rootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);        
+    }
+
+    private async Task<JobDefinitionDto?> GetJobDefinition(
+        string? name,
+        string? rootUrl,
+        JobDefinitionsApplicationService definitionsApplicationService,
+        string? envName,
+        string? envRootUrl)
+    {
+        JobDefinitionDto? jobDef = null;
+        if (name != null)
+        {
+            jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
+            if (jobDef == null)
+            {
+                _logger.LogWarning("Job definition {Name} does not exist", name);
+            }
+
+            return jobDef;
+        }
+        
+        if (rootUrl != null)
+        {
+            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
+            if (jobDef == null)
+            {
+                _logger.LogWarning("No job definition matches with {RootUrl}", rootUrl);
+            }
+            else
+            {
+                return jobDef;
+            }
+        }
+        
+        if (envName != null)
+        {
+            jobDef = await definitionsApplicationService.FindJobByNameAsync(envName);
+            if (jobDef == null)
+            {
+                _logger.LogWarning("Job definition {Name} does not exist", envName);
+            }
+
+            return jobDef;
+        }
+        
+        if (envRootUrl != null)
+        {
+            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(envRootUrl);
+            if (jobDef == null)
+            {
+                _logger.LogWarning("No job definition matches with {RootUrl}", envRootUrl);
+            }
+        }
+
+        return jobDef;
     }
 }

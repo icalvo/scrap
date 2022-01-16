@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using CLAP;
 using CLAP.Interception;
 using Figgle;
@@ -421,7 +422,10 @@ public class ScrapCommandLine
         var currentColor = Console.ForegroundColor;
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine(FiggleFonts.Standard.Render("SCRAP"));
-        Console.WriteLine("Command line tool for generic web scrapping");
+        var version = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion;
+        Console.WriteLine("Command line tool for generic web scrapping, version " + version);
         Console.ForegroundColor = currentColor;
     }
 

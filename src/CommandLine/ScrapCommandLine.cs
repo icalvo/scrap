@@ -20,6 +20,12 @@ public class ScrapCommandLine
     private ILoggerFactory _loggerFactory = null!;
     private ILogger<ScrapCommandLine> _logger = null!;
 
+    public ScrapCommandLine(Parser<ScrapCommandLine> parser, string[] args)
+    {
+        parser.Register.HelpHandler("help,h,?", Help);
+        parser.Register.ErrorHandler((Action<ExceptionContext>) (c => Exception(c, args)));
+    }
+
     [PreVerbExecution]
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
     [SuppressMessage("ReSharper", "UnusedParameter.Local")]
@@ -539,5 +545,21 @@ public class ScrapCommandLine
         }
 
         return jobDef;
+    }
+
+    private static void Help(string helpText)
+    {
+        Console.WriteLine("SCRAP is a tool for generic web scrapping. To set it up, head to the project docs: https://github.com/icalvo/scrap");
+        Console.WriteLine(helpText);
+    }
+
+    private static void Exception(ExceptionContext c, IEnumerable<string> args)
+    {
+        Console.Error.WriteLine("Parsing error: {0}", c.Exception.Demystify());
+        Console.Error.WriteLine("Arguments:");
+        foreach (var (arg, idx) in args.Select((arg, idx) => (arg, idx)))
+        {
+            Console.WriteLine("Arg {0}: {1}", idx, arg);
+        }
     }
 }

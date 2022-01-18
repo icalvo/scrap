@@ -433,11 +433,12 @@ public class ScrapCommandLine
 
     private static void PrintHeader()
     {
+        var version = GetVersion();
         var currentColor = Console.ForegroundColor;
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine(FiggleFonts.Standard.Render("SCRAP"));
-        var version = GetVersion();
-        Console.WriteLine("Command line tool for generic web scrapping, version " + version);
+        Console.WriteLine(FiggleFonts.Doom.Render("scrap " + version));
+        Console.WriteLine("Command line tool for generic web scrapping");
+        Console.WriteLine();
         Console.ForegroundColor = currentColor;
     }
 

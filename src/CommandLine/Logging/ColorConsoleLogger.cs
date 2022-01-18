@@ -1,9 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace Scrap.CommandLine.Logging;
 
-public class ScrapConsoleLogger : ILogger
+public class ColorConsoleLogger : ILogger
 {
+    private readonly ColorConfiguration _configuration;
+
+    public ColorConsoleLogger(ColorConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+
     public IDisposable BeginScope<TState>(TState state)
     {
         return new NullDisposable();
@@ -26,21 +34,14 @@ public class ScrapConsoleLogger : ILogger
         var defForegroundColor = Console.ForegroundColor;
         var defBackgroundColor = Console.BackgroundColor;
 
-        var foregroundColor = logLevel switch
-        {
-            LogLevel.Trace => ConsoleColor.Gray,
-            LogLevel.Debug => ConsoleColor.Blue,
-            LogLevel.Information => defForegroundColor,
-            LogLevel.Warning => ConsoleColor.Yellow,
-            LogLevel.Error => ConsoleColor.Red,
-            LogLevel.Critical => ConsoleColor.Magenta,
-            LogLevel.None => defBackgroundColor,
-            _ => throw new ArgumentOutOfRangeException(nameof(logLevel), logLevel, null)
-        };
+        var foregroundColor = _configuration.ColorFor(logLevel) ?? defForegroundColor;
 
         var backgroundColor = defBackgroundColor;
 
-        var logRecord = $"{formattedMessage} {exception?.StackTrace ?? ""}";
+        string logRecord;
+        logRecord = exception != null
+            ? $"{formattedMessage}"
+            : $"{formattedMessage} {exception?.ToStringDemystified() ?? ""}";
         Console.ForegroundColor = foregroundColor;
         Console.BackgroundColor = backgroundColor;
         Console.WriteLine(logRecord);

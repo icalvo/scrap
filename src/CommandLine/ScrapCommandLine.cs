@@ -415,12 +415,16 @@ public class ScrapCommandLine
                 builder.AddConfiguration(_configuration.GetSection("Logging"));
             }
 
-            builder.AddFile(
+            builder.AddGeneric<FileLogger, FileLoggingConfiguration>(
+                configuration => new FileLogger(configuration),
                 _configuration.GetSection("Logging:File"),
                 options => options.FolderPath = GetGlobalUserConfigFolder());
+
             if (withConsole)
             {
-                builder.AddGeneric<ScrapConsoleLogger>();
+                builder.AddGeneric<ColorConsoleLogger, ColorConfiguration>(
+                    configuration => new ColorConsoleLogger(configuration),
+                    _configuration.GetSection("Logging:Color"));
             }
         });
 
@@ -489,7 +493,7 @@ public class ScrapCommandLine
             jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
             if (jobDef == null)
             {
-                _logger.LogWarning("Job definition {Name} does not exist", name);
+                _logger.LogError("Job definition {Name} does not exist", name);
             }
 
             return jobDef;
@@ -517,7 +521,7 @@ public class ScrapCommandLine
             jobDef = await definitionsApplicationService.FindJobByNameAsync(envName);
             if (jobDef == null)
             {
-                _logger.LogWarning("Job definition {Name} does not exist", envName);
+                _logger.LogError("Job definition {Name} does not exist", envName);
             }
 
             return jobDef;

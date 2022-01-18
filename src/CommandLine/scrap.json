@@ -5,6 +5,10 @@
       "System": "Warning",
       "Microsoft": "Warning",
       "Hangfire": "Information"
+    },
+    "File": {
+        "FolderPath": ".\\",
+        "FilePath": "log_{date}.log"
     }
   }
 }

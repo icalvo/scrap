@@ -75,16 +75,9 @@ public class JobDefinitionsApplicationService
         return _definitionRepository.ListAsync().Select(x => x.ToDto());
     }
 
-    public async Task<JobDefinitionDto?> FindJobByRootUrlAsync(string rootUrl)
+    public IAsyncEnumerable<JobDefinitionDto> FindJobsByRootUrlAsync(string rootUrl)
     {
-        var jobDefinition = (await _definitionRepository.FindByRootUrlAsync(rootUrl))?.ToDto();
-        if (jobDefinition == null)
-        {
-            return null;
-        }
-
-        _logger.LogInformation("Got job def. by URL {RootUrl}: {Name}", rootUrl, jobDefinition.Name);
-        return jobDefinition;
+        return _definitionRepository.FindByRootUrlAsync(rootUrl).Select(x => x.ToDto());
     }
 
     public Task DeleteJobAsync(JobDefinitionId id)

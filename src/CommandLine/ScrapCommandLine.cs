@@ -495,10 +495,14 @@ public class ScrapCommandLine
         
         if (rootUrl != null)
         {
-            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
-            if (jobDef == null)
+            var jobDefs = await definitionsApplicationService.FindJobsByRootUrlAsync(rootUrl).ToArrayAsync();
+            if (jobDefs.Length == 0)
             {
                 _logger.LogWarning("No job definition matches with {RootUrl}", rootUrl);
+            }
+            else if (jobDefs.Length > 1)
+            {
+                _logger.LogWarning("More than one definition matched with {RootUrl}", rootUrl);
             }
             else
             {
@@ -519,10 +523,18 @@ public class ScrapCommandLine
         
         if (envRootUrl != null)
         {
-            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(envRootUrl);
-            if (jobDef == null)
+            var jobDefs = await definitionsApplicationService.FindJobsByRootUrlAsync(envRootUrl).ToArrayAsync();
+            if (jobDefs.Length == 0)
             {
                 _logger.LogWarning("No job definition matches with {RootUrl}", envRootUrl);
+            }
+            else if (jobDefs.Length > 1)
+            {
+                _logger.LogWarning("More than one definition matched with {RootUrl}", envRootUrl);
+            }
+            else
+            {
+                return jobDef;
             }
         }
 

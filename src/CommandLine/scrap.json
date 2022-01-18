@@ -5,6 +5,17 @@
       "System": "Warning",
       "Microsoft": "Warning",
       "Hangfire": "Information"
+    },
+    "File": {
+        "FolderPath": ".\\",
+        "FilePath": "log_{date}.log"
+    },
+    "Color": {
+      "Trace": "Gray",
+      "Debug": "Blue",
+      "Warning": "Yellow",
+      "Error": "Red",
+      "Critical": "Magenta"
     }
   }
 }

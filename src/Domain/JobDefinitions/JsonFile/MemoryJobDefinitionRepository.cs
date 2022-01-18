@@ -50,10 +50,9 @@ public class MemoryJobDefinitionRepository: IJobDefinitionRepository
         return Task.FromResult(result);
     }
 
-    public Task<JobDefinition?> FindByRootUrlAsync(string rootUrl)
+    public IAsyncEnumerable<JobDefinition> FindByRootUrlAsync(string rootUrl)
     {
-        var x = _store.Values.FirstOrDefault(x => x.UrlPattern != null && Regex.IsMatch(rootUrl, x.UrlPattern));
-        return Task.FromResult(x);
+        return _store.Values.Where(x => x.UrlPattern != null && Regex.IsMatch(rootUrl, x.UrlPattern)).ToAsyncEnumerable();
     }
 
     public Task UpsertAsync(JobDefinition jobDefinition)

@@ -36,7 +36,7 @@ public class JobApplicationService
         {
             ResourceType.DownloadLink => DownloadLinksAsync(jobDto),
             ResourceType.Text => ScrapTextAsync(jobDto),
-            _ => throw new ArgumentOutOfRangeException()
+            _ => throw new Exception($"Invalid resource type")
         });
         _logger.LogInformation("Finished!");
     }
@@ -47,7 +47,7 @@ public class JobApplicationService
         var job = _jobFactory.Create(jobDto);
 
         var (rootUri, adjacencyXPath, _, _, _, pageRetriever, pageMarkerRepository) =
-            GetJobInfoAndCreateDependencies(job);
+            GetJobInfoAndDependencies(job);
 
         return Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
             .Select(x => x.Uri.AbsoluteUri);
@@ -64,7 +64,7 @@ public class JobApplicationService
 
         var job = _jobFactory.Create(jobDto);
         var (_, _, resourceXPath, _, _, pageRetriever, _) =
-            GetJobInfoAndCreateDependencies(job);
+            GetJobInfoAndDependencies(job);
 
         IAsyncEnumerable<ResourceInfo> GetResourceLinks(Page page, int crawlPageIndex)
             => ResourceLinks(page, crawlPageIndex, resourceXPath);
@@ -90,7 +90,7 @@ public class JobApplicationService
 
         var job = _jobFactory.Create(jobDto);
         var (_, _, _, downloadStreamProvider, resourceRepository, pageRetriever, _) =
-            GetJobInfoAndCreateDependencies(job);
+            GetJobInfoAndDependencies(job);
         
         var page = await pageRetriever.GetPageAsync(pageUrl);
 
@@ -107,7 +107,7 @@ public class JobApplicationService
     {
         var job = _jobFactory.Create(jobDto);
         var (_, _, _, _, _, _, pageMarkerRepository) =
-            GetJobInfoAndCreateDependencies(job);
+            GetJobInfoAndDependencies(job);
         
         return pageMarkerRepository.UpsertAsync(pageUrl);
     }
@@ -116,7 +116,7 @@ public class JobApplicationService
     {
         var job = _jobFactory.Create(jobDto);
         var (rootUri, adjacencyXPath, resourceXPath, downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository) =
-            GetJobInfoAndCreateDependencies(job);
+            GetJobInfoAndDependencies(job);
 
         async Task Download((ResourceInfo info, Stream stream) x)
         {
@@ -150,7 +150,7 @@ public class JobApplicationService
     {
         var job = _jobFactory.Create(jobDto);
         var (rootUri, adjacencyXPath,resourceXPath, _, resourceRepository, pageRetriever, pageMarkerRepository) =
-            GetJobInfoAndCreateDependencies(job);
+            GetJobInfoAndDependencies(job);
             
         IAsyncEnumerable<(ResourceInfo info, string text)> PageTexts(Page page, int crawlPageIndex) =>
             page.Contents(resourceXPath)
@@ -163,19 +163,19 @@ public class JobApplicationService
         _logger.LogDebug("Defining pipeline...");
         var pipeline =
             Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
-                .DoAwait((page, pageIndex) =>
-                    PageTexts(page, pageIndex)
-                        .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository, job.DownloadAlways))
-                        .Select(x => (
-                            x.info,
-                            stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
-                        .DoAwait(y => resourceRepository.UpsertAsync(y.info, y.stream))
-                        .DoAwait(async x =>
-                            _logger.LogInformation(
-                                "Downloaded text from {Url} to {Key}",
-                                x.info.ResourceUrl,
-                                await resourceRepository.GetKeyAsync(x.info))))
-                .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
+            .DoAwait((page, pageIndex) =>
+                PageTexts(page, pageIndex)
+                .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository, job.DownloadAlways))
+                .Select(x => (
+                    x.info,
+                    stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
+                .DoAwait(y => resourceRepository.UpsertAsync(y.info, y.stream))
+                .DoAwait(async x =>
+                    _logger.LogInformation(
+                        "Downloaded text from {Url} to {Key}",
+                        x.info.ResourceUrl,
+                        await resourceRepository.GetKeyAsync(x.info))))
+            .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();
         _logger.LogInformation("Finished!");
@@ -188,7 +188,7 @@ public class JobApplicationService
         IDownloadStreamProvider downloadStreamProvider,
         IResourceRepository resourceRepository,
         IPageRetriever pageRetriever,
-        IPageMarkerRepository pageMarkerRepository) GetJobInfoAndCreateDependencies(Job job)
+        IPageMarkerRepository pageMarkerRepository) GetJobInfoAndDependencies(Job job)
     {
         var (rootUri, adjacencyXPath, resourceXPath) =
             (job.RootUrl, job.AdjacencyXPath, job.ResourceXPath);
@@ -196,9 +196,17 @@ public class JobApplicationService
         job.Log(_logger);
 
         _logger.LogDebug("Building job-specific dependencies...");
-        var (downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository) = _servicesResolver.BuildJobDependencies(job);
+        var (downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository) =
+            _servicesResolver.BuildJobDependencies(job);
             
-        return (rootUri, adjacencyXPath, resourceXPath, downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository);
+        return (
+            rootUri,
+            adjacencyXPath,
+            resourceXPath,
+            downloadStreamProvider,
+            resourceRepository,
+            pageRetriever,
+            pageMarkerRepository);
     }
 
     private static IAsyncEnumerable<ResourceInfo> ResourceLinks(

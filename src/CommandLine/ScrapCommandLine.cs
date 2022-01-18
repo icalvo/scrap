@@ -6,6 +6,7 @@ using CLAP.Interception;
 using Figgle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Scrap.CommandLine.Logging;
 using Scrap.JobDefinitions;
 using Scrap.Jobs;
 using Scrap.DependencyInjection;
@@ -19,6 +20,12 @@ public class ScrapCommandLine
     private IConfiguration _configuration = null!;
     private ILoggerFactory _loggerFactory = null!;
     private ILogger<ScrapCommandLine> _logger = null!;
+
+    public ScrapCommandLine(Parser<ScrapCommandLine> parser, string[] args)
+    {
+        parser.Register.HelpHandler("help,h,?", Help);
+        parser.Register.ErrorHandler((Action<ExceptionContext>) (c => Exception(c, args)));
+    }
 
     [PreVerbExecution]
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
@@ -44,7 +51,7 @@ public class ScrapCommandLine
                 .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
                 .Build();
             
-        SetupLogging(_verbose ? LogLevel.Trace : null);
+        SetupLoggingWithoutConsole();
     }
 
     [Global(Aliases="dbg", Description = "Runs a debugger session at the beginning")]
@@ -72,7 +79,8 @@ public class ScrapCommandLine
         )
     {
         PrintHeader();
-
+            
+        SetupLoggingWithConsole();
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
         var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
         
@@ -97,9 +105,9 @@ public class ScrapCommandLine
 
             if (jobDef == null)
             {
-                _logger.LogWarning("No job definition found, nothing will be done");
                 return;
             }
+            jobDefs.Add(jobDef);
         }
 
         if (jobDefs.Count == 0)
@@ -124,11 +132,6 @@ public class ScrapCommandLine
         [Description("URL where the scrapping starts")]string? rootUrl = null,
         [Description("Navigate through already visited pages")]bool fullScan = false)
     {
-        if (!_verbose)
-        {
-            SetupLogging(LogLevel.Error);
-        }
-        
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
         var newJob = await BuildJobDto(serviceResolver, name, rootUrl,  fullScan, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
         if (newJob == null)
@@ -148,11 +151,6 @@ public class ScrapCommandLine
         [Description("Pipeline")]string[]? pipeline = null,
         [Description("Output only the resource link instead of the format expected by 'scrap download'")]bool onlyResourceLink = false)
     {
-        if (!_verbose)
-        {
-            SetupLogging(LogLevel.Error);
-        }
-
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
@@ -190,11 +188,6 @@ public class ScrapCommandLine
         [Description("Download resources even if they are already downloaded")]bool downloadAlways = false,
         [Description("Pipeline")]string[]? pipeline = null)
     {
-        if (!_verbose)
-        {
-            SetupLogging(LogLevel.Error);
-        }
-
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
@@ -230,11 +223,6 @@ public class ScrapCommandLine
         [Description("URL where the scrapping starts")]string? rootUrl = null,
         [Description("Pipeline")]string[]? pipeline = null)
     {
-        if (!_verbose)
-        {
-            SetupLogging(LogLevel.Error);
-        }
-        
         var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
@@ -265,8 +253,7 @@ public class ScrapCommandLine
     {
         PrintHeader();
 
-        var globalUserConfigFolder =
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
+        var globalUserConfigFolder = GetGlobalUserConfigFolder();
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
         
         Directory.CreateDirectory(globalUserConfigFolder);
@@ -313,6 +300,9 @@ public class ScrapCommandLine
             Console.ReadKey();
         }
     }
+
+    private static string GetGlobalUserConfigFolder()
+        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
 
     private record GlobalConfig(
         string Key,
@@ -402,23 +392,40 @@ public class ScrapCommandLine
         }
     }
 
-    private void SetupLogging(LogLevel? minimumLevel)
+    private void SetupLoggingWithoutConsole()
+    {
+        SetupLogging(withConsole: false);
+    }
+
+    private void SetupLoggingWithConsole()
+    {
+        SetupLogging(withConsole: true);
+    }
+
+    private void SetupLogging(bool withConsole)
     {
         _loggerFactory = LoggerFactory.Create(builder =>
         {
-            if (minimumLevel.HasValue)
+            if (_verbose)
             {
-                builder.SetMinimumLevel(minimumLevel.Value);
+                builder.SetMinimumLevel(LogLevel.Trace);
             }
             else
             {
                 builder.AddConfiguration(_configuration.GetSection("Logging"));
             }
 
-            builder.AddConsole(options =>
+            builder.AddGeneric<FileLogger, FileLoggingConfiguration>(
+                configuration => new FileLogger(configuration),
+                _configuration.GetSection("Logging:File"),
+                options => options.FolderPath = GetGlobalUserConfigFolder());
+
+            if (withConsole)
             {
-                options.LogToStandardErrorThreshold = LogLevel.Warning;
-            });
+                builder.AddGeneric<ColorConsoleLogger, ColorConfiguration>(
+                    configuration => new ColorConsoleLogger(configuration),
+                    _configuration.GetSection("Logging:Color"));
+            }
         });
 
         _logger = new Logger<ScrapCommandLine>(_loggerFactory);
@@ -426,11 +433,12 @@ public class ScrapCommandLine
 
     private static void PrintHeader()
     {
+        var version = GetVersion();
         var currentColor = Console.ForegroundColor;
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine(FiggleFonts.Standard.Render("SCRAP"));
-        var version = GetVersion();
-        Console.WriteLine("Command line tool for generic web scrapping, version " + version);
+        Console.WriteLine(FiggleFonts.Doom.Render("scrap " + version));
+        Console.WriteLine("Command line tool for generic web scrapping");
+        Console.WriteLine();
         Console.ForegroundColor = currentColor;
     }
 
@@ -465,7 +473,6 @@ public class ScrapCommandLine
 
         if (jobDef == null)
         {
-            _logger.LogWarning("No job definition found, nothing will be done");
             return null;
         }
         
@@ -487,7 +494,7 @@ public class ScrapCommandLine
             jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
             if (jobDef == null)
             {
-                _logger.LogWarning("Job definition {Name} does not exist", name);
+                _logger.LogError("Job definition {Name} does not exist", name);
             }
 
             return jobDef;
@@ -495,10 +502,14 @@ public class ScrapCommandLine
         
         if (rootUrl != null)
         {
-            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(rootUrl);
-            if (jobDef == null)
+            var jobDefs = await definitionsApplicationService.FindJobsByRootUrlAsync(rootUrl).ToArrayAsync();
+            if (jobDefs.Length == 0)
             {
                 _logger.LogWarning("No job definition matches with {RootUrl}", rootUrl);
+            }
+            else if (jobDefs.Length > 1)
+            {
+                _logger.LogWarning("More than one definition matched with {RootUrl}", rootUrl);
             }
             else
             {
@@ -511,7 +522,7 @@ public class ScrapCommandLine
             jobDef = await definitionsApplicationService.FindJobByNameAsync(envName);
             if (jobDef == null)
             {
-                _logger.LogWarning("Job definition {Name} does not exist", envName);
+                _logger.LogError("Job definition {Name} does not exist", envName);
             }
 
             return jobDef;
@@ -519,13 +530,42 @@ public class ScrapCommandLine
         
         if (envRootUrl != null)
         {
-            jobDef = await definitionsApplicationService.FindJobByRootUrlAsync(envRootUrl);
-            if (jobDef == null)
+            var jobDefs = await definitionsApplicationService.FindJobsByRootUrlAsync(envRootUrl).ToArrayAsync();
+            if (jobDefs.Length == 0)
             {
                 _logger.LogWarning("No job definition matches with {RootUrl}", envRootUrl);
             }
+            else if (jobDefs.Length > 1)
+            {
+                _logger.LogWarning("More than one definition matched with {RootUrl}", envRootUrl);
+            }
+            else
+            {
+                return jobDef;
+            }
+        }
+
+        if (jobDef == null)
+        {
+            _logger.LogWarning("No single job definition was found, nothing will be done");
         }
 
         return jobDef;
+    }
+
+    private static void Help(string helpText)
+    {
+        Console.WriteLine("SCRAP is a tool for generic web scrapping. To set it up, head to the project docs: https://github.com/icalvo/scrap");
+        Console.WriteLine(helpText);
+    }
+
+    private static void Exception(ExceptionContext c, IEnumerable<string> args)
+    {
+        Console.Error.WriteLine("Parsing error: {0}", c.Exception.Demystify());
+        Console.Error.WriteLine("Arguments:");
+        foreach (var (arg, idx) in args.Select((arg, idx) => (arg, idx)))
+        {
+            Console.WriteLine("Arg {0}: {1}", idx, arg);
+        }
     }
 }

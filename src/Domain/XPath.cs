@@ -28,7 +28,7 @@ public class XPath
 
     public override string ToString()
     {
-        return IsHtml ? "html:" + _expression.Expression : _expression.Expression;
+        return (IsHtml ? "html:" : "") + _expression.Expression;
     }
 
     public static implicit operator XPath(string x) => new(x);

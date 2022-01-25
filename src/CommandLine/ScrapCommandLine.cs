@@ -251,7 +251,9 @@ public class ScrapCommandLine
 
     [Verb(Description = "Configures the tool", Aliases = "c,config")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public static void Configure()
+    public static void Configure(
+        string? key = null,
+        string? value = null)
     {
         PrintHeader();
 
@@ -278,7 +280,20 @@ public class ScrapCommandLine
             new ConfigurationBuilder()
                 .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
                 .Build();
-        SetUpGlobalConfigValues(globalUserConfigFolder, globalUserConfigPath, cfg);
+
+        if (key == null)
+        {
+            SetUpGlobalConfigValuesInteractively(globalUserConfigFolder, globalUserConfigPath, cfg);
+            return;
+        }
+
+        if (value == null)
+        {
+            Console.Error.WriteLine("You must set a value");
+            return;
+        }
+
+        SetUpGlobalConfigValue(globalUserConfigFolder, globalUserConfigPath, key, value);
     }
 
     [Verb(Description = "Show version")]
@@ -339,21 +354,13 @@ public class ScrapCommandLine
             "Connection string for page markings LiteDB database")
     };
 
-    private static void SetUpGlobalConfigValues(
+    private static void SetUpGlobalConfigValuesInteractively(
         string globalUserConfigFolder,
         string globalUserConfigPath,
         IConfiguration cfg)
     {
-        Directory.CreateDirectory(globalUserConfigFolder);
-        if (!File.Exists(globalUserConfigPath))
-        {
-            Console.WriteLine($"Global config file not found. We are going to create a global config file and ask some values. " +
-                              "This file is located at: {globalUserConfigPath}");
-            Console.WriteLine($"The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
-            File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
-            Console.WriteLine("Created global config at: " + globalUserConfigPath);
-        }
-        
+        CreateGlobalConfigFile(globalUserConfigFolder, globalUserConfigPath);
+
         var updates =
             GetGlobalConfigs(globalUserConfigFolder)
                 .Select(EnsureGlobalConfigValue)
@@ -392,6 +399,39 @@ public class ScrapCommandLine
 
             return new KeyValuePair<string, object>(key, value);
         }
+    }
+
+    private static void CreateGlobalConfigFile(string globalUserConfigFolder, string globalUserConfigPath)
+    {
+        Directory.CreateDirectory(globalUserConfigFolder);
+        if (!File.Exists(globalUserConfigPath))
+        {
+            Console.WriteLine(
+                $"Global config file not found. We are going to create a global config file and ask some values. " +
+                "This file is located at: {globalUserConfigPath}");
+            Console.WriteLine(
+                $"The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
+            File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
+            Console.WriteLine("Created global config at: " + globalUserConfigPath);
+        }
+    }
+
+    private static void SetUpGlobalConfigValue(
+        string globalUserConfigFolder,
+        string globalUserConfigPath,
+        string key,
+        string value)
+    {
+        CreateGlobalConfigFile(globalUserConfigFolder, globalUserConfigPath);
+
+        var update = GetGlobalConfigs(globalUserConfigFolder).SingleOrDefault(x => x.Key == key);
+        if (update == null)
+        {
+            Console.Error.WriteLine("Key not found!");
+        }
+        
+        var updater = new JsonUpdater(globalUserConfigPath);
+        updater.AddOrUpdate(new[] { new KeyValuePair<string, object>(key, value) });
     }
 
     private void SetupLoggingWithoutConsole()
@@ -516,7 +556,7 @@ public class ScrapCommandLine
             }
             else
             {
-                return jobDef;
+                return jobDefs[0];
             }
         }
         
@@ -544,7 +584,7 @@ public class ScrapCommandLine
             }
             else
             {
-                return jobDef;
+                return jobDefs[0];
             }
         }
 

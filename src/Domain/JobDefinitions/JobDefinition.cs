@@ -53,15 +53,15 @@ public class JobDefinition
             ResourceType);            
     }
 
-    public void Log(ILogger logger)
+    public void Log(ILogger logger, LogLevel logLevel)
     {
-        logger.LogDebug("Name: {Name}", Name);
-        logger.LogDebug("Root URL: {RootUrl}", RootUrl);
-        logger.LogDebug("Adjacency XPath: {AdjacencyXPath}", AdjacencyXPath);
-        logger.LogDebug("Resource XPath: {ResourceXPath}", ResourceXPath);
-        logger.LogDebug("Resource repo args: {ResourceRepoArgs}", ResourceRepoArgs);
-        logger.LogDebug("Url Pattern: {UrlPattern}", UrlPattern);
-        logger.LogDebug("Resource Type: {ResourceType}", ResourceType);
+        logger.Log(logLevel, "Name: {Name}", Name);
+        logger.Log(logLevel, "Root URL: {RootUrl}", RootUrl);
+        logger.Log(logLevel, "Adjacency XPath: {AdjacencyXPath}", AdjacencyXPath);
+        logger.Log(logLevel, "Resource XPath: {ResourceXPath}", ResourceXPath);
+        logger.Log(logLevel, "Resource repo args:\n{ResourceRepoArgs}", ResourceRepoArgs);
+        logger.Log(logLevel, "Url Pattern: {UrlPattern}", UrlPattern);
+        logger.Log(logLevel, "Resource Type: {ResourceType}", ResourceType);
     }
 
     public JobDefinitionId Id { get; }

@@ -30,20 +30,16 @@ public class JobApplicationService
 
     public async Task ScrapAsync(NewJobDto jobDto)
     {
-        _logger.LogTrace("Trace enabled");
-        _logger.LogInformation("Starting...");
         await (jobDto.ResourceType switch
         {
             ResourceType.DownloadLink => DownloadLinksAsync(jobDto),
             ResourceType.Text => ScrapTextAsync(jobDto),
             _ => throw new Exception($"Invalid resource type")
         });
-        _logger.LogInformation("Finished!");
     }
 
     public IAsyncEnumerable<string> TraverseAsync(NewJobDto jobDto)
     {
-        _logger.LogTrace("Trace enabled");
         var job = _jobFactory.Create(jobDto);
 
         var (rootUri, adjacencyXPath, _, _, _, pageRetriever, pageMarkerRepository) =
@@ -59,8 +55,6 @@ public class JobApplicationService
         {
             throw new Exception();
         }
-
-        _logger.LogTrace("Trace enabled");
 
         var job = _jobFactory.Create(jobDto);
         var (_, _, resourceXPath, _, _, pageRetriever, _) =
@@ -85,8 +79,6 @@ public class JobApplicationService
         {
             throw new Exception();
         }
-
-        _logger.LogTrace("Trace enabled");
 
         var job = _jobFactory.Create(jobDto);
         var (_, _, _, downloadStreamProvider, resourceRepository, pageRetriever, _) =
@@ -133,7 +125,7 @@ public class JobApplicationService
 
         var pipeline =
             Pages(rootUri, pageRetriever, adjacencyXPath, pageMarkerRepository)
-                .Do(page => _logger.LogInformation("Processing page {PageUrl}", page.Uri))
+                .Do(page => _logger.LogDebug("Processing page {PageUrl}", page.Uri))
                 .DoAwait((page, pageIndex) =>
                     GetResourceLinks(page, pageIndex)
                         .WhereAwait(IsNotDownloaded)
@@ -193,9 +185,9 @@ public class JobApplicationService
         var (rootUri, adjacencyXPath, resourceXPath) =
             (job.RootUrl, job.AdjacencyXPath, job.ResourceXPath);
 
-        job.Log(_logger);
+        job.Log(_logger, LogLevel.Trace);
 
-        _logger.LogDebug("Building job-specific dependencies...");
+        _logger.LogTrace("Building job-specific dependencies...");
         var (downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository) =
             _servicesResolver.BuildJobDependencies(job);
             
@@ -271,7 +263,7 @@ public class JobApplicationService
         }
 
         var key = await resourceRepository.GetKeyAsync(info);
-        _logger.LogInformation("{Resource} already downloaded", key);
+        _logger.LogDebug("{Resource} already downloaded", key);
 
         return false;
     }

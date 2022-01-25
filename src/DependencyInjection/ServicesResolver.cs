@@ -38,12 +38,12 @@ public class ServicesResolver : IJobServicesResolver
         _cacheProvider = new MemoryCacheProvider(
             new MemoryCache(new MemoryCacheOptions(), _loggerFactory));
         _db = new LiteDatabase(new ConnectionString(_config["Scrap:Database"]));
-        _logger.LogInformation("Scrap DB: {ConnectionString}", _config["Scrap:Database"]);
+        _logger.LogDebug("Scrap DB: {ConnectionString}", _config["Scrap:Database"]);
     }
 
     public async Task<JobDefinitionsApplicationService> BuildJobDefinitionsApplicationServiceAsync()
     {
-        _logger.LogInformation("Definitions file: {DefinitionsPath}", _config["Scrap:Definitions"]);
+        _logger.LogDebug("Definitions file: {DefinitionsPath}", _config["Scrap:Definitions"]);
         return
             new JobDefinitionsApplicationService(
                 await MemoryJobDefinitionRepository.FromJsonFileAsync(_config["Scrap:Definitions"]),
@@ -125,7 +125,7 @@ public class ServicesResolver : IJobServicesResolver
         switch (configuration)
         {
             case FileSystemResourceRepositoryConfiguration config:
-                _logger.LogInformation("Destination root folder: {RootFolder}", config.RootFolder);
+                _logger.LogDebug("Destination root folder: {RootFolder}", config.RootFolder);
                 var destinationProvider = CompiledDestinationProvider.CreateCompiled(
                     config.PathFragments,
                     new Logger<CompiledDestinationProvider>(_loggerFactory));

@@ -22,7 +22,7 @@ public class HttpPageRetriever : IPageRetriever
 
     public Task<Page> GetPageAsync(Uri uri)
     {
-        _logger.LogDebug("GET {Uri}", uri);
+        _logger.LogTrace("GET {Uri}", uri);
         return _policy.ExecuteAsync(async _ =>
         {
             var stream = await _client.GetStreamAsync(uri);

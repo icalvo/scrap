@@ -1,17 +1,16 @@
 {
   "Logging": {
     "LogLevel": {
-      "Default": "Information",
+      "Default": "Debug",
       "System": "Warning",
-      "Microsoft": "Warning",
-      "Hangfire": "Information"
+      "Microsoft": "Warning"
     },
     "File": {
         "FolderPath": ".\\",
         "FilePath": "log_{date}.log"
     },
     "Color": {
-      "Trace": "Gray",
+      "Trace": "DarkGray",
       "Debug": "Blue",
       "Warning": "Yellow",
       "Error": "Red",

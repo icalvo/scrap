@@ -31,6 +31,6 @@ public class FileSystemResourceRepositoryConfiguration : IResourceRepositoryConf
     public override string ToString()
     {
         return $"Folder: {RootFolder}\n" +
-               string.Join("\n", PathFragments.Select((exp, i) => $"Expression {i + 1}: {exp}"));
+               string.Join("\n", PathFragments.Select((exp, i) => $"Path Fragment {i + 1}: {exp}"));
     }
 }

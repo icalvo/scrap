@@ -79,7 +79,7 @@ public class Page: IEquatable<Page>
         }
 
         string output = string.Join(",", elementsToDisplay.Select(x => x == null ? "" : x.Length <= maxCharsPerElement ? x : x[..(maxCharsPerElement - 3)] + "...")) + suffix;
-        _logger.LogDebug("Eval XPath {XPath} => [{Result}]", xPath, output);
+        _logger.LogTrace("Eval XPath {XPath} => [{Result}]", xPath, output);
             
         return result;
     }

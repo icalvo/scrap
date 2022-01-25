@@ -47,7 +47,7 @@ public class CompiledDestinationProvider : IDestinationProvider
         }
         catch (Exception)
         {
-            _logger.LogDebug("Source: {SourceCode}", sourceCode);
+            _logger.LogTrace("Source: {SourceCode}", sourceCode);
             throw;
         }
     }
@@ -68,7 +68,7 @@ public class CompiledDestinationProvider : IDestinationProvider
 
     private Assembly CompileSourceCode(string sourceCode)
     {
-        _logger.LogDebug("Compiling destination expression...");
+        _logger.LogTrace("Compiling destination expression...");
         SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
 
         // define other necessary objects for compilation

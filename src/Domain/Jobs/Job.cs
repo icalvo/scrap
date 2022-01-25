@@ -25,17 +25,18 @@ public class Job
         ResourceType = dto.ResourceType;
     }
 
-    public void Log(ILogger logger, LogLevel logLevel = LogLevel.Debug)
+    public void Log(ILogger logger, LogLevel logLevel)
     {
         logger.Log(logLevel, "Root URL: {RootUrl}", RootUrl);
         logger.Log(logLevel, "Adjacency XPath: {AdjacencyXPath}", AdjacencyXPath);
         logger.Log(logLevel, "Resource XPath: {ResourceXPath}", ResourceXPath);
-        logger.Log(logLevel, "Resource repo args: {ResourceRepoArgs}", ResourceRepoArgs);
+        logger.Log(logLevel, "Resource repo args:\n{ResourceRepoArgs}", ResourceRepoArgs);
         logger.Log(logLevel, "Disable marking visited pages: {DisableMarkingVisited}", DisableMarkingVisited);
         logger.Log(logLevel, "Disable writing resources: {DisableResourceWrites}", DisableResourceWrites);
         logger.Log(logLevel, "Full scan flag: {FullScan}", FullScan);
         logger.Log(logLevel, "Download always flag: {DownloadAlways}", DownloadAlways);
-        logger.LogDebug("Resource Type: {ResourceType}", ResourceType);
+        logger.Log(logLevel, "HTTP request retries: {HttpRequestRetries}", HttpRequestRetries);
+        logger.Log(logLevel, "HTTP request delay between retries: {HttpRequestDelayBetweenRetries}", HttpRequestDelayBetweenRetries);
     }
 
 

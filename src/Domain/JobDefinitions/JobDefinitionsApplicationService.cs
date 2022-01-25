@@ -52,26 +52,26 @@ public class JobDefinitionsApplicationService
             
         jobDefinition.ResourceRepoArgs.Validate(_loggerFactory);
 
-        _logger.LogInformation("Upserting job def. {JobId}, name {JobName}", jobDefinition.Id, jobDefinition.Name);
+        _logger.LogDebug("Upserting job def. {JobId}, name {JobName}", jobDefinition.Id, jobDefinition.Name);
         await _definitionRepository.UpsertAsync(jobDefinition);
         return jobDefinition.ToDto();
     }
 
     public async Task<JobDefinitionDto?> GetJobAsync(JobDefinitionId id)
     {
-        _logger.LogInformation("Getting job def. {JobId}", id);
+        _logger.LogDebug("Getting job def. {JobId}", id);
         return (await _definitionRepository.GetByIdAsync(id))?.ToDto();
     }
 
     public async Task<JobDefinitionDto?> FindJobByNameAsync(string name)
     {
-        _logger.LogInformation("Getting job def. called {JobName}", name);
+        _logger.LogDebug("Getting job def. called {JobName}", name);
         return (await _definitionRepository.GetByNameAsync(name))?.ToDto();
     }
 
     public IAsyncEnumerable<JobDefinitionDto> GetJobsAsync()
     {
-        _logger.LogInformation("Getting all job defs");
+        _logger.LogDebug("Getting all job defs");
         return _definitionRepository.ListAsync().Select(x => x.ToDto());
     }
 
@@ -82,7 +82,7 @@ public class JobDefinitionsApplicationService
 
     public Task DeleteJobAsync(JobDefinitionId id)
     {
-        _logger.LogInformation("Deleting job def. {JobId}", id);
+        _logger.LogDebug("Deleting job def. {JobId}", id);
         return _definitionRepository.DeleteJobAsync(id);
     }
 }

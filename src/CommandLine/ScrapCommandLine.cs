@@ -121,7 +121,9 @@ public class ScrapCommandLine
         {
             var newJob = new NewJobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
             var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+            _logger.LogInformation("Starting {Definition}...", jobDef.Name);
             await scrapAppService.ScrapAsync(newJob);
+            _logger.LogInformation("Finished!");
         }
     }
 
@@ -429,6 +431,7 @@ public class ScrapCommandLine
         });
 
         _logger = new Logger<ScrapCommandLine>(_loggerFactory);
+        _logger.LogTrace("Trace enabled");
     }
 
     private static void PrintHeader()

@@ -18,7 +18,6 @@ public class ScrapCommandLine
     private bool _verbose;
     private bool _debug;
     private IConfiguration _configuration = null!;
-    private ILoggerFactory _loggerFactory = null!;
     private ILogger<ScrapCommandLine> _logger = null!;
 
     public ScrapCommandLine(Parser<ScrapCommandLine> parser, string[] args)
@@ -50,8 +49,6 @@ public class ScrapCommandLine
                 .AddJsonFile("scrap.json", optional: false, reloadOnChange: false)
                 .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
                 .Build();
-            
-        SetupLoggingWithoutConsole();
     }
 
     [Global(Aliases="dbg", Description = "Runs a debugger session at the beginning")]
@@ -80,8 +77,8 @@ public class ScrapCommandLine
     {
         PrintHeader();
             
-        SetupLoggingWithConsole();
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var loggerFactory = SetupLoggingWithConsole();
+        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
         
         var jobDefs = new List<JobDefinitionDto>();
@@ -134,7 +131,8 @@ public class ScrapCommandLine
         [Description("URL where the scrapping starts")]string? rootUrl = null,
         [Description("Navigate through already visited pages")]bool fullScan = false)
     {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var loggerFactory = SetupLoggingWithoutConsole();
+        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var newJob = await BuildJobDto(serviceResolver, name, rootUrl,  fullScan, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
         if (newJob == null)
         {
@@ -153,7 +151,8 @@ public class ScrapCommandLine
         [Description("Pipeline")]string[]? pipeline = null,
         [Description("Output only the resource link instead of the format expected by 'scrap download'")]bool onlyResourceLink = false)
     {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var loggerFactory = SetupLoggingWithoutConsole();
+        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -190,7 +189,8 @@ public class ScrapCommandLine
         [Description("Download resources even if they are already downloaded")]bool downloadAlways = false,
         [Description("Pipeline")]string[]? pipeline = null)
     {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var loggerFactory = SetupLoggingWithoutConsole();
+        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -225,7 +225,8 @@ public class ScrapCommandLine
         [Description("URL where the scrapping starts")]string? rootUrl = null,
         [Description("Pipeline")]string[]? pipeline = null)
     {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var loggerFactory = SetupLoggingWithoutConsole();
+        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -434,44 +435,42 @@ public class ScrapCommandLine
         updater.AddOrUpdate(new[] { new KeyValuePair<string, object>(key, value) });
     }
 
-    private void SetupLoggingWithoutConsole()
+    private ILoggerFactory SetupLoggingWithoutConsole()
     {
-        SetupLogging(withConsole: false);
+        return SetupLogging(withConsole: false);
     }
 
-    private void SetupLoggingWithConsole()
+    private ILoggerFactory SetupLoggingWithConsole()
     {
-        SetupLogging(withConsole: true);
+        return SetupLogging(withConsole: true);
     }
 
-    private void SetupLogging(bool withConsole)
+    private ILoggerFactory SetupLogging(bool withConsole)
     {
-        _loggerFactory = LoggerFactory.Create(builder =>
+        var loggerFactory = LoggerFactory.Create(builder =>
         {
-            if (_verbose)
+            builder.ClearProviders();
+            builder.AddConfiguration(_configuration.GetSection("Logging"));
+            if (!_verbose)
             {
-                builder.SetMinimumLevel(LogLevel.Trace);
-            }
-            else
-            {
-                builder.AddConfiguration(_configuration.GetSection("Logging"));
+                builder.SetMinimumLevel(LogLevel.Debug);
             }
 
-            builder.AddGeneric<FileLogger, FileLoggingConfiguration>(
-                configuration => new FileLogger(configuration),
+            builder.AddFile(
                 _configuration.GetSection("Logging:File"),
                 options => options.FolderPath = GetGlobalUserConfigFolder());
 
             if (withConsole)
             {
-                builder.AddGeneric<ColorConsoleLogger, ColorConfiguration>(
-                    configuration => new ColorConsoleLogger(configuration),
-                    _configuration.GetSection("Logging:Color"));
+                builder.AddConsole();
+                builder.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
             }
         });
 
-        _logger = new Logger<ScrapCommandLine>(_loggerFactory);
+        _logger = new Logger<ScrapCommandLine>(loggerFactory);
         _logger.LogTrace("Trace enabled");
+
+        return loggerFactory;
     }
 
     private static void PrintHeader()

@@ -14,6 +14,6 @@ scrap config /key=Scrap:Definitions /value=$jobDefsFullPath
 scrap config /key=Scrap:Database /value="Filename=$dbFullPath;Connection=shared"
 dotnet tool install dotnet-serve --global
 $wwwPath = Resolve-Path .\Tests\www\
-$serverproc = Start-Process "dotnet" -ArgumentList "serve --directory $wwwPath --port 8080" -WindowStyle Hidden -PassThru -WorkingDirectory .
+$serverproc = Start-Process "dotnet" -ArgumentList "serve --directory $wwwPath --port 8080" -PassThru -WorkingDirectory .
 dotnet test --no-build --logger:"console;verbosity=normal"
 $serverproc.Kill()

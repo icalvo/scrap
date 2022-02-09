@@ -262,7 +262,11 @@ public class ScrapCommandLine
         string? key = null,
         string? value = null)
     {
-        PrintHeader();
+        var isInteractive = key == null;
+        if (isInteractive)
+        {
+            PrintHeader();
+        }
 
         var globalUserConfigFolder = GetGlobalUserConfigFolder();
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
@@ -274,11 +278,15 @@ public class ScrapCommandLine
         }
         else
         {
-            Console.WriteLine(
-                "Global config file not found. We are going to create a global config file and ask some values. " +
-                $"This file is located at: {globalUserConfigPath}");
-            Console.WriteLine(
-                "The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
+            if (isInteractive)
+            {
+                Console.WriteLine(
+                    "Global config file not found. We are going to create a global config file and ask some values. " +
+                    $"This file is located at: {globalUserConfigPath}");
+                Console.WriteLine(
+                    "The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
+            }
+
             File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
             Console.WriteLine($"Created global config at: {globalUserConfigPath}");
         }
@@ -288,7 +296,7 @@ public class ScrapCommandLine
                 .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
                 .Build();
 
-        if (key == null)
+        if (isInteractive)
         {
             SetUpGlobalConfigValuesInteractively(globalUserConfigFolder, globalUserConfigPath, cfg);
             return;

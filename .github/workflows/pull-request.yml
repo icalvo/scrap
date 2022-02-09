@@ -21,10 +21,10 @@ jobs:
       - name: 🧱 Build
         run: dotnet build --no-restore
       - name: 📦 NuGet Pack
-        run: dotnet pack /p:Version='0.1.2-test1' /p:PackageVersion='0.1.2-test1' /p:AssemblyVersion='0.1.2' /p:FileVersion='0.1.2' /p:InformationalVersion='0.1.2-test1'
+        run: dotnet pack /p:Version='0.1.2-test1' /p:PackageVersion='0.1.2-test1' /p:AssemblyVersion='0.1.2' /p:FileVersion='0.1.2' /p:InformationalVersion='0.1.2-test1' --no-build
       - name: Install tool
         run: |
-          dotnet tool install scrap --global --add-source .\CommandLine\nupkg\ --version 0.1.2-test1
+          dotnet tool install scrap --global --add-source ./CommandLine/nupkg/ --version '0.1.2-test1'
           scrap config /key=Scrap:Definitions /value=./definitions.json
           scrap config /key=Scrap:Database /value=./
       - name: 🐛 Test

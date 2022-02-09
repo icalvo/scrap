@@ -39,16 +39,22 @@ public class ScrapCommandLine
         var globalUserConfigFolder =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
+        var configBuilder = new ConfigurationBuilder()
+            .AddJsonFile("scrap.json", optional: false, reloadOnChange: false);
+
         if (!context.Method.Names.Contains("configure"))
         {
+            _configuration = 
+                configBuilder
+                    .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
+                    .Build();
             EnsureGlobalConfiguration(globalUserConfigFolder, globalUserConfigPath);
         }
+        else
+        {
+            _configuration = configBuilder.Build();
+        }
 
-        _configuration =
-            new ConfigurationBuilder()
-                .AddJsonFile("scrap.json", optional: false, reloadOnChange: false)
-                .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
-                .Build();
     }
 
     [Global(Aliases="dbg", Description = "Runs a debugger session at the beginning")]
@@ -76,11 +82,11 @@ public class ScrapCommandLine
         )
     {
         PrintHeader();
-            
-        var loggerFactory = SetupLoggingWithConsole();
+
+        using var loggerFactory = SetupLoggingWithConsole();
         var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
-        
+    
         var jobDefs = new List<JobDefinitionDto>();
         var envRootUrl = Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
         if (all)
@@ -269,10 +275,10 @@ public class ScrapCommandLine
         else
         {
             Console.WriteLine(
-                $"Global config file not found. We are going to create a global config file and ask some values. " +
-                "This file is located at: {globalUserConfigPath}");
+                "Global config file not found. We are going to create a global config file and ask some values. " +
+                $"This file is located at: {globalUserConfigPath}");
             Console.WriteLine(
-                $"The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
+                "The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
             File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
             Console.WriteLine($"Created global config at: {globalUserConfigPath}");
         }
@@ -327,20 +333,16 @@ public class ScrapCommandLine
         string DefaultValue,
         string Prompt);
 
-    private static void EnsureGlobalConfiguration(string globalUserConfigFolder, string globalUserConfigPath)
+    private void EnsureGlobalConfiguration(string globalUserConfigFolder, string globalUserConfigPath)
     {
         if (!File.Exists(globalUserConfigPath))
         {
-            throw new Exception("The tool is not properly configured; call 'scrap config'.");
+            throw new ScrapException("The tool is not properly configured; call 'scrap config'.");
         }
 
-        var cfg =
-            new ConfigurationBuilder()
-                .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
-                .Build();
-        if (GetGlobalConfigs(globalUserConfigFolder).Any(config => cfg[config.Key] == null))
+        if (GetGlobalConfigs(globalUserConfigFolder).Any(config => _configuration[config.Key] == null))
         {
-            throw new Exception("The tool is not properly configured; call 'scrap config'.");
+            throw new ScrapException("The tool is not properly configured; call 'scrap config'.");
         }
     }
 
@@ -433,6 +435,7 @@ public class ScrapCommandLine
         
         var updater = new JsonUpdater(globalUserConfigPath);
         updater.AddOrUpdate(new[] { new KeyValuePair<string, object>(key, value) });
+        Console.WriteLine($"{key}={value}");
     }
 
     private ILoggerFactory SetupLoggingWithoutConsole()
@@ -451,14 +454,14 @@ public class ScrapCommandLine
         {
             builder.ClearProviders();
             builder.AddConfiguration(_configuration.GetSection("Logging"));
-            if (!_verbose)
-            {
-                builder.SetMinimumLevel(LogLevel.Debug);
-            }
-
             builder.AddFile(
                 _configuration.GetSection("Logging:File"),
                 options => options.FolderPath = GetGlobalUserConfigFolder());
+
+            if (!_verbose)
+            {
+                builder.AddFilter(level => level != LogLevel.Trace);
+            }
 
             if (withConsole)
             {
@@ -603,11 +606,24 @@ public class ScrapCommandLine
 
     private static void Exception(ExceptionContext c, IEnumerable<string> args)
     {
+        if (c.Exception is TargetInvocationException { InnerException: ScrapException s})
+        {
+            Console.Error.WriteLine("{0}", s.Message);
+            return;
+        }
+
         Console.Error.WriteLine("Parsing error: {0}", c.Exception.Demystify());
         Console.Error.WriteLine("Arguments:");
         foreach (var (arg, idx) in args.Select((arg, idx) => (arg, idx)))
         {
             Console.WriteLine("Arg {0}: {1}", idx, arg);
+        }
+    }
+
+    private class ScrapException : Exception
+    {
+        public ScrapException(string message) : base(message)
+        {
         }
     }
 }

@@ -33,7 +33,7 @@ public class ServicesResolver : IJobServicesResolver
     public ServicesResolver(ILoggerFactory loggerFactory, IConfiguration config)
     {
         _loggerFactory = loggerFactory;
-        _logger = new Logger<ServicesResolver>(_loggerFactory);
+        _logger = _loggerFactory.CreateLogger<ServicesResolver>();
         _config = config;
         _cacheProvider = new MemoryCacheProvider(
             new MemoryCache(new MemoryCacheOptions(), _loggerFactory));
@@ -47,7 +47,7 @@ public class ServicesResolver : IJobServicesResolver
         return
             new JobDefinitionsApplicationService(
                 await MemoryJobDefinitionRepository.FromJsonFileAsync(_config["Scrap:Definitions"]),
-                new Logger<JobDefinitionsApplicationService>(_loggerFactory),
+                _loggerFactory.CreateLogger<JobDefinitionsApplicationService>(),
                 _loggerFactory);
     }
 
@@ -57,7 +57,7 @@ public class ServicesResolver : IJobServicesResolver
             new DepthFirstGraphSearch(),
             this,
             new JobFactory(_loggerFactory),
-            new Logger<JobApplicationService>(_loggerFactory));
+            _loggerFactory.CreateLogger<JobApplicationService>());
     }
 
     public (
@@ -73,7 +73,7 @@ public class ServicesResolver : IJobServicesResolver
         var pageRetriever = new HttpPageRetriever(
             downloadStreamProvider,
             httpPolicy,
-            new Logger<HttpPageRetriever>(_loggerFactory),
+            _loggerFactory.CreateLogger<HttpPageRetriever>(),
             _loggerFactory);
         var resourceRepository = BuildResourceRepository(job.ResourceRepoArgs, job.DisableResourceWrites);
         var pageMarkerRepository = BuildPageMarkerRepository(job.FullScan, job.DisableMarkingVisited);

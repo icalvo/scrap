@@ -4,7 +4,11 @@ dotnet pack /p:PackageVersion='0.1.2-test1' --no-build
 dotnet tool uninstall scrap --global
 dotnet tool install scrap --global --add-source ./CommandLine/nupkg/ --version '0.1.2-test1'
 $jobDefsFullPath = Resolve-Path ./Tests/jobDefinitions.json
-Remove-Item -Force ./scrap.db
+if (Test-Path ./scrap.db)
+{
+    Remove-Item -Force ./scrap.db
+}
+
 $dbFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("./scrap.db")
 scrap config /key=Scrap:Definitions /value=$jobDefsFullPath
 scrap config /key=Scrap:Database /value="Filename=$dbFullPath;Connection=shared"

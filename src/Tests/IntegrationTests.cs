@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using FluentAssertions;
+using LamarCodeGeneration.Util;
 using Xunit;
 
 namespace Scrap.Tests;
@@ -17,6 +18,9 @@ public class IntegrationTests
     public async Task SimpleScrap_Version()
     {
         var commandLineOutput = await GetCommandLineOutput("-name=testsite").ToArrayAsync();
+        Console.WriteLine("-------------------------------------");
+        commandLineOutput.ForEach(Console.WriteLine);
+        Console.WriteLine("-------------------------------------");
         var downloadedContent = await File.ReadAllTextAsync("./tricky/0.txt");
         downloadedContent.Should().Be("My text.");
     }

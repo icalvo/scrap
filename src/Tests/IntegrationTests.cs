@@ -13,6 +13,14 @@ public class IntegrationTests
         commandLineOutput.Should().BeEquivalentTo("0.1.2-test1");
     }
 
+    [Fact]
+    public async Task SimpleScrap_Version()
+    {
+        var commandLineOutput = await GetCommandLineOutput("-name=testsite").ToArrayAsync();
+        var downloadedContent = await File.ReadAllTextAsync("./tricky/0.txt");
+        downloadedContent.Should().Be("My text.");
+    }
+
     private static async IAsyncEnumerable<string> GetCommandLineOutput(string args)
     {
         var psi = new ProcessStartInfo("scrap", args) { RedirectStandardOutput = true, };

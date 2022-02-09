@@ -1,20 +1,20 @@
 {
   "Logging": {
     "LogLevel": {
-      "Default": "Debug",
+      "Default": "Trace",
       "System": "Warning",
       "Microsoft": "Warning"
     },
     "File": {
-        "FolderPath": ".\\",
-        "FilePath": "log_{date}.log"
+      "FolderPath": ".\\",
+      "FilePath": "log_{date}.log"
     },
-    "Color": {
-      "Trace": "DarkGray",
-      "Debug": "Blue",
-      "Warning": "Yellow",
-      "Error": "Red",
-      "Critical": "Magenta"
+    "Console": {
+      "FormatterName": "CustomConsoleFormatter",
+      "FormatterOptions": {
+        "IncludeScopes": true,
+        "EnableColors": true
+      }
     }
   }
 }

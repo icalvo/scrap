@@ -19,6 +19,15 @@ jobs:
       - name: 🏭 Restore dependencies
         run: dotnet restore
       - name: 🧱 Build
-        run: dotnet build --no-restore
+        run: dotnet build /p:Version='0.1.2-test1' /p:AssemblyVersion='0.1.2' /p:FileVersion='0.1.2' /p:InformationalVersion='0.1.2-test1' --no-restore
+      - name: 📦 NuGet Pack
+        run: dotnet pack /p:PackageVersion='0.1.2-test1' --no-build
+      - name: 🛠 Install tool
+        run: |
+          dotnet tool install scrap --global --add-source ./CommandLine/nupkg/ --version '0.1.2-test1'
+      - name: ⚙ Configure tool
+        run: |
+          scrap config /key=Scrap:Definitions /value=./definitions.json
+          scrap config /key=Scrap:Database /value='Filename=./scrap.db;Connection=shared'
       - name: 🐛 Test
         run: dotnet test --no-build --verbosity normal

@@ -18,7 +18,6 @@ public class ScrapCommandLine
     private bool _verbose;
     private bool _debug;
     private IConfiguration _configuration = null!;
-    private ILoggerFactory _loggerFactory = null!;
     private ILogger<ScrapCommandLine> _logger = null!;
 
     public ScrapCommandLine(Parser<ScrapCommandLine> parser, string[] args)
@@ -40,18 +39,22 @@ public class ScrapCommandLine
         var globalUserConfigFolder =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
+        var configBuilder = new ConfigurationBuilder()
+            .AddJsonFile("scrap.json", optional: false, reloadOnChange: false);
+
         if (!context.Method.Names.Contains("configure"))
         {
+            _configuration = 
+                configBuilder
+                    .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
+                    .Build();
             EnsureGlobalConfiguration(globalUserConfigFolder, globalUserConfigPath);
         }
+        else
+        {
+            _configuration = configBuilder.Build();
+        }
 
-        _configuration =
-            new ConfigurationBuilder()
-                .AddJsonFile("scrap.json", optional: false, reloadOnChange: false)
-                .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
-                .Build();
-            
-        SetupLoggingWithoutConsole();
     }
 
     [Global(Aliases="dbg", Description = "Runs a debugger session at the beginning")]
@@ -79,11 +82,11 @@ public class ScrapCommandLine
         )
     {
         PrintHeader();
-            
-        SetupLoggingWithConsole();
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+
+        using var loggerFactory = SetupLoggingWithConsole();
+        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
-        
+    
         var jobDefs = new List<JobDefinitionDto>();
         var envRootUrl = Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
         if (all)
@@ -134,7 +137,8 @@ public class ScrapCommandLine
         [Description("URL where the scrapping starts")]string? rootUrl = null,
         [Description("Navigate through already visited pages")]bool fullScan = false)
     {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var loggerFactory = SetupLoggingWithoutConsole();
+        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var newJob = await BuildJobDto(serviceResolver, name, rootUrl,  fullScan, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
         if (newJob == null)
         {
@@ -153,7 +157,8 @@ public class ScrapCommandLine
         [Description("Pipeline")]string[]? pipeline = null,
         [Description("Output only the resource link instead of the format expected by 'scrap download'")]bool onlyResourceLink = false)
     {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var loggerFactory = SetupLoggingWithoutConsole();
+        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -190,7 +195,8 @@ public class ScrapCommandLine
         [Description("Download resources even if they are already downloaded")]bool downloadAlways = false,
         [Description("Pipeline")]string[]? pipeline = null)
     {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var loggerFactory = SetupLoggingWithoutConsole();
+        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -225,7 +231,8 @@ public class ScrapCommandLine
         [Description("URL where the scrapping starts")]string? rootUrl = null,
         [Description("Pipeline")]string[]? pipeline = null)
     {
-        var serviceResolver = new ServicesResolver(_loggerFactory, _configuration);
+        var loggerFactory = SetupLoggingWithoutConsole();
+        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -255,7 +262,11 @@ public class ScrapCommandLine
         string? key = null,
         string? value = null)
     {
-        PrintHeader();
+        var isInteractive = key == null;
+        if (isInteractive)
+        {
+            PrintHeader();
+        }
 
         var globalUserConfigFolder = GetGlobalUserConfigFolder();
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
@@ -267,11 +278,15 @@ public class ScrapCommandLine
         }
         else
         {
-            Console.WriteLine(
-                $"Global config file not found. We are going to create a global config file and ask some values. " +
-                "This file is located at: {globalUserConfigPath}");
-            Console.WriteLine(
-                $"The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
+            if (isInteractive)
+            {
+                Console.WriteLine(
+                    "Global config file not found. We are going to create a global config file and ask some values. " +
+                    $"This file is located at: {globalUserConfigPath}");
+                Console.WriteLine(
+                    "The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
+            }
+
             File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
             Console.WriteLine($"Created global config at: {globalUserConfigPath}");
         }
@@ -281,7 +296,7 @@ public class ScrapCommandLine
                 .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
                 .Build();
 
-        if (key == null)
+        if (isInteractive)
         {
             SetUpGlobalConfigValuesInteractively(globalUserConfigFolder, globalUserConfigPath, cfg);
             return;
@@ -326,20 +341,16 @@ public class ScrapCommandLine
         string DefaultValue,
         string Prompt);
 
-    private static void EnsureGlobalConfiguration(string globalUserConfigFolder, string globalUserConfigPath)
+    private void EnsureGlobalConfiguration(string globalUserConfigFolder, string globalUserConfigPath)
     {
         if (!File.Exists(globalUserConfigPath))
         {
-            throw new Exception("The tool is not properly configured; call 'scrap config'.");
+            throw new ScrapException("The tool is not properly configured; call 'scrap config'.");
         }
 
-        var cfg =
-            new ConfigurationBuilder()
-                .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
-                .Build();
-        if (GetGlobalConfigs(globalUserConfigFolder).Any(config => cfg[config.Key] == null))
+        if (GetGlobalConfigs(globalUserConfigFolder).Any(config => _configuration[config.Key] == null))
         {
-            throw new Exception("The tool is not properly configured; call 'scrap config'.");
+            throw new ScrapException("The tool is not properly configured; call 'scrap config'.");
         }
     }
 
@@ -432,46 +443,45 @@ public class ScrapCommandLine
         
         var updater = new JsonUpdater(globalUserConfigPath);
         updater.AddOrUpdate(new[] { new KeyValuePair<string, object>(key, value) });
+        Console.WriteLine($"{key}={value}");
     }
 
-    private void SetupLoggingWithoutConsole()
+    private ILoggerFactory SetupLoggingWithoutConsole()
     {
-        SetupLogging(withConsole: false);
+        return SetupLogging(withConsole: false);
     }
 
-    private void SetupLoggingWithConsole()
+    private ILoggerFactory SetupLoggingWithConsole()
     {
-        SetupLogging(withConsole: true);
+        return SetupLogging(withConsole: true);
     }
 
-    private void SetupLogging(bool withConsole)
+    private ILoggerFactory SetupLogging(bool withConsole)
     {
-        _loggerFactory = LoggerFactory.Create(builder =>
+        var loggerFactory = LoggerFactory.Create(builder =>
         {
-            if (_verbose)
-            {
-                builder.SetMinimumLevel(LogLevel.Trace);
-            }
-            else
-            {
-                builder.AddConfiguration(_configuration.GetSection("Logging"));
-            }
-
-            builder.AddGeneric<FileLogger, FileLoggingConfiguration>(
-                configuration => new FileLogger(configuration),
+            builder.ClearProviders();
+            builder.AddConfiguration(_configuration.GetSection("Logging"));
+            builder.AddFile(
                 _configuration.GetSection("Logging:File"),
                 options => options.FolderPath = GetGlobalUserConfigFolder());
 
+            if (!_verbose)
+            {
+                builder.AddFilter(level => level != LogLevel.Trace);
+            }
+
             if (withConsole)
             {
-                builder.AddGeneric<ColorConsoleLogger, ColorConfiguration>(
-                    configuration => new ColorConsoleLogger(configuration),
-                    _configuration.GetSection("Logging:Color"));
+                builder.AddConsole();
+                builder.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
             }
         });
 
-        _logger = new Logger<ScrapCommandLine>(_loggerFactory);
+        _logger = new Logger<ScrapCommandLine>(loggerFactory);
         _logger.LogTrace("Trace enabled");
+
+        return loggerFactory;
     }
 
     private static void PrintHeader()
@@ -604,11 +614,24 @@ public class ScrapCommandLine
 
     private static void Exception(ExceptionContext c, IEnumerable<string> args)
     {
+        if (c.Exception is TargetInvocationException { InnerException: ScrapException s})
+        {
+            Console.Error.WriteLine("{0}", s.Message);
+            return;
+        }
+
         Console.Error.WriteLine("Parsing error: {0}", c.Exception.Demystify());
         Console.Error.WriteLine("Arguments:");
         foreach (var (arg, idx) in args.Select((arg, idx) => (arg, idx)))
         {
             Console.WriteLine("Arg {0}: {1}", idx, arg);
+        }
+    }
+
+    private class ScrapException : Exception
+    {
+        public ScrapException(string message) : base(message)
+        {
         }
     }
 }

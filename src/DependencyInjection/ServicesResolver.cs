@@ -33,7 +33,7 @@ public class ServicesResolver : IJobServicesResolver
     public ServicesResolver(ILoggerFactory loggerFactory, IConfiguration config)
     {
         _loggerFactory = loggerFactory;
-        _logger = new Logger<ServicesResolver>(_loggerFactory);
+        _logger = _loggerFactory.CreateLogger<ServicesResolver>();
         _config = config;
         _cacheProvider = new MemoryCacheProvider(
             new MemoryCache(new MemoryCacheOptions(), _loggerFactory));
@@ -47,7 +47,7 @@ public class ServicesResolver : IJobServicesResolver
         return
             new JobDefinitionsApplicationService(
                 await MemoryJobDefinitionRepository.FromJsonFileAsync(_config["Scrap:Definitions"]),
-                new Logger<JobDefinitionsApplicationService>(_loggerFactory),
+                _loggerFactory.CreateLogger<JobDefinitionsApplicationService>(),
                 _loggerFactory);
     }
 
@@ -57,7 +57,7 @@ public class ServicesResolver : IJobServicesResolver
             new DepthFirstGraphSearch(),
             this,
             new JobFactory(_loggerFactory),
-            new Logger<JobApplicationService>(_loggerFactory));
+            _loggerFactory.CreateLogger<JobApplicationService>());
     }
 
     public (
@@ -73,7 +73,7 @@ public class ServicesResolver : IJobServicesResolver
         var pageRetriever = new HttpPageRetriever(
             downloadStreamProvider,
             httpPolicy,
-            new Logger<HttpPageRetriever>(_loggerFactory),
+            _loggerFactory.CreateLogger<HttpPageRetriever>(),
             _loggerFactory);
         var resourceRepository = BuildResourceRepository(job.ResourceRepoArgs, job.DisableResourceWrites);
         var pageMarkerRepository = BuildPageMarkerRepository(job.FullScan, job.DisableMarkingVisited);
@@ -81,15 +81,13 @@ public class ServicesResolver : IJobServicesResolver
         return (downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository);
     }
 
-    private IAsyncPolicy BuildHttpPolicy(
-        int? httpRequestRetries,
-        TimeSpan? httpDelay)
+    private IAsyncPolicy BuildHttpPolicy(int? httpRequestRetries, TimeSpan? httpDelay)
     {
         var cacheLogger = _loggerFactory.CreateLogger("Cache");
         var cachePolicy = Policy.CacheAsync(
             _cacheProvider,
             DefaultCacheTtl,
-            (_, key) => { cacheLogger.LogDebug("CACHED {Uri}", key); },
+            (_, key) => {  cacheLogger.LogRequest("CACHED", key); },
             (_, _) => {  },
             (_, _) => {  },
             (_, _, _) => {  },
@@ -141,13 +139,14 @@ public class ServicesResolver : IJobServicesResolver
         }
     }
 
-    private static IDownloadStreamProvider BuildDownloadStreamProvider(string protocol, IAsyncPolicy policy)
+    private IDownloadStreamProvider BuildDownloadStreamProvider(string protocol, IAsyncPolicy policy)
     {
         switch (protocol)
         {
             case "http":
             case "https":
-                var httpClient = new HttpClient(new PollyMessageHandler(policy));
+                var httpClient = new HttpClient(
+                    new PollyMessageHandler(policy, _loggerFactory.CreateLogger<HttpClientDownloadStreamProvider>()));
                 return new HttpClientDownloadStreamProvider(httpClient);
             default:
                 throw new ArgumentException($"Unknown URI protocol {protocol}", nameof(protocol));
@@ -157,16 +156,27 @@ public class ServicesResolver : IJobServicesResolver
     private class PollyMessageHandler: DelegatingHandler
     {
         private readonly IAsyncPolicy _policy;
+        private readonly ILogger _logger;
 
-        public PollyMessageHandler(IAsyncPolicy policy)
+        public PollyMessageHandler(IAsyncPolicy policy, ILogger logger)
         {
             _policy = policy;
+            _logger = logger;
             InnerHandler = new HttpClientHandler();
         }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            _logger.LogRequest(request.Method.ToString(), request.RequestUri?.AbsoluteUri);
             return _policy.ExecuteAsync(_ => base.SendAsync(request, cancellationToken), new Context(request.RequestUri?.AbsoluteUri));
         }
+    }
+}
+
+public static class RequestLoggerExtensions
+{
+    public static void LogRequest(this ILogger logger, string method, string url)
+    {
+        logger.LogTrace("{Method} {Uri}", method, url);   
     }
 }

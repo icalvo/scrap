@@ -42,12 +42,12 @@ Task Pack -Depends Build {
 Task Install -Depends Pack {
     "🛠 Install tool"
     dotnet tool uninstall scrap --global
-    dotnet tool install scrap --global --add-source ./src/CommandLine/nupkg/ --version '0.1.2-test1'
+    dotnet tool install scrap --global --add-source ./CommandLine/nupkg/ --version '0.1.2-test1'
 }
 
 Task ConfigureIntegrationTests -Depends Install {
     "⚙ Configure tool for integration tests"
-    $jobDefsFullPath = Resolve-Path ./src/Tests/jobDefinitions.json
+    $jobDefsFullPath = Resolve-Path ./Tests/jobDefinitions.json
 
     $dbFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("./scrap.db")
     scrap config /key=Scrap:Definitions /value=$jobDefsFullPath
@@ -57,7 +57,7 @@ Task ConfigureIntegrationTests -Depends Install {
 Task IntegrationTests -Depends ConfigureIntegrationTests {
     "🌍 Install and start web server for integration tests"
     dotnet tool install dotnet-serve --global
-    $wwwPath = Resolve-Path ./src/Tests/www/
+    $wwwPath = Resolve-Path ./Tests/www/
     $serverproc = Start-Process "dotnet" -ArgumentList "serve --directory $wwwPath --port 8080" -PassThru -WorkingDirectory .
     "🐛 Test"
     dotnet test --no-build --logger:"console;verbosity=normal"

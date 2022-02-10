@@ -7,5 +7,6 @@ namespace Scrap;
 
 public interface IJobServicesResolver
 {
-    (IDownloadStreamProvider downloadStreamProvider, IResourceRepository resourceRepository, IPageRetriever pageRetriever, IPageMarkerRepository pageMarkerRepository) BuildJobDependencies(Job job);
+    Task<(IDownloadStreamProvider downloadStreamProvider, IResourceRepository resourceRepository, IPageRetriever pageRetriever, IPageMarkerRepository pageMarkerRepository)>
+        BuildJobDependencies(Job job);
 }

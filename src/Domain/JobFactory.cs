@@ -12,10 +12,10 @@ public class JobFactory : IJobFactory
         _loggerFactory = loggerFactory;
     }
 
-    public Job Create(NewJobDto newJobDto)
+    public async Task<Job> CreateAsync(NewJobDto newJobDto)
     {
         var job = new Job(newJobDto);
-        job.ResourceRepoArgs.Validate(_loggerFactory);
+        await job.ResourceRepoArgs.ValidateAsync(_loggerFactory);
 
         return job;
     }

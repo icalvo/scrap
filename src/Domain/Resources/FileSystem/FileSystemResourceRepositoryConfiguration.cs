@@ -21,9 +21,9 @@ public class FileSystemResourceRepositoryConfiguration : IResourceRepositoryConf
     public string RootFolder { get; private set; } = null!;
     public string[] PathFragments { get; private set; } = null!;
 
-    public void Validate(ILoggerFactory loggerFactory)
+    public async Task ValidateAsync(ILoggerFactory loggerFactory)
     {
-        _ = CompiledDestinationProvider.CreateCompiled(
+        _ = await CompiledDestinationProvider.CreateCompiledAsync(
             PathFragments,
             new Logger<CompiledDestinationProvider>(loggerFactory));
     }

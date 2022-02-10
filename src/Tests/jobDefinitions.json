@@ -5,7 +5,7 @@
     "resourceXPath": "//a/@href",
     "resourceRepository": {
       "type": "filesystem",
-      "rootFolder": "./tricky",
+      "rootFolder": "./testsite-result",
       "pathFragments": [
         "resourceIndex + (String.IsNullOrEmpty(resourceUrl.Extension()) ? \".unknown\" : resourceUrl.Extension())"
       ]

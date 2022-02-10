@@ -23,13 +23,13 @@ public class IntegrationTests
     }
 
     [Fact]
-    public async Task SimpleScrap_Version()
+    public async Task CommandLine_Scrap_Simple()
     {
         var commandLineOutput = await GetCommandLineOutput("-name=testsite").ToArrayAsync();
         _output.WriteLine("-------------------------------------");
         commandLineOutput.ForEach(_output.WriteLine);
         _output.WriteLine("-------------------------------------");
-        var downloadedContent = await File.ReadAllTextAsync("./tricky/0.txt");
+        var downloadedContent = await File.ReadAllTextAsync("./testsite-result/0.txt");
         downloadedContent.Should().Be("My text.");
     }
 

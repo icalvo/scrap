@@ -5,14 +5,15 @@ properties {
 
 FormatTaskName "-------- {0} --------"
 
-task default -depends TestParams
+task default -Depends TestParams
 
-task TestParams {
+Task Init {
     Assert ($version -ne $null) '$version should not be null'
     Assert ($actor -ne $null) '$actor should not be null'
+    Set-Location "$PSScriptRoot/src"
 }
 
-Task Clean {
+Task "✨ Clean" -Depends Init {
     "Clean"
     dotnet clean
     if (Test-Path ./scrap.db)
@@ -76,4 +77,4 @@ Task TagCommit -Depends Push {
     git push origin --tags
 }
 
-task Publish -depends TagCommit
+task Publish -Depends TagCommit

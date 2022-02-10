@@ -3,7 +3,7 @@ properties {
     $mainversion = $split[0]
 }
 
-FormatTaskName "-------- {0} --------"
+FormatTaskName ""
 
 task default -Depends TestParams
 
@@ -13,8 +13,8 @@ Task Init {
     Set-Location "$PSScriptRoot/src"
 }
 
-Task "✨ Clean" -Depends Init {
-    "Clean"
+Task Clean -Depends Init {
+    "✨ Clean"
     dotnet clean
     if (Test-Path ./scrap.db)
     {

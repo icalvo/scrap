@@ -1,1 +1,0 @@
-Invoke-Psake ./pullRequest.ps1

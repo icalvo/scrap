@@ -23,4 +23,4 @@ jobs:
           Install-Module psake
       - name: 🏭 Configure and run tests
         shell: pwsh
-        run:  Invoke-Psake ../pullRequest.ps1 -parameters @{"version"="0.1.2-test1";"actor"="${{ github.actor }}"}
+        run:  Invoke-Psake ../psakeTasks.ps1 UnitTests,IntegrationTests -parameters @{"version"="0.1.2-test1";"actor"="${{ github.actor }}"}

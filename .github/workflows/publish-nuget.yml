@@ -25,6 +25,6 @@ jobs:
         run: Install-Module psake
       - name: 🏭 Configure and run tests
         shell: pwsh
-        run: Invoke-Psake ../pullRequest.ps1 -parameters @{"version"="${{ github.event.inputs.version }}";"actor"="${{ github.actor }}"}
+        run: Invoke-Psake ../psakeTasks.ps1 Publish -parameters @{"version"="${{ github.event.inputs.version }}";"actor"="${{ github.actor }}"}
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.NUGET_TOKEN }}

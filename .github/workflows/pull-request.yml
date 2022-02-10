@@ -19,7 +19,7 @@ jobs:
       - name: 🏭 Install psake
         shell: pwsh
         run: |
-          Set-PSRepository -Name PSGallery -SourceLocation https://www.powershellgallery.com/api/v2/ -InstallationPolicy Trusted
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module psake
       - name: 🏭 Configure and run tests
         shell: pwsh

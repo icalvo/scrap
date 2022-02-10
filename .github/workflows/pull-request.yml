@@ -18,7 +18,9 @@ jobs:
           dotnet-version: 6.0.x
       - name: 🏭 Install psake
         shell: pwsh
-        run: Install-Module psake
+        run: |
+          Set-PSRepository -Name PSGallery -SourceLocation https://www.powershellgallery.com/api/v2/ -InstallationPolicy Trusted
+          Install-Module psake
       - name: 🏭 Configure and run tests
         shell: pwsh
         run:  Invoke-Psake ../pullRequest.ps1 -parameters @{"version"="0.1.2-test1";"actor"="${{ github.actor }}"}

@@ -66,7 +66,7 @@ Task IntegrationTests -Depends ConfigureIntegrationTests {
 
 Task Push -Depends Pack {
     "📢 NuGet Push"
-    dotnet nuget push ./CommandLine/nupkg/scrap.*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
+    dotnet nuget push ./CommandLine/nupkg/scrap.*.nupkg -k $env:NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
 }
 
 Task TagCommit -Depends Push {

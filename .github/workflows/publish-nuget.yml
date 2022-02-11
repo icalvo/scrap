@@ -20,28 +20,11 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 6.0.x
-      - name: 🏭 Restore dependencies
-        run: dotnet restore
-      - name: 🧱 Build
-        run: dotnet build --no-restore
-      - name: 🐛 Test
-        run: dotnet test --no-build --verbosity normal
-      - name: 🆚 Get NuGet version
-        id: mainversion
+      - name: 🏭 Install psake
         shell: pwsh
-        run: |
-          $split = "${{ github.event.inputs.version }}" -split "-",2
-          $mainver = $split[0]
-          echo "::set-output name=value::$mainver"
-      - name: 📦 NuGet Pack
-        run: dotnet pack /p:Version='${{ github.event.inputs.version }}' /p:PackageVersion='${{ github.event.inputs.version }}' /p:AssemblyVersion='${{ steps.mainversion.outputs.value }}' /p:FileVersion='${{ steps.mainversion.outputs.value }}' /p:InformationalVersion='${{ github.event.inputs.version }}'
-      - name: 📢 NuGet Push
-        run: dotnet nuget push ./CommandLine/nupkg/scrap.*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
+        run: Install-Module psake
+      - name: 🏭 Configure and run tests
+        shell: pwsh
+        run: Invoke-Psake ../psakeTasks.ps1 Publish -parameters @{"version"="${{ github.event.inputs.version }}";"actor"="${{ github.actor }}"}
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.NUGET_TOKEN }}
-      - name: 🏷 Tag commit and push
-        run: |
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-          git config --global user.name "${{ github.actor }}"
-          git tag v${{ github.event.inputs.version }}
-          git push origin --tags

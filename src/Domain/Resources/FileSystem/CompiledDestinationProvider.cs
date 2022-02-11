@@ -20,10 +20,10 @@ public class CompiledDestinationProvider : IDestinationProvider
         _logger = logger;
     }
 
-    public static CompiledDestinationProvider CreateCompiled(string[] destinationFolderPattern, ILogger<CompiledDestinationProvider> logger)
+    public static async Task<CompiledDestinationProvider> CreateCompiledAsync(string[] destinationFolderPattern, ILogger<CompiledDestinationProvider> logger)
     {
         var result = new CompiledDestinationProvider(destinationFolderPattern, logger);
-        result.Compile();
+        await result.Compile();
         return result;
     }
 
@@ -37,9 +37,9 @@ public class CompiledDestinationProvider : IDestinationProvider
         return _compiledDestinationProvider.GetDestinationAsync(destinationRootFolder, page, pageIndex, resourceUrl, resourceIndex);
     }
 
-    private void Compile()
+    private async Task Compile()
     {
-        string sourceCode = GenerateSourceCode();
+        string sourceCode = await GenerateSourceCodeAsync();
         try
         {
             var assembly = CompileSourceCode(sourceCode);
@@ -52,14 +52,15 @@ public class CompiledDestinationProvider : IDestinationProvider
         }
     }
 
-    private string GenerateSourceCode()
+    private async Task<string> GenerateSourceCodeAsync()
     {
-        var directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location) ??
-                            throw new Exception("Cannot find entry assembly path");
-        var sourcePath = Path.Combine(directoryName, @"Resources\FileSystem\TemplateDestinationProvider.cs");
-
-        // define source code, then parse it (to the type used for compilation)
-        string sourceCode = File.ReadAllText(sourcePath);
+        await using var stream =
+            typeof(CompiledDestinationProvider).Assembly
+                .GetManifestResourceStream("Scrap.Resources.FileSystem.TemplateDestinationProvider.cs")
+            ?? throw new Exception("TemplateDestinationProvider resource not found");
+        using var reader = new StreamReader(stream);
+        
+        string sourceCode = await reader.ReadToEndAsync();
         var callChain = string.Join("", _destinationFolderPattern.Select(p => $".C({p})"));
         var pattern = $"rootFolder{callChain}.ToPath()";
         sourceCode = sourceCode.Replace("\"destinationFolderPattern\"", pattern);

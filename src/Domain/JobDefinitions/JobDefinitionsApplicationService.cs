@@ -50,7 +50,7 @@ public class JobDefinitionsApplicationService
             jobDefinition.SetValues(definition);
         }
             
-        jobDefinition.ResourceRepoArgs.Validate(_loggerFactory);
+        await jobDefinition.ResourceRepoArgs.ValidateAsync(_loggerFactory);
 
         _logger.LogDebug("Upserting job def. {JobId}, name {JobName}", jobDefinition.Id, jobDefinition.Name);
         await _definitionRepository.UpsertAsync(jobDefinition);

@@ -17,7 +17,8 @@ public class Page: IEquatable<Page>
         _logger = logger;
         Uri = uri;
         Document = document;
-        _baseUri = new Uri(uri.Scheme + "://" + uri.Host);
+        var portSuffix = uri.IsDefaultPort ? "" : $":{uri.Port}";
+        _baseUri = new Uri($"{uri.Scheme}://{uri.Host}{portSuffix}");
     }
 
     public Uri Uri { get; }

@@ -45,9 +45,9 @@ public sealed class CustomConsoleFormatter : ConsoleFormatter, IDisposable
                 : null;
 
 
-        var logRecord = exception != null
+        var logRecord = exception == null
             ? $"{formattedMessage}"
-            : $"{formattedMessage} {exception?.ToStringDemystified() ?? ""}";
+            : $"{formattedMessage} {exception.ToStringDemystified()}";
         textWriter.SetForegroundColor(foregroundColor);
         textWriter.WriteLine(logRecord);
         textWriter.ResetForegroundColor(foregroundColor);

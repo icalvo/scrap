@@ -3,6 +3,6 @@ namespace Scrap.Resources;
 
 public interface IResourceRepositoryConfiguration
 {
-    void Validate(ILoggerFactory loggerFactory);
+    Task ValidateAsync(ILoggerFactory loggerFactory);
     string Type { get; }
 }

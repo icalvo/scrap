@@ -60,11 +60,9 @@ public class ServicesResolver : IJobServicesResolver
             _loggerFactory.CreateLogger<JobApplicationService>());
     }
 
-    public (
-        IDownloadStreamProvider downloadStreamProvider,
-        IResourceRepository resourceRepository,
-        IPageRetriever pageRetriever,
-        IPageMarkerRepository pageMarkerRepository) BuildJobDependencies(Job job)
+    public async
+        Task<(IDownloadStreamProvider downloadStreamProvider, IResourceRepository resourceRepository, IPageRetriever
+            pageRetriever, IPageMarkerRepository pageMarkerRepository)> BuildJobDependencies(Job job)
     {
         IAsyncPolicy httpPolicy = BuildHttpPolicy(
             job.HttpRequestRetries,
@@ -75,7 +73,7 @@ public class ServicesResolver : IJobServicesResolver
             httpPolicy,
             _loggerFactory.CreateLogger<HttpPageRetriever>(),
             _loggerFactory);
-        var resourceRepository = BuildResourceRepository(job.ResourceRepoArgs, job.DisableResourceWrites);
+        var resourceRepository = await BuildResourceRepositoryAsync(job.ResourceRepoArgs, job.DisableResourceWrites);
         var pageMarkerRepository = BuildPageMarkerRepository(job.FullScan, job.DisableMarkingVisited);
 
         return (downloadStreamProvider, resourceRepository, pageRetriever, pageMarkerRepository);
@@ -118,13 +116,13 @@ public class ServicesResolver : IJobServicesResolver
             disableWrites: whatIf);
     }
         
-    private IResourceRepository BuildResourceRepository(IResourceRepositoryConfiguration configuration, bool whatIf)
+    private async Task<IResourceRepository> BuildResourceRepositoryAsync(IResourceRepositoryConfiguration configuration, bool whatIf)
     {
         switch (configuration)
         {
             case FileSystemResourceRepositoryConfiguration config:
                 _logger.LogDebug("Destination root folder: {RootFolder}", config.RootFolder);
-                var destinationProvider = CompiledDestinationProvider.CreateCompiled(
+                var destinationProvider = await CompiledDestinationProvider.CreateCompiledAsync(
                     config.PathFragments,
                     new Logger<CompiledDestinationProvider>(_loggerFactory));
                 return new FileSystemResourceRepository(

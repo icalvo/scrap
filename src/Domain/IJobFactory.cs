@@ -4,5 +4,5 @@ namespace Scrap;
 
 public interface IJobFactory
 {
-    Job Create(NewJobDto newJobDto);
+    Task<Job> CreateAsync(NewJobDto newJobDto);
 }

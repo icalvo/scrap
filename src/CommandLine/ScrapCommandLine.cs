@@ -308,6 +308,7 @@ public class ScrapCommandLine
             return;
         }
 
+        System.Diagnostics.Debug.Assert(key != null, nameof(key) + " != null");
         SetUpGlobalConfigValue(globalUserConfigFolder, globalUserConfigPath, key, value);
     }
 

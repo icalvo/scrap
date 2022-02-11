@@ -79,9 +79,3 @@ Task TagCommit -Depends Push {
 
 task Publish -Depends TagCommit
 
-TaskTearDown {
-    if ($lastexitcode -ne 0)
-    {
-        throw "Command-line program failed"
-    }
-}

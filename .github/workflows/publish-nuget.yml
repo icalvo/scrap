@@ -22,7 +22,9 @@ jobs:
           dotnet-version: 6.0.x
       - name: 🏭 Install psake
         shell: pwsh
-        run: Install-Module psake
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module psake
       - name: 🏭 Configure and run tests
         shell: pwsh
         run: Invoke-Psake ../psakeTasks.ps1 Publish -parameters @{"version"="${{ github.event.inputs.version }}";"actor"="${{ github.actor }}"}

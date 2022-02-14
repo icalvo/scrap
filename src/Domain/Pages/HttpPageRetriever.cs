@@ -20,15 +20,15 @@ public class HttpPageRetriever : IPageRetriever
         _pageLogger = new Logger<Page>(loggerFactory);
     }
 
-    public Task<Page> GetPageAsync(Uri uri)
+    public Task<IPage> GetPageAsync(Uri uri)
     {
         _logger.LogTrace("GET {Uri}", uri);
-        return _policy.ExecuteAsync(async _ =>
+        return _policy.ExecuteAsync<IPage>(async _ =>
         {
             var stream = await _client.GetStreamAsync(uri);
             HtmlDocument document = new();
             document.Load(stream);
             return new Page(uri, document, this, _pageLogger);
-        }, new Context("Page " + uri.AbsoluteUri));
+        }, new Context($"Page {uri.AbsoluteUri}"));
     }
 }

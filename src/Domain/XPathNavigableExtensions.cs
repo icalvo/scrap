@@ -1,12 +1,11 @@
 ﻿using System.Collections;
 using System.Xml.XPath;
-using HtmlAgilityPack;
 
 namespace Scrap;
 
-public static class HtmlDocumentExtensions
+public static class XPathNavigableExtensions
 {
-    public static IEnumerable<string?> Contents(this HtmlDocument doc, XPath xpath)
+    public static IEnumerable<string?> Contents(this IXPathNavigable doc, XPath xpath)
     {
         XPathNavigator nav = doc.CreateNavigator()
                              ?? throw new ArgumentException("Could not create XPathNavigator", nameof(doc));

@@ -15,6 +15,9 @@ namespace Scrap.CommandLine;
 
 public class ScrapCommandLine
 {
+    private const string JobDefNameEnvironment = "JobDefinition:DefaultName";
+    private const string JobDefRootUrlEnvironment = "JobDefinition:DefaultRootUrl";
+    private const string ConfigFolderEnvironment = "GlobalConfigurationFolder";
     private bool _verbose;
     private bool _debug;
     private IConfiguration _configuration = null!;
@@ -36,25 +39,23 @@ public class ScrapCommandLine
             Debugger.Launch();
         }
 
-        var globalUserConfigFolder =
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
+        const string environmentVarPrefix = "Scrap_";
+        _configuration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
+        var globalUserConfigFolder = GetGlobalUserConfigFolder();
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
         var configBuilder = new ConfigurationBuilder()
             .AddJsonFile("scrap.json", optional: false, reloadOnChange: false);
+        if (!context.Method.Names.Contains("configure"))
+        {
+            _ = configBuilder.AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false);
+        }
+ 
+        _configuration = configBuilder.AddEnvironmentVariables(prefix: environmentVarPrefix).Build();
 
         if (!context.Method.Names.Contains("configure"))
         {
-            _configuration = 
-                configBuilder
-                    .AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false)
-                    .Build();
             EnsureGlobalConfiguration(globalUserConfigFolder, globalUserConfigPath);
         }
-        else
-        {
-            _configuration = configBuilder.Build();
-        }
-
     }
 
     [Global(Aliases="dbg", Description = "Runs a debugger session at the beginning")]
@@ -85,10 +86,10 @@ public class ScrapCommandLine
 
         using var loggerFactory = SetupLoggingWithConsole();
         var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
-        var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
+        var definitionsApplicationService = await serviceResolver.GetJobDefinitionsApplicationServiceAsync();
     
         var jobDefs = new List<JobDefinitionDto>();
-        var envRootUrl = Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
+        var envRootUrl = _configuration[JobDefRootUrlEnvironment];
         if (all)
         {
             if (name != null || rootUrl != null)
@@ -103,13 +104,14 @@ public class ScrapCommandLine
         }
         else
         {
-            var envName = Environment.GetEnvironmentVariable("JOBDEF_NAME");
+            var envName = _configuration[JobDefNameEnvironment];
             var jobDef = await GetJobDefinition(name, rootUrl, definitionsApplicationService, envName, envRootUrl);
 
             if (jobDef == null)
             {
                 return;
             }
+
             jobDefs.Add(jobDef);
         }
 
@@ -123,7 +125,7 @@ public class ScrapCommandLine
         foreach (var jobDef in jobDefs)
         {
             var newJob = new NewJobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
-            var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+            var scrapAppService = serviceResolver.GetJobApplicationService();
             _logger.LogInformation("Starting {Definition}...", jobDef.Name);
             await scrapAppService.ScrapAsync(newJob);
             _logger.LogInformation("Finished!");
@@ -145,7 +147,7 @@ public class ScrapCommandLine
             return;
         }
 
-        var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+        var scrapAppService = serviceResolver.GetJobApplicationService();
         await scrapAppService.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
     }
 
@@ -172,7 +174,7 @@ public class ScrapCommandLine
             return;
         }
 
-        var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+        var scrapAppService = serviceResolver.GetJobApplicationService();
         var pageIndex = 0;
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
@@ -210,7 +212,7 @@ public class ScrapCommandLine
             return;
         }
 
-        var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+        var scrapAppService = serviceResolver.GetJobApplicationService();
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
         {
@@ -246,7 +248,7 @@ public class ScrapCommandLine
             return;
         }
 
-        var scrapAppService = serviceResolver.BuildScrapperApplicationService();
+        var scrapAppService = serviceResolver.GetJobApplicationService();
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
         {
@@ -258,7 +260,7 @@ public class ScrapCommandLine
 
     [Verb(Description = "Configures the tool", Aliases = "c,config")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public static void Configure(
+    public void Configure(
         string? key = null,
         string? value = null)
     {
@@ -334,8 +336,9 @@ public class ScrapCommandLine
         }
     }
 
-    private static string GetGlobalUserConfigFolder()
-        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
+    private string GetGlobalUserConfigFolder()
+        => _configuration[ConfigFolderEnvironment]
+           ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
 
     private record GlobalConfig(
         string Key,
@@ -519,9 +522,9 @@ public class ScrapCommandLine
         bool? disableMarkingVisited,
         bool? disableResourceWrites)
     {
-        var definitionsApplicationService = await serviceResolver.BuildJobDefinitionsApplicationServiceAsync();
-        var envName = Environment.GetEnvironmentVariable("JOBDEF_NAME");
-        var envRootUrl = Environment.GetEnvironmentVariable("JOBDEF_ROOT_URL");
+        var definitionsApplicationService = await serviceResolver.GetJobDefinitionsApplicationServiceAsync();
+        var envName = _configuration[JobDefNameEnvironment];
+        var envRootUrl = _configuration[JobDefRootUrlEnvironment];
         
         var jobDef = await GetJobDefinition(name, rootUrl, definitionsApplicationService, envName, envRootUrl);
 

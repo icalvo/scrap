@@ -35,7 +35,15 @@ public class IntegrationTests
 
     private static async IAsyncEnumerable<string> GetCommandLineOutput(string args)
     {
-        var psi = new ProcessStartInfo("scrap", args) { RedirectStandardOutput = true, };
+        var psi = new ProcessStartInfo(
+            Path.Combine(Environment.GetEnvironmentVariable("Scrap_GlobalConfigurationFolder")!, "scrap.exe"), args)
+        {
+            RedirectStandardOutput = true,
+            Environment =
+            {
+                ["Scrap_GlobalConfigurationFolder"] = Environment.GetEnvironmentVariable("Scrap_GlobalConfigurationFolder")
+            }
+        };
         var p = Process.Start(psi);
         Debug.Assert(p != null);
         while (true)

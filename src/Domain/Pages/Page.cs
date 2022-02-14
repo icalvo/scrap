@@ -1,17 +1,16 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Xml.XPath;
-using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
 
 namespace Scrap.Pages;
 
-public class Page: IEquatable<Page>
+public class Page: IPage
 {
     private readonly IPageRetriever _pageRetriever;
     private readonly Uri _baseUri;
     private readonly ILogger<Page> _logger;
 
-    public Page(Uri uri, HtmlDocument document, IPageRetriever pageRetriever, ILogger<Page> logger)
+    public Page(Uri uri, IXPathNavigable document, IPageRetriever pageRetriever, ILogger<Page> logger)
     {
         _pageRetriever = pageRetriever;
         _logger = logger;
@@ -22,7 +21,7 @@ public class Page: IEquatable<Page>
     }
 
     public Uri Uri { get; }
-    private HtmlDocument Document { get; }
+    public IXPathNavigable Document { get; }
 
     public override bool Equals(object? obj)
     {
@@ -32,7 +31,7 @@ public class Page: IEquatable<Page>
         return Equals((Page)obj);
     }
 
-    public bool Equals(Page? other)
+    public bool Equals(IPage? other)
     {
         return other != null && Uri.AbsoluteUri.Equals(other.Uri.AbsoluteUri);
     }
@@ -55,7 +54,7 @@ public class Page: IEquatable<Page>
         return Links(xPath).FirstOrDefault();
     }
 
-    public string Concat(XPathExpression xPath)
+    public string Concat(XPath xPath)
     {
         return string.Join("", Contents(xPath));
     }
@@ -69,22 +68,10 @@ public class Page: IEquatable<Page>
     {
         var result = Document.Contents(xPath).ToArray();
 
-        string?[] elementsToDisplay = result;
-        string suffix = "";
-        const int maxElementsToDisplay = 3;
-        const int maxCharsPerElement = 15;
-        if (result.Length > maxElementsToDisplay)
-        {
-            elementsToDisplay = result[..maxElementsToDisplay];
-            suffix = ",... (" + (result.Length - maxElementsToDisplay) + " more)";
-        }
-
-        string output = string.Join(",", elementsToDisplay.Select(x => x == null ? "" : x.Length <= maxCharsPerElement ? x : x[..(maxCharsPerElement - 3)] + "...")) + suffix;
-        _logger.LogTrace("Eval XPath {XPath} => [{Result}]", xPath, output);
-            
+        LogXPathEval(result, xPath);
         return result;
     }
-        
+    
     public string Content(XPath xPath)
     {
         var result = Contents(xPath).FirstOrDefault();
@@ -96,7 +83,7 @@ public class Page: IEquatable<Page>
         return result;
     }
 
-    public async Task<Page?> LinkedDoc(string xPath)
+    public async Task<IPage?> LinkedDoc(string xPath)
     {
         var link = Link(xPath);
         try
@@ -111,7 +98,22 @@ public class Page: IEquatable<Page>
         }
     }
 
-    private async Task<Page?> Doc(Uri? link)
+    private void LogXPathEval(string?[] result, XPath xPath)
+    {
+        const int maxElementsToDisplay = 3;
+        const int maxCharsPerElement = 15;
+        string?[] elementsToDisplay = result;
+        string suffix = "";
+        if (result.Length > maxElementsToDisplay)
+        {
+            elementsToDisplay = result[..maxElementsToDisplay];
+            suffix = ",... (" + (result.Length - maxElementsToDisplay) + " more)";
+        }
+
+        string output = string.Join(",", elementsToDisplay.Select(x => x == null ? "" : x.Length <= maxCharsPerElement ? x : x[..(maxCharsPerElement - 3)] + "...")) + suffix;
+        _logger.LogTrace("Eval XPath {XPath} => [{Result}]", xPath, output);
+    }
+    private async Task<IPage?> Doc(Uri? link)
     {
         Debug.Assert(_pageRetriever != null, nameof(_pageRetriever) + " != null");
 

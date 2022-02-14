@@ -2,5 +2,5 @@ namespace Scrap.Pages;
 
 public interface IPageRetriever
 {
-    Task<Page> GetPageAsync(Uri uri);
+    Task<IPage> GetPageAsync(Uri uri);
 }

@@ -39,7 +39,6 @@ public class Job
         logger.Log(logLevel, "HTTP request delay between retries: {HttpRequestDelayBetweenRetries}", HttpRequestDelayBetweenRetries);
     }
 
-
     public JobId Id { get; }
     public Uri RootUrl { get; }
     public XPath? AdjacencyXPath { get; }

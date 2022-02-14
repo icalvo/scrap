@@ -6,7 +6,7 @@ public interface IDestinationProvider
 {
     Task<string> GetDestinationAsync(
         string rootFolder,
-        Page page,
+        IPage page,
         int pageIndex,
         Uri resourceUrl,
         int resourceIndex);

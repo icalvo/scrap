@@ -86,9 +86,3 @@ public class JobDefinition
         HttpRequestDelayBetweenRetries = dto.HttpRequestDelayBetweenRetries;
     }
 }
-
-public enum ResourceType
-{
-    DownloadLink = 0,
-    Text = 1
-}

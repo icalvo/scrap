@@ -42,8 +42,8 @@ Task Build -Depends Clean {
 }
 
 Task UnitTests -Depends Build {
-    "🐛 Test"
-    # Check { dotnet test --no-build --logger:"console;verbosity=normal" }
+    "🐛 Unit Tests"
+    Check { dotnet test ./UnitTests/ --no-build --logger:"console;verbosity=normal" }
 }
 
 Task Pack -Depends Build {
@@ -53,30 +53,44 @@ Task Pack -Depends Build {
 
 Task Install -Depends Pack {
     "🛠 Install tool"
-    Check { dotnet tool uninstall scrap --global }
-    Check { dotnet tool install scrap --global --add-source ./CommandLine/nupkg/ --version '0.1.2-test1' }
+    dotnet tool uninstall scrap --tool-path install
+    Check { dotnet tool install scrap --tool-path install --add-source ./CommandLine/nupkg/ --version '0.1.2-test1' }
 }
 
 Task ConfigureIntegrationTests -Depends Install {
     "⚙ Configure tool for integration tests"
-    $jobDefsFullPath = Resolve-Path ./Tests/jobDefinitions.json
+    $installFullPath = Resolve-Path ./install
+    $env:Scrap_GlobalConfigurationFolder=$installFullPath
+    $jobDefsFullPath = Resolve-Path ./IntegrationTests/jobDefinitions.json
 
     $dbFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("./scrap.db")
-    Check { scrap config /key=Scrap:Definitions /value=$jobDefsFullPath }
-    Check { scrap config /key=Scrap:Database /value="Filename=$dbFullPath;Connection=shared" }
+    Check { ./install/scrap.exe config /key=Scrap:Definitions /value=$jobDefsFullPath }
+    Check { ./install/scrap.exe config /key=Scrap:Database /value="Filename=$dbFullPath;Connection=shared" }
 }
 
-Task IntegrationTests -Depends ConfigureIntegrationTests {
+Task RunIntegrationTests -Depends ConfigureIntegrationTests {
     "🌍 Install and start web server for integration tests"
-    Check { dotnet tool install dotnet-serve --global }
-    $wwwPath = Resolve-Path ./Tests/www/
-    $serverproc = Start-Process "dotnet" -ArgumentList "serve --directory $wwwPath --port 8080" -PassThru -WorkingDirectory .
-    "🐛 Test"
-    Check { dotnet test --no-build --logger:"console;verbosity=normal" }
-    $serverproc.Kill()
+    dotnet tool uninstall dotnet-serve --tool-path install
+    Check { dotnet tool install dotnet-serve --tool-path install }
+    $wwwPath = Resolve-Path ./IntegrationTests/www/
+    $serverproc = Start-Process "./install/dotnet-serve.exe" -ArgumentList "--directory $wwwPath --port 8080" -PassThru -WorkingDirectory .
+    "🐛 Integration Tests"
+    try
+    {
+        Check {
+            dotnet test `
+                ./IntegrationTests/ `
+                --no-build `
+                --logger:"console;verbosity=normal" `
+                --environment Scrap_GlobalConfigurationFolder="$env:Scrap_GlobalConfigurationFolder"
+        }
+    }
+    finally {
+        $serverproc.Kill()
+    }
 }
 
-Task Push -Depends Pack {
+Task Push -Depends Pack,UnitTests {
     "📢 NuGet Push"
     Check { dotnet nuget push ./CommandLine/nupkg/scrap.*.nupkg -k $env:NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json }
 }
@@ -89,5 +103,10 @@ Task TagCommit -Depends Push {
     Check { git push origin --tags }
 }
 
-task Publish -Depends TagCommit
+Task Publish -Depends TagCommit
 
+Task IntegrationTests -Depends RunIntegrationTests {
+    Check { dotnet tool uninstall dotnet-serve --tool-path install }
+    Check { dotnet tool uninstall scrap --tool-path install }
+    del $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("./scrap.db")
+}

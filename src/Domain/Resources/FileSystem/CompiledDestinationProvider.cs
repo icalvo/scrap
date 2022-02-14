@@ -29,7 +29,7 @@ public class CompiledDestinationProvider : IDestinationProvider
 
     public Task<string> GetDestinationAsync(
         string destinationRootFolder,
-        Page page,
+        IPage page,
         int pageIndex,
         Uri resourceUrl,
         int resourceIndex)

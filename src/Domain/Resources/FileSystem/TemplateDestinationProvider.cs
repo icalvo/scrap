@@ -17,7 +17,7 @@ namespace Scrap.Resources.FileSystem
     {
         public async Task<string> GetDestinationAsync(
             string rootFolder,
-            Page page,
+            IPage page,
             int pageIndex,
             Uri resourceUrl,
             int resourceIndex)

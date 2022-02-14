@@ -78,13 +78,3 @@ internal static class TextWriterExtensions
             _ => "\u001B[49m"
         };
 }
-
-public static class EnumerableExtensions
-{
-    public static IEnumerable<T> Stitch<T>(
-        this IEnumerable<T> source,
-        T separator)
-    {
-        return source.SelectMany(x => new[] { x, separator }).SkipLast(1);
-    }
-}

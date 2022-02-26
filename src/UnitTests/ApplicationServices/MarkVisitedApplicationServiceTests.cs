@@ -2,7 +2,7 @@
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.ApplicationServices;
 
 public class MarkVisitedApplicationServiceTests
 {

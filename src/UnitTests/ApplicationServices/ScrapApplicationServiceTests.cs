@@ -5,7 +5,7 @@ using Scrap.Domain.Jobs;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.ApplicationServices;
 
 public class ScrapApplicationServiceTests
 {

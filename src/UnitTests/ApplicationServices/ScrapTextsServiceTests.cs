@@ -5,7 +5,7 @@ using Scrap.Domain.Resources;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.ApplicationServices;
 
 public class ScrapTextsServiceTests
 {
@@ -21,16 +21,11 @@ public class ScrapTextsServiceTests
     {
         var builder = new MockBuilder(
             _output,
-            TestTools.PageMock(
-                "https://example.com/a",
-                MockBuilder.LinkXPath, new[] { "https://example.com/b" },
-                MockBuilder.ResourceXPath, new[] { "https://example.com/1.txt", "https://example.com/2.txt" },
-                MockBuilder.ResourceXPath, new[] { "qwer", "asdf" }),
-            TestTools.PageMock(
-                "https://example.com/b",
-                MockBuilder.LinkXPath, new[] { "https://example.com/a" },
-                MockBuilder.ResourceXPath, new[] { "https://example.com/3.txt", "https://example.com/4.txt" },
-                MockBuilder.ResourceXPath, new[] { "zxcv", "yuio" }));
+            new PageMock("https://example.com/a")
+                .Contents(MockBuilder.ResourceXPath, "qwer", "asdf"),
+            new PageMock(
+                "https://example.com/b")
+                .Contents(MockBuilder.ResourceXPath, "zxcv", "yuio"));
         var jobDto = builder.BuildJobDto(ResourceType.Text);
         var service = builder.BuildScrapTextsService(jobDto);
 
@@ -55,22 +50,11 @@ public class ScrapTextsServiceTests
     [Fact]
     public async Task? ScrapTextAsync_DownloadJob_Throws()
     {
-        var builder = new MockBuilder(
-            _output,
-            TestTools.PageMock(
-                "https://example.com/a",
-                MockBuilder.LinkXPath, new[] { "https://example.com/b" },
-                MockBuilder.ResourceXPath, new[] { "https://example.com/1.txt", "https://example.com/2.txt" },
-                MockBuilder.ResourceXPath, new[] { "qwer", "asdf" }),
-            TestTools.PageMock(
-                "https://example.com/b",
-                MockBuilder.LinkXPath, new[] { "https://example.com/a" },
-                MockBuilder.ResourceXPath, new[] { "https://example.com/3.txt", "https://example.com/4.txt" },
-                MockBuilder.ResourceXPath, new[] { "zxcv", "yuio" }));
+        var builder = new MockBuilder(_output);
         var jobDto = builder.BuildJobDto(ResourceType.DownloadLink);
         var service = builder.BuildScrapTextsService(jobDto);
 
         var action = () => service.ScrapTextAsync(jobDto);
-        await action.Should().ThrowAsync<Exception>();
+        await action.Should().ThrowAsync<InvalidOperationException>();
     }
 }

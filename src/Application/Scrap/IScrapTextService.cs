@@ -4,5 +4,5 @@ namespace Scrap.Application.Scrap;
 
 public interface IScrapTextService
 {
-    Task ScrapTextAsync(NewJobDto jobDto);
+    Task ScrapTextAsync(JobDto jobDto);
 }

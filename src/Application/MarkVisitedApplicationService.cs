@@ -15,7 +15,7 @@ public class MarkVisitedApplicationService : IMarkVisitedApplicationService
         _pageMarkerRepository = pageMarkerRepository;
     }
 
-    public async Task MarkVisitedPageAsync(NewJobDto jobDto, Uri pageUrl)
+    public async Task MarkVisitedPageAsync(JobDto jobDto, Uri pageUrl)
     {
         var _ = await _jobFactory.CreateAsync(jobDto);
         

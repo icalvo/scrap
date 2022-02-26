@@ -4,14 +4,14 @@ using Scrap.Domain.Resources;
 
 namespace Scrap.Domain.Jobs;
 
-public class NewJobDto
+public class JobDto
 {
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
-    private NewJobDto()
+    private JobDto()
     {
     }
 
-    public NewJobDto(
+    public JobDto(
         JobDefinitionDto jobDefinition,
         string? rootUrl,
         bool? fullScan,
@@ -31,7 +31,7 @@ public class NewJobDto
             jobDefinition.ResourceType ?? default(ResourceType), disableMarkingVisited, disableResourceWrites)
     {}
 
-    public NewJobDto(
+    public JobDto(
         string? adjacencyXPath,
         string resourceXPath,
         IResourceRepositoryConfiguration resourceRepository,

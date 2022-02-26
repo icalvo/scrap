@@ -4,5 +4,5 @@ namespace Scrap.Application;
 
 public interface IMarkVisitedApplicationService
 {
-    Task MarkVisitedPageAsync(NewJobDto jobDto, Uri pageUrl);
+    Task MarkVisitedPageAsync(JobDto jobDto, Uri pageUrl);
 }

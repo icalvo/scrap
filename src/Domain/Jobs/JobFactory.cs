@@ -16,9 +16,9 @@ public class JobFactory : IJobFactory
         _validator = validator;
     }
 
-    public async Task<Job> CreateAsync(NewJobDto newJobDto)
+    public async Task<Job> CreateAsync(JobDto jobDto)
     {
-        var job = new Job(newJobDto);
+        var job = new Job(jobDto);
         await _validator.ValidateAsync(job.ResourceRepoArgs);
         _jobRegistry.Register(job);
         return job;

@@ -30,7 +30,7 @@ public class DownloadApplicationService : IDownloadApplicationService
         _logger = logger;
     }
 
-    public async Task DownloadAsync(NewJobDto jobDto, Uri pageUrl, int pageIndex, Uri resourceUrl, int resourceIndex)
+    public async Task DownloadAsync(JobDto jobDto, Uri pageUrl, int pageIndex, Uri resourceUrl, int resourceIndex)
     {
         if (jobDto.ResourceType != ResourceType.DownloadLink)
         {

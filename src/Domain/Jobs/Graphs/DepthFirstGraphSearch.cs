@@ -2,7 +2,6 @@ namespace Scrap.Domain.Jobs.Graphs;
 
 public class DepthFirstGraphSearch : IGraphSearch
 {
-   
     public async IAsyncEnumerable<T> SearchAsync<TRef, T>(TRef startRef, Func<TRef, Task<T>> visit, Func<T, IAsyncEnumerable<TRef>> adj)
     {
         HashSet<TRef> visitedRefs = new(EqualityComparer<TRef>.Default);

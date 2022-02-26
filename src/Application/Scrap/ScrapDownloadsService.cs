@@ -39,7 +39,7 @@ public class ScrapDownloadsService : IScrapDownloadsService
         _jobFactory = jobFactory;
     }
 
-    public async Task DownloadLinksAsync(NewJobDto jobDto)
+    public async Task DownloadLinksAsync(JobDto jobDto)
     {
         var job = await _jobFactory.CreateAsync(jobDto);
         var rootUri = job.RootUrl;

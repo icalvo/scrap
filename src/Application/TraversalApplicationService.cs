@@ -23,7 +23,7 @@ public class TraversalApplicationService : ITraversalApplicationService
         _jobFactory = jobFactory;
     }
 
-    public async IAsyncEnumerable<string> TraverseAsync(NewJobDto jobDto)
+    public async IAsyncEnumerable<string> TraverseAsync(JobDto jobDto)
     {
         var job = await _jobFactory.CreateAsync(jobDto);
         var rootUri = job.RootUrl;

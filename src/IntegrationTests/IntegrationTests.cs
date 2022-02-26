@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using FluentAssertions;
-using LamarCodeGeneration.Util;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -25,7 +24,7 @@ public class IntegrationTests
     [Fact]
     public async Task CommandLine_Scrap_Simple()
     {
-        var commandLineOutput = await GetCommandLineOutput("-name=testsite").ToArrayAsync();
+        var commandLineOutput = await GetCommandLineOutput("-name=testsite").ToListAsync();
         _output.WriteLine("-------------------------------------");
         commandLineOutput.ForEach(_output.WriteLine);
         _output.WriteLine("-------------------------------------");

@@ -18,7 +18,7 @@ public class ResourcesApplicationService : IResourcesApplicationService
         _pageRetriever = pageRetriever;
     }
 
-    public async IAsyncEnumerable<string> GetResourcesAsync(NewJobDto jobDto, Uri pageUrl, int pageIndex)
+    public async IAsyncEnumerable<string> GetResourcesAsync(JobDto jobDto, Uri pageUrl, int pageIndex)
     {
         if (jobDto.ResourceType != ResourceType.DownloadLink)
         {

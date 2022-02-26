@@ -127,7 +127,7 @@ public class ScrapCommandLine
         _logger.LogInformation("The following job def(s). will be run: {JobDefs}", string.Join(", ", jobDefs.Select(x => x.Name)));
         foreach (var jobDef in jobDefs)
         {
-            var newJob = new NewJobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
+            var newJob = new JobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
             var scrapAppService = serviceResolver.Get<ScrapApplicationService>();
             _logger.LogInformation("Starting {Definition}...", jobDef.Name);
             await scrapAppService.ScrapAsync(newJob);
@@ -516,7 +516,7 @@ public class ScrapCommandLine
         }
     }
 
-    private async Task<NewJobDto?> BuildJobDto(
+    private async Task<JobDto?> BuildJobDto(
         ServicesLocator serviceLocator,
         string? name,
         string? rootUrl,
@@ -538,7 +538,7 @@ public class ScrapCommandLine
         
         _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
         
-        return new NewJobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);        
+        return new JobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);        
     }
 
     private async Task<JobDefinitionDto?> GetJobDefinition(

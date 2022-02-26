@@ -16,7 +16,7 @@ public class ScrapApplicationService : IScrapApplicationService
         _scrapTextService = scrapTextService;
     }
 
-    public async Task ScrapAsync(NewJobDto jobDto)
+    public async Task ScrapAsync(JobDto jobDto)
     {
         await (jobDto.ResourceType switch
         {

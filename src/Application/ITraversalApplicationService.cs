@@ -4,5 +4,5 @@ namespace Scrap.Application;
 
 public interface ITraversalApplicationService
 {
-    IAsyncEnumerable<string> TraverseAsync(NewJobDto jobDto);
+    IAsyncEnumerable<string> TraverseAsync(JobDto jobDto);
 }

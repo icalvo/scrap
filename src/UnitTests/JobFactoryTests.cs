@@ -18,7 +18,7 @@ public class JobFactoryTests
             new JobFactory(Mock.Of<IEntityRegistry<Job>>(), Mock.Of<IResourceRepositoryConfigurationValidator>());
         IResourceRepositoryConfiguration resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
        
-        var actual = await jobFactory.CreateAsync(new NewJobDto(
+        var actual = await jobFactory.CreateAsync(new JobDto(
             null,
             "//a/@href",
             resourceRepoConfig,

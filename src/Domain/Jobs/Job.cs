@@ -9,7 +9,7 @@ public class Job
     public const int DefaultHttpRequestRetries = 5;
     public static readonly TimeSpan DefaultHttpRequestDelayBetweenRetries = TimeSpan.FromSeconds(1);
 
-    public Job(NewJobDto dto)
+    public Job(JobDto dto)
     {
         Id = new JobId();
         AdjacencyXPath = dto.AdjacencyXPath == null ? null : new XPath(dto.AdjacencyXPath);

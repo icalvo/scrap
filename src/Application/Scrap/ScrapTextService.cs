@@ -37,7 +37,7 @@ public class ScrapTextService : IScrapTextService
         _linkCalculator = linkCalculator;
     }
 
-    public async Task ScrapTextAsync(NewJobDto jobDto)
+    public async Task ScrapTextAsync(JobDto jobDto)
     {
         if (jobDto.ResourceType != ResourceType.Text)
         {

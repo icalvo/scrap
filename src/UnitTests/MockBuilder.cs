@@ -35,11 +35,11 @@ public class MockBuilder
         Traversal = traversal;
     }
 
-    public NewJobDto BuildJobDto(ResourceType resourceType = ResourceType.DownloadLink)
+    public JobDto BuildJobDto(ResourceType resourceType = ResourceType.DownloadLink)
     {
         IResourceRepositoryConfiguration resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
 
-        return new NewJobDto(
+        return new JobDto(
             null,
             ResourceXPath,
             resourceRepoConfig,
@@ -53,7 +53,7 @@ public class MockBuilder
             null);            
     }
         
-    public ScrapDownloadsService BuildScrapDownloadsService(NewJobDto jobDto)
+    public ScrapDownloadsService BuildScrapDownloadsService(JobDto jobDto)
     {
         SetupDependencies(jobDto);
         return new ScrapDownloadsService(
@@ -67,7 +67,7 @@ public class MockBuilder
             JobFactoryMock.Object);
     }
 
-    public IScrapTextService BuildScrapTextsService(NewJobDto jobDto)
+    public IScrapTextService BuildScrapTextsService(JobDto jobDto)
     {
         SetupDependencies(jobDto);
         return new ScrapTextService(
@@ -80,7 +80,7 @@ public class MockBuilder
             new MockLogger<ScrapTextService>(LoggerMock));
     }
 
-    public TraversalApplicationService BuildTraversalApplicationService(NewJobDto jobDto)
+    public TraversalApplicationService BuildTraversalApplicationService(JobDto jobDto)
     {
         SetupDependencies(jobDto);
         return new TraversalApplicationService(GraphSearchMock.Object,
@@ -89,7 +89,7 @@ public class MockBuilder
             JobFactoryMock.Object);
     }
 
-    public MarkVisitedApplicationService BuildMarkVisitedApplicationService(NewJobDto jobDto)
+    public MarkVisitedApplicationService BuildMarkVisitedApplicationService(JobDto jobDto)
     {
         SetupDependencies(jobDto);
         return new MarkVisitedApplicationService(
@@ -97,7 +97,7 @@ public class MockBuilder
             PageMarkerRepositoryMock.Object);
     }
 
-    public ResourcesApplicationService BuildResourcesApplicationService(NewJobDto jobDto)
+    public ResourcesApplicationService BuildResourcesApplicationService(JobDto jobDto)
     {
         SetupDependencies(jobDto);
         return new ResourcesApplicationService(
@@ -105,7 +105,7 @@ public class MockBuilder
             PageRetrieverMock.Object);
     }
 
-    public DownloadApplicationService BuildDownloadApplicationService(NewJobDto jobDto)
+    public DownloadApplicationService BuildDownloadApplicationService(JobDto jobDto)
     {
         SetupDependencies(jobDto);
         return new DownloadApplicationService(
@@ -116,7 +116,7 @@ public class MockBuilder
             Mock.Of<ILogger<DownloadApplicationService>>());
     }
 
-    private void SetupDependencies(NewJobDto jobDto)
+    private void SetupDependencies(JobDto jobDto)
     {
         foreach (var pageMock in Traversal)
         {
@@ -134,7 +134,7 @@ public class MockBuilder
         _streamProviderMock.Setup(y => y.GetStreamAsync(It.IsAny<Uri>()))
             .ReturnsAsync(new MemoryStream(Encoding.UTF8.GetBytes("some text goes here!..")));
         JobFactoryMock = new Mock<IJobFactory>();
-        JobFactoryMock.Setup(x => x.CreateAsync(It.IsAny<NewJobDto>()))
+        JobFactoryMock.Setup(x => x.CreateAsync(It.IsAny<JobDto>()))
             .ReturnsAsync(new Job(jobDto));
 
         ResourceRepositoryMock.Setup(x => x.ExistsAsync(It.IsAny<ResourceInfo>())).ReturnsAsync(false);

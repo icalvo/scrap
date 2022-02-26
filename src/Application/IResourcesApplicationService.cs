@@ -4,5 +4,5 @@ namespace Scrap.Application;
 
 public interface IResourcesApplicationService
 {
-    IAsyncEnumerable<string> GetResourcesAsync(NewJobDto jobDto, Uri pageUrl, int pageIndex);
+    IAsyncEnumerable<string> GetResourcesAsync(JobDto jobDto, Uri pageUrl, int pageIndex);
 }

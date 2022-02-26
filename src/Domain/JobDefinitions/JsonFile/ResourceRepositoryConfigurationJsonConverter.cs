@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Scrap.Resources;
-using Scrap.Resources.FileSystem;
+using Scrap.Domain.Resources;
+using Scrap.Domain.Resources.FileSystem;
 
-namespace Scrap.JobDefinitions.JsonFile;
+namespace Scrap.Domain.JobDefinitions.JsonFile;
 
 public class ResourceRepositoryConfigurationJsonConverter : JsonConverter<IResourceRepositoryConfiguration>
 {

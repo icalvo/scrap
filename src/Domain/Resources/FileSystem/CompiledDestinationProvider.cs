@@ -5,41 +5,36 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.Extensions.Logging;
-using Scrap.Pages;
+using Scrap.Domain.Pages;
 
-namespace Scrap.Resources.FileSystem;
+namespace Scrap.Domain.Resources.FileSystem;
 
 public class CompiledDestinationProvider : IDestinationProvider
 {
-    private readonly string[] _destinationFolderPattern;
     private IDestinationProvider _compiledDestinationProvider = null!;
     private readonly ILogger<CompiledDestinationProvider> _logger;
-    private CompiledDestinationProvider(string[] destinationFolderPattern, ILogger<CompiledDestinationProvider> logger)
+
+    public CompiledDestinationProvider(ILogger<CompiledDestinationProvider> logger)
     {
-        _destinationFolderPattern = destinationFolderPattern;
         _logger = logger;
     }
 
-    public static async Task<CompiledDestinationProvider> CreateCompiledAsync(string[] destinationFolderPattern, ILogger<CompiledDestinationProvider> logger)
-    {
-        var result = new CompiledDestinationProvider(destinationFolderPattern, logger);
-        await result.Compile();
-        return result;
-    }
-
-    public Task<string> GetDestinationAsync(
+    public async Task<string> GetDestinationAsync(
+        FileSystemResourceRepositoryConfiguration config,
         string destinationRootFolder,
         IPage page,
         int pageIndex,
         Uri resourceUrl,
         int resourceIndex)
     {
-        return _compiledDestinationProvider.GetDestinationAsync(destinationRootFolder, page, pageIndex, resourceUrl, resourceIndex);
+        await CompileAsync(config);
+        return await _compiledDestinationProvider.GetDestinationAsync(config, destinationRootFolder, page, pageIndex, resourceUrl, resourceIndex);
     }
 
-    private async Task Compile()
+    public async Task CompileAsync(FileSystemResourceRepositoryConfiguration config)
     {
-        string sourceCode = await GenerateSourceCodeAsync();
+        var destinationFolderPattern = config.PathFragments;
+        string sourceCode = await GenerateSourceCodeAsync(destinationFolderPattern);
         try
         {
             var assembly = CompileSourceCode(sourceCode);
@@ -52,7 +47,7 @@ public class CompiledDestinationProvider : IDestinationProvider
         }
     }
 
-    private async Task<string> GenerateSourceCodeAsync()
+    private async Task<string> GenerateSourceCodeAsync(string[] destinationFolderPattern)
     {
         await using var stream =
             typeof(CompiledDestinationProvider).Assembly
@@ -61,7 +56,7 @@ public class CompiledDestinationProvider : IDestinationProvider
         using var reader = new StreamReader(stream);
         
         string sourceCode = await reader.ReadToEndAsync();
-        var callChain = string.Join("", _destinationFolderPattern.Select(p => $".C({p})"));
+        var callChain = string.Join("", destinationFolderPattern.Select(p => $".C({p})"));
         var pattern = $"rootFolder{callChain}.ToPath()";
         sourceCode = sourceCode.Replace("\"destinationFolderPattern\"", pattern);
         return sourceCode;

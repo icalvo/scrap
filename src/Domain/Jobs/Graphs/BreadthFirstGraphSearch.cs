@@ -1,4 +1,4 @@
-namespace Scrap.Jobs.Graphs;
+namespace Scrap.Domain.Jobs.Graphs;
 
 public class BreadthFirstGraphSearch : IGraphSearch
 {

@@ -1,6 +1,6 @@
-﻿using Scrap.Pages;
+﻿using Scrap.Domain.Pages;
 
-namespace Scrap.Resources;
+namespace Scrap.Domain.Resources;
 
 public class ResourceInfo
 {

@@ -1,6 +1,6 @@
 ﻿using System.Xml.XPath;
 
-namespace Scrap;
+namespace Scrap.Domain;
 
 public class XPath
 {

@@ -1,4 +1,4 @@
-namespace Scrap.JobDefinitions;
+namespace Scrap.Domain.JobDefinitions;
 
 public class JobDefinitionId
 {

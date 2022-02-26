@@ -1,4 +1,4 @@
-namespace Scrap.Resources;
+namespace Scrap.Domain.Resources;
 
 public interface IResourceRepository
 {

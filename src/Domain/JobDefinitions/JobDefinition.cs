@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
-using Scrap.Resources;
+using Scrap.Domain.Resources;
 
-namespace Scrap.JobDefinitions;
+namespace Scrap.Domain.JobDefinitions;
 
 public class JobDefinition
 {

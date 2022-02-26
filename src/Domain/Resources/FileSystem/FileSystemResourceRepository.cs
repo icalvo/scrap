@@ -1,22 +1,24 @@
 using Microsoft.Extensions.Logging;
 
-namespace Scrap.Resources.FileSystem;
+namespace Scrap.Domain.Resources.FileSystem;
 
 public class FileSystemResourceRepository : BaseResourceRepository<FileSystemResourceId>
 {
     private readonly IDestinationProvider _destinationProvider;
+    private readonly FileSystemResourceRepositoryConfiguration _config;
     private readonly string _destinationRootFolder;
     private readonly ILogger<FileSystemResourceRepository> _logger;
     private readonly bool _disableWrites;
 
     public FileSystemResourceRepository(
         IDestinationProvider destinationProvider,
-        string destinationRootFolder,
+        FileSystemResourceRepositoryConfiguration config,
         ILogger<FileSystemResourceRepository> logger,
         bool disableWrites)
     {
         _destinationProvider = destinationProvider;
-        _destinationRootFolder = destinationRootFolder;
+        _config = config;
+        _destinationRootFolder = config.RootFolder;
         _logger = logger;
         _disableWrites = disableWrites;
     }
@@ -25,6 +27,7 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
     {
         var (page, pageIndex, resourceUrl, resourceIndex) = resourceInfo;
         var destinationPath = await _destinationProvider.GetDestinationAsync(
+            _config,
             _destinationRootFolder,
             page, pageIndex,
             resourceUrl, resourceIndex);

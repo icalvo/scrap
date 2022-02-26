@@ -1,7 +1,8 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Scrap.Pages;
+using Scrap.Domain;
+using Scrap.Domain.Pages;
 using Xunit;
 
 namespace Scrap.Tests;

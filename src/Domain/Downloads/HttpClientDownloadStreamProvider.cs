@@ -1,4 +1,4 @@
-namespace Scrap.Downloads;
+namespace Scrap.Domain.Downloads;
 
 public class HttpClientDownloadStreamProvider : IDownloadStreamProvider
 {

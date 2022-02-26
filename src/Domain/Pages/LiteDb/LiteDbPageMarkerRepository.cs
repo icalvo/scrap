@@ -1,7 +1,8 @@
 using LiteDB;
 using Microsoft.Extensions.Logging;
+using Scrap.Domain.Jobs;
 
-namespace Scrap.Pages.LiteDb;
+namespace Scrap.Domain.Pages.LiteDb;
 
 public class LiteDbPageMarkerRepository : IPageMarkerRepository
 {
@@ -12,10 +13,10 @@ public class LiteDbPageMarkerRepository : IPageMarkerRepository
     public LiteDbPageMarkerRepository(
         ILiteDatabase db,
         ILogger<LiteDbPageMarkerRepository> logger,
-        bool disableWrites)
+        Job job)
     {
         _logger = logger;
-        _disableWrites = disableWrites;
+        _disableWrites = job.DisableMarkingVisited;
         _collection = db.GetCollection<PageMarker>();
     }
         

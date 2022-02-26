@@ -1,8 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
-using Scrap.JobDefinitions;
-using Scrap.Resources;
+using Scrap.Domain.JobDefinitions;
+using Scrap.Domain.Resources;
 
-namespace Scrap.Jobs;
+namespace Scrap.Domain.Jobs;
 
 public class NewJobDto
 {

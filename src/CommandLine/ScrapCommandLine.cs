@@ -6,10 +6,13 @@ using CLAP.Interception;
 using Figgle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Scrap.Application;
+using Scrap.Application.Scrap;
 using Scrap.CommandLine.Logging;
-using Scrap.JobDefinitions;
-using Scrap.Jobs;
 using Scrap.DependencyInjection;
+using Scrap.Domain;
+using Scrap.Domain.JobDefinitions;
+using Scrap.Domain.Jobs;
 
 namespace Scrap.CommandLine;
 
@@ -85,8 +88,8 @@ public class ScrapCommandLine
         PrintHeader();
 
         using var loggerFactory = SetupLoggingWithConsole();
-        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
-        var definitionsApplicationService = await serviceResolver.GetJobDefinitionsApplicationServiceAsync();
+        var serviceResolver = new ServicesLocator(loggerFactory, _configuration);
+        var definitionsApplicationService = serviceResolver.Get<JobDefinitionsApplicationService>();
     
         var jobDefs = new List<JobDefinitionDto>();
         var envRootUrl = _configuration[JobDefRootUrlEnvironment];
@@ -125,7 +128,7 @@ public class ScrapCommandLine
         foreach (var jobDef in jobDefs)
         {
             var newJob = new NewJobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
-            var scrapAppService = serviceResolver.GetJobApplicationService();
+            var scrapAppService = serviceResolver.Get<ScrapApplicationService>();
             _logger.LogInformation("Starting {Definition}...", jobDef.Name);
             await scrapAppService.ScrapAsync(newJob);
             _logger.LogInformation("Finished!");
@@ -140,15 +143,15 @@ public class ScrapCommandLine
         [Description("Navigate through already visited pages")]bool fullScan = false)
     {
         var loggerFactory = SetupLoggingWithoutConsole();
-        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
+        var serviceResolver = new ServicesLocator(loggerFactory, _configuration);
         var newJob = await BuildJobDto(serviceResolver, name, rootUrl,  fullScan, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
         if (newJob == null)
         {
             return;
         }
 
-        var scrapAppService = serviceResolver.GetJobApplicationService();
-        await scrapAppService.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
+        var service = serviceResolver.Get<ITraversalApplicationService>();
+        await service.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
     }
 
     [Verb(Description = "Lists all the pages reachable with the adjacency path")]
@@ -160,7 +163,7 @@ public class ScrapCommandLine
         [Description("Output only the resource link instead of the format expected by 'scrap download'")]bool onlyResourceLink = false)
     {
         var loggerFactory = SetupLoggingWithoutConsole();
-        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
+        var serviceResolver = new ServicesLocator(loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -174,7 +177,7 @@ public class ScrapCommandLine
             return;
         }
 
-        var scrapAppService = serviceResolver.GetJobApplicationService();
+        var scrapAppService = serviceResolver.Get<IResourcesApplicationService>();
         var pageIndex = 0;
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
@@ -198,7 +201,7 @@ public class ScrapCommandLine
         [Description("Pipeline")]string[]? pipeline = null)
     {
         var loggerFactory = SetupLoggingWithoutConsole();
-        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
+        var serviceResolver = new ServicesLocator(loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -212,7 +215,7 @@ public class ScrapCommandLine
             return;
         }
 
-        var scrapAppService = serviceResolver.GetJobApplicationService();
+        var scrapAppService = serviceResolver.Get<IDownloadApplicationService>();
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
         {
@@ -234,7 +237,7 @@ public class ScrapCommandLine
         [Description("Pipeline")]string[]? pipeline = null)
     {
         var loggerFactory = SetupLoggingWithoutConsole();
-        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
+        var serviceResolver = new ServicesLocator(loggerFactory, _configuration);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -248,7 +251,7 @@ public class ScrapCommandLine
             return;
         }
 
-        var scrapAppService = serviceResolver.GetJobApplicationService();
+        var scrapAppService = serviceResolver.Get<IMarkVisitedApplicationService>();
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
         {
@@ -514,7 +517,7 @@ public class ScrapCommandLine
     }
 
     private async Task<NewJobDto?> BuildJobDto(
-        ServicesResolver serviceResolver,
+        ServicesLocator serviceLocator,
         string? name,
         string? rootUrl,
         bool? fullScan,
@@ -522,7 +525,7 @@ public class ScrapCommandLine
         bool? disableMarkingVisited,
         bool? disableResourceWrites)
     {
-        var definitionsApplicationService = await serviceResolver.GetJobDefinitionsApplicationServiceAsync();
+        var definitionsApplicationService = serviceLocator.Get<JobDefinitionsApplicationService>();
         var envName = _configuration[JobDefNameEnvironment];
         var envRootUrl = _configuration[JobDefRootUrlEnvironment];
         

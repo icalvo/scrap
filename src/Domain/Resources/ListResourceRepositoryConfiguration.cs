@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
-namespace Scrap.Resources;
+namespace Scrap.Domain.Resources;
 
 public class ListResourceRepositoryConfiguration : IResourceRepositoryConfiguration
 {

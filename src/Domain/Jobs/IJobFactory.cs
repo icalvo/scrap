@@ -1,6 +1,6 @@
-﻿using Scrap.Jobs;
+﻿using Scrap.Domain.Jobs;
 
-namespace Scrap;
+namespace Scrap.Domain;
 
 public interface IJobFactory
 {

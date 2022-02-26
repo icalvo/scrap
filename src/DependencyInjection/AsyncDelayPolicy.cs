@@ -1,6 +1,6 @@
 using Polly;
 
-namespace Scrap;
+namespace Scrap.DependencyInjection;
 
 public class AsyncDelayPolicy : AsyncPolicy
 {

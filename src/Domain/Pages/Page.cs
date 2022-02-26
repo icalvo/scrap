@@ -2,7 +2,7 @@
 using System.Xml.XPath;
 using Microsoft.Extensions.Logging;
 
-namespace Scrap.Pages;
+namespace Scrap.Domain.Pages;
 
 public class Page: IPage
 {

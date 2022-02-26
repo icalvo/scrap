@@ -1,7 +1,8 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Scrap.Pages;
+using Scrap.Domain;
+using Scrap.Domain.Pages;
 using Xunit;
 
 namespace Scrap.Tests;
@@ -16,9 +17,8 @@ public class FullScanLinkCalculatorTests
 
         var lc = new FullScanLinkCalculator(Mock.Of<ILogger<FullScanLinkCalculator>>());
         var linkXPath = "//a/@href";
-        var pageMock = TestTools.PageMock("https://example.com/a", linkXPath,
-            "http://example.com/1.txt",
-            "http://example.com/2.txt");
+        var pageMock = TestTools.PageMock(
+            "https://example.com/a", linkXPath, "http://example.com/1.txt", "http://example.com/2.txt");
 
         (await lc.CalculateLinks(pageMock, linkXPath).ToArrayAsync()).Should().BeEquivalentTo(new[]
         {

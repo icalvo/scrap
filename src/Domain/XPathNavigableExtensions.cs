@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Xml.XPath;
 
-namespace Scrap;
+namespace Scrap.Domain;
 
 public static class XPathNavigableExtensions
 {

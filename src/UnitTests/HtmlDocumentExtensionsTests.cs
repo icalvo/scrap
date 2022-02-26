@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using HtmlAgilityPack;
+using Scrap.Domain;
 using Xunit;
 
 namespace Scrap.Tests;

@@ -1,4 +1,4 @@
-namespace Scrap.Jobs;
+namespace Scrap.Domain.Jobs;
 
 public class JobId
 {

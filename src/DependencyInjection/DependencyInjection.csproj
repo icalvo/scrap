@@ -7,6 +7,7 @@
       <IsPackable>false</IsPackable>
       <ImplicitUsings>true</ImplicitUsings>
       <Nullable>enable</Nullable>
+      <AssemblyName>Scrap.DependencyInjection</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,6 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Application\Application.csproj" />
       <ProjectReference Include="..\Domain\Domain.csproj" />
     </ItemGroup>
 

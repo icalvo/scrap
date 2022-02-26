@@ -1,6 +1,6 @@
-﻿using Scrap.Pages;
+﻿using Scrap.Domain.Pages;
 
-namespace Scrap;
+namespace Scrap.Domain;
 
 public interface ILinkCalculator
 {

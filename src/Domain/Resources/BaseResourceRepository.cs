@@ -1,4 +1,4 @@
-﻿namespace Scrap.Resources;
+﻿namespace Scrap.Domain.Resources;
 
 public abstract class BaseResourceRepository<TResourceId> : IResourceRepository<TResourceId>
     where TResourceId : IResourceId

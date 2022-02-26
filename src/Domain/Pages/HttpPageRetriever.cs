@@ -1,9 +1,9 @@
 using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
 using Polly;
-using Scrap.Downloads;
+using Scrap.Domain.Downloads;
 
-namespace Scrap.Pages;
+namespace Scrap.Domain.Pages;
 
 public class HttpPageRetriever : IPageRetriever
 {

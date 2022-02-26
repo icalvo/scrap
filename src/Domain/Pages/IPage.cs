@@ -1,6 +1,6 @@
 using System.Xml.XPath;
 
-namespace Scrap.Pages;
+namespace Scrap.Domain.Pages;
 
 public interface IPage : IEquatable<IPage>
 {

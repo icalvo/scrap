@@ -12,6 +12,7 @@ using Scrap.Application.Scrap;
 using Scrap.Domain;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.JobDefinitions;
+using Scrap.Domain.JobDefinitions.JsonFile;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Jobs.Graphs;
 using Scrap.Domain.Pages;
@@ -46,6 +47,8 @@ public class ServicesLocator
     {
         container.AddOptions<MemoryCacheOptions>();
         container.AddMemoryCache();
+        container.AddLogging();
+
         container.AddSingleton<IAsyncCacheProvider, MemoryCacheProvider>();
         container.AddSingleton<FullScanLinkCalculator>();
         container.AddSingleton<LinkCalculator>();
@@ -56,6 +59,7 @@ public class ServicesLocator
         container.AddTransient(BuildLinkCalculator);
         container.AddTransient<ScrapApplicationService>();
         container.AddSingleton<JobDefinitionsApplicationService>();
+        container.AddSingleton<IJobDefinitionRepository, MemoryJobDefinitionRepository>();
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
         container.AddSingleton<IPageRetriever, HttpPageRetriever>();
         container.AddSingleton<IPageRetriever, HttpPageRetriever>();

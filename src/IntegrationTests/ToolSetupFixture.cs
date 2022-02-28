@@ -13,10 +13,8 @@ public sealed class ToolSetupFixture : IDisposable
         const string version = "0.1.2-test1";
         const string mainVersion = "0.1.2";
         Environment.CurrentDirectory = Environment.CurrentDirectory.Split("src")[0] + "src";
-        if (Directory.Exists("./CommandLine/nupkg"))
-        {
-            Directory.Delete("./CommandLine/nupkg", recursive: true);
-        }
+        DirectoryEx.DeleteIfExists("./CommandLine/nupkg", recursive: true);
+        DirectoryEx.DeleteIfExists("./testsite-result", recursive: true);
 
         RunAndCheck("dotnet",
             $"build ./CommandLine/CommandLine.csproj /p:Version=\"{version}\" /p:AssemblyVersion=\"{mainVersion}\" /p:FileVersion=\"{mainVersion}\" /p:InformationalVersion=\"{version}\"",
@@ -46,7 +44,8 @@ public sealed class ToolSetupFixture : IDisposable
         _serverProcess.Kill();
         Run("dotnet", "tool uninstall dotnet-serve --tool-path install");
         Run("dotnet", "tool uninstall scrap --tool-path install");
-        Directory.Delete("./install", recursive: true);
+        DirectoryEx.DeleteIfExists("./install", recursive: true);
+        DirectoryEx.DeleteIfExists("./testsite-result", recursive: true);
         File.Delete(_dbFullPath);
     }
 

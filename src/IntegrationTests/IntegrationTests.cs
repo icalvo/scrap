@@ -27,11 +27,6 @@ public class IntegrationTests
     [Fact]
     public async Task CommandLine_Scrap_Simple()
     {
-        if (Directory.Exists("./testsite-result"))
-        {
-            Directory.Delete("./testsite-result", recursive: true);
-        }
-
         var commandLineOutput = await GetCommandLineOutput("-name=testsite").ToListAsync();
         _output.WriteLine("-------------------------------------");
         commandLineOutput.ForEach(_output.WriteLine);

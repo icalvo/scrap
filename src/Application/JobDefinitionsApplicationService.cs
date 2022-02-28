@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Scrap.Domain;
 using Scrap.Domain.JobDefinitions;
-using Scrap.Domain.Resources.FileSystem;
+using Scrap.Domain.Resources;
 
 namespace Scrap.Application;
 
@@ -9,18 +9,18 @@ public class JobDefinitionsApplicationService
 {
     private readonly IJobDefinitionRepository _definitionRepository;
     private readonly ILogger<JobDefinitionsApplicationService> _logger;
-    private readonly IResourceRepositoryConfigurationValidator _validator;
+    private readonly Dictionary<string, IResourceRepositoryConfigurationValidator> _validators;
     private readonly IEntityRegistry<JobDefinition> _registry;
 
     public JobDefinitionsApplicationService(
         IJobDefinitionRepository definitionRepository,
         ILogger<JobDefinitionsApplicationService> logger,
-        IResourceRepositoryConfigurationValidator validator,
+        IEnumerable<IResourceRepositoryConfigurationValidator> validators,
         IEntityRegistry<JobDefinition> registry)
     {
         _definitionRepository = definitionRepository;
         _logger = logger;
-        _validator = validator;
+        _validators = validators.ToDictionary(x => x.RepositoryType);
         _registry = registry;
     }
 
@@ -58,7 +58,7 @@ public class JobDefinitionsApplicationService
 
         _registry.Register(jobDefinition);
 
-        await _validator.ValidateAsync(jobDefinition.ResourceRepoArgs);
+        await _validators[jobDefinition.ResourceRepoArgs.RepositoryType].ValidateAsync(jobDefinition.ResourceRepoArgs);
 
         _logger.LogDebug("Upserting job def. {JobId}, name {JobName}", jobDefinition.Id, jobDefinition.Name);
         await _definitionRepository.UpsertAsync(jobDefinition);

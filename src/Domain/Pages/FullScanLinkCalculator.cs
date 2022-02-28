@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using Scrap.Domain.Pages;
 
-namespace Scrap.Domain;
+namespace Scrap.Domain.Pages;
 
 public class FullScanLinkCalculator : ILinkCalculator
 {

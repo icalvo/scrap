@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Scrap.Domain.Resources.FileSystem;
 
-public class FileSystemResourceRepositoryConfiguration : IResourceRepositoryConfiguration
+public class FileSystemResourceRepositoryConfiguration : BaseResourceRepositoryConfiguration<FileSystemResourceRepository>
 {
     [SuppressMessage("ReSharper", "UnusedMember.Local", Justification = "Deserialization by MemoryRepo")]
     public FileSystemResourceRepositoryConfiguration(string[] pathFragments, string rootFolder)
@@ -11,7 +11,6 @@ public class FileSystemResourceRepositoryConfiguration : IResourceRepositoryConf
         RootFolder = rootFolder;
     }
 
-    public string Type => "filesystem";
     public string RootFolder { get; private set; } = null!;
     public string[] PathFragments { get; private set; } = null!;
 

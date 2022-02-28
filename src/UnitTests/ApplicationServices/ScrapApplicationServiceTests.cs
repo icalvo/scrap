@@ -30,6 +30,7 @@ public class ScrapApplicationServiceTests
             .Returns(Task.CompletedTask);
             
         var service = new ScrapApplicationService(
+            Mock.Of<IJobFactory>(),
             scrapDownloadsServiceMock.Object,
             scrapTextServiceMock.Object);
 
@@ -53,6 +54,7 @@ public class ScrapApplicationServiceTests
             .Returns(Task.CompletedTask);
             
         var service = new ScrapApplicationService(
+            Mock.Of<IJobFactory>(),
             scrapDownloadsServiceMock.Object,
             scrapTextServiceMock.Object);
 

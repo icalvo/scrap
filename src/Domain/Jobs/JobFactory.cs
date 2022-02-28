@@ -1,26 +1,25 @@
-﻿using Scrap.Domain.Jobs;
-using Scrap.Domain.Resources.FileSystem;
+﻿using Scrap.Domain.Resources;
 
-namespace Scrap.Domain;
+namespace Scrap.Domain.Jobs;
 
 public class JobFactory : IJobFactory
 {
     private readonly IEntityRegistry<Job> _jobRegistry;
-    private readonly IResourceRepositoryConfigurationValidator _validator;
+    private readonly Dictionary<string, IResourceRepositoryConfigurationValidator> _validators;
 
     public JobFactory(
         IEntityRegistry<Job> jobRegistry,
-        IResourceRepositoryConfigurationValidator validator)
+        IEnumerable<IResourceRepositoryConfigurationValidator> validators)
     {
         _jobRegistry = jobRegistry;
-        _validator = validator;
+        _validators = validators.ToDictionary(x => x.RepositoryType);
     }
 
     public async Task<Job> CreateAsync(JobDto jobDto)
     {
         var job = new Job(jobDto);
-        await _validator.ValidateAsync(job.ResourceRepoArgs);
         _jobRegistry.Register(job);
+        await _validators[job.ResourceRepoArgs.RepositoryType].ValidateAsync(job.ResourceRepoArgs);
         return job;
     }
 }

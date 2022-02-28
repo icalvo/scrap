@@ -19,6 +19,8 @@ public abstract class BaseResourceRepository<TResourceId> : IResourceRepository<
         return (await GetIdAsync(resourceInfo)).ToText();
     }
 
+    public string Type => this.GetType().Name;
+
     public abstract Task<TResourceId> GetIdAsync(ResourceInfo resourceInfo);
     public abstract Task<bool> ExistsAsync(TResourceId id);
     public abstract Task UpsertAsync(TResourceId id, Stream resourceStream);

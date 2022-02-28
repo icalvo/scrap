@@ -23,10 +23,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Remove="Resources\FileSystem\TemplateDestinationProvider.cs" />
       <EmbeddedResource Include="Resources\FileSystem\TemplateDestinationProvider.cs">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+      <Compile Remove="Resources\FileSystem\TemplateDestinationProvider.cs" />
     </ItemGroup>
 
 </Project>

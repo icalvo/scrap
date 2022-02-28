@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Scrap.Domain;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
@@ -12,20 +11,20 @@ public class DownloadApplicationService : IDownloadApplicationService
 {
     private readonly IJobFactory _jobFactory;
     private readonly IPageRetriever _pageRetriever;
-    private readonly IResourceRepository _resourceRepository;
+    private readonly IEnumerable<IResourceRepository> _resourceRepositories;
     private readonly IDownloadStreamProvider _downloadStreamProvider;
     private readonly ILogger<DownloadApplicationService> _logger;
 
     public DownloadApplicationService(
         IJobFactory jobFactory,
         IPageRetriever pageRetriever,
-        IResourceRepository resourceRepository,
+        IEnumerable<IResourceRepository> resourceRepositories,
         IDownloadStreamProvider downloadStreamProvider,
         ILogger<DownloadApplicationService> logger)
     {
         _jobFactory = jobFactory;
         _pageRetriever = pageRetriever;
-        _resourceRepository = resourceRepository;
+        _resourceRepositories = resourceRepositories;
         _downloadStreamProvider = downloadStreamProvider;
         _logger = logger;
     }
@@ -38,14 +37,15 @@ public class DownloadApplicationService : IDownloadApplicationService
         }
 
         var job = await _jobFactory.CreateAsync(jobDto);
+        var resourceRepository = _resourceRepositories.Single(x => x.Type == job.ResourceRepoArgs.RepositoryType);
         var page = await _pageRetriever.GetPageAsync(pageUrl);
 
         var info = new ResourceInfo(page, pageIndex, resourceUrl, resourceIndex);
-        if (await this.IsNotDownloadedAsync(info, _resourceRepository, job.DownloadAlways))
+        if (await this.IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways))
         {
             var stream = await _downloadStreamProvider.GetStreamAsync(resourceUrl);
-            await _resourceRepository.UpsertAsync(info, stream);
-            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl, await _resourceRepository.GetKeyAsync(info));
+            await resourceRepository.UpsertAsync(info, stream);
+            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl, await resourceRepository.GetKeyAsync(info));
         }
     }
   

@@ -12,26 +12,34 @@ namespace Scrap.Domain.Resources.FileSystem;
 public class CompiledDestinationProvider : IDestinationProvider
 {
     private IDestinationProvider _compiledDestinationProvider = null!;
+    private readonly FileSystemResourceRepositoryConfiguration _config;
     private readonly ILogger<CompiledDestinationProvider> _logger;
 
-    public CompiledDestinationProvider(ILogger<CompiledDestinationProvider> logger)
+    public CompiledDestinationProvider(
+        FileSystemResourceRepositoryConfiguration config,
+        ILogger<CompiledDestinationProvider> logger)
     {
+        _config = config;
         _logger = logger;
     }
 
     public async Task<string> GetDestinationAsync(
-        FileSystemResourceRepositoryConfiguration config,
         string destinationRootFolder,
         IPage page,
         int pageIndex,
         Uri resourceUrl,
         int resourceIndex)
     {
-        await CompileAsync(config);
-        return await _compiledDestinationProvider.GetDestinationAsync(config, destinationRootFolder, page, pageIndex, resourceUrl, resourceIndex);
+        await CompileAsync(_config);
+        return await _compiledDestinationProvider.GetDestinationAsync(destinationRootFolder, page, pageIndex, resourceUrl, resourceIndex);
     }
 
-    public async Task CompileAsync(FileSystemResourceRepositoryConfiguration config)
+    public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config)
+    {
+        return CompileAsync(config);
+    }
+
+    private async Task CompileAsync(FileSystemResourceRepositoryConfiguration config)
     {
         var destinationFolderPattern = config.PathFragments;
         string sourceCode = await GenerateSourceCodeAsync(destinationFolderPattern);
@@ -47,18 +55,17 @@ public class CompiledDestinationProvider : IDestinationProvider
         }
     }
 
-    private async Task<string> GenerateSourceCodeAsync(string[] destinationFolderPattern)
+    private static async Task<string> GenerateSourceCodeAsync(string[] destinationFolderPattern)
     {
         await using var stream =
             typeof(CompiledDestinationProvider).Assembly
-                .GetManifestResourceStream("Scrap.Resources.FileSystem.TemplateDestinationProvider.cs")
+                .GetManifestResourceStream("Scrap.Domain.Resources.FileSystem.TemplateDestinationProvider.cs")
             ?? throw new Exception("TemplateDestinationProvider resource not found");
         using var reader = new StreamReader(stream);
         
         string sourceCode = await reader.ReadToEndAsync();
-        var callChain = string.Join("", destinationFolderPattern.Select(p => $".C({p})"));
-        var pattern = $"rootFolder{callChain}.ToPath()";
-        sourceCode = sourceCode.Replace("\"destinationFolderPattern\"", pattern);
+        var callChain = string.Join("", destinationFolderPattern.Select(p => $"ToArray({p}),\n"));
+        sourceCode = sourceCode.Replace("/* DestinationPattern */", callChain);
         return sourceCode;
     }
 
@@ -98,6 +105,7 @@ public class CompiledDestinationProvider : IDestinationProvider
             {
                 _logger.LogError("{Id}: {Message} at {Location}", diagnostic.Id, diagnostic.GetMessage(),
                     diagnostic.Location);
+                _logger.LogDebug("{SourceCode}", sourceCode);
             }
 
             throw new Exception("Compilation error");

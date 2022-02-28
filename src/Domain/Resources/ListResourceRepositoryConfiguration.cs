@@ -22,5 +22,5 @@ public class ListResourceRepositoryConfiguration : IResourceRepositoryConfigurat
         return Task.CompletedTask;
     }
 
-    public string Type => "list";
+    public string RepositoryType => "list";
 }

@@ -13,7 +13,7 @@ public class ScrapDownloadsService : IScrapDownloadsService
     private readonly IGraphSearch _graphSearch;
     private readonly ILogger<ScrapDownloadsService> _logger;
     private readonly IDownloadStreamProvider _downloadStreamProvider;
-    private readonly IResourceRepository _resourceRepository;
+    private readonly IEnumerable<IResourceRepository> _resourceRepositories;
     private readonly IPageRetriever _pageRetriever;
     private readonly IPageMarkerRepository _pageMarkerRepository;
     private readonly ILinkCalculator _linkCalculator;
@@ -23,7 +23,7 @@ public class ScrapDownloadsService : IScrapDownloadsService
         IGraphSearch graphSearch,
         ILogger<ScrapDownloadsService> logger,
         IDownloadStreamProvider downloadStreamProvider,
-        IResourceRepository resourceRepository,
+        IEnumerable<IResourceRepository> resourceRepositories,
         IPageRetriever pageRetriever,
         IPageMarkerRepository pageMarkerRepository,
         ILinkCalculator linkCalculator,
@@ -32,7 +32,7 @@ public class ScrapDownloadsService : IScrapDownloadsService
         _graphSearch = graphSearch;
         _logger = logger;
         _downloadStreamProvider = downloadStreamProvider;
-        _resourceRepository = resourceRepository;
+        _resourceRepositories = resourceRepositories;
         _pageRetriever = pageRetriever;
         _pageMarkerRepository = pageMarkerRepository;
         _linkCalculator = linkCalculator;
@@ -42,6 +42,7 @@ public class ScrapDownloadsService : IScrapDownloadsService
     public async Task DownloadLinksAsync(JobDto jobDto)
     {
         var job = await _jobFactory.CreateAsync(jobDto);
+        var resourceRepository = _resourceRepositories.Single(x => x.Type == job.ResourceRepoArgs.RepositoryType);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
         var resourceXPath = job.ResourceXPath;
@@ -49,15 +50,15 @@ public class ScrapDownloadsService : IScrapDownloadsService
         async Task Download((ResourceInfo info, Stream stream) x)
         {
             var (info, stream) = x;
-            await _resourceRepository.UpsertAsync(info, stream);
-            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl, await _resourceRepository.GetKeyAsync(info));
+            await resourceRepository.UpsertAsync(info, stream);
+            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl, await resourceRepository.GetKeyAsync(info));
         }
 
         IEnumerable<ResourceInfo> GetResourceLinks(IPage page, int crawlPageIndex)
             => ResourceLinks(page, crawlPageIndex, resourceXPath);
 
         ValueTask<bool> IsNotDownloaded(ResourceInfo info)
-            => this.IsNotDownloadedAsync(info, _resourceRepository, job.DownloadAlways);
+            => this.IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways);
 
         var pipeline =
             Pages(rootUri, _pageRetriever, adjacencyXPath, _linkCalculator)

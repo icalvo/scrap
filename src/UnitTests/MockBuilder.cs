@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Scrap.Application;
 using Scrap.Application.Scrap;
-using Scrap.Domain;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
@@ -35,9 +34,10 @@ public class MockBuilder
         Traversal = traversal;
     }
 
-    public JobDto BuildJobDto(ResourceType resourceType = ResourceType.DownloadLink)
+    public JobDto BuildJobDto(ResourceType resourceType, string resourceRepositoryType = "FileSystemRepository")
     {
-        IResourceRepositoryConfiguration resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
+        IResourceRepositoryConfiguration resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>(
+            x => x.RepositoryType == resourceRepositoryType);
 
         return new JobDto(
             null,
@@ -60,7 +60,7 @@ public class MockBuilder
             GraphSearchMock.Object,
             new MockLogger<ScrapDownloadsService>(LoggerMock),
             _streamProviderMock.Object,
-            ResourceRepositoryMock.Object,
+            new[]{ ResourceRepositoryMock.Object },
             PageRetrieverMock.Object,
             PageMarkerRepositoryMock.Object,
             LinkCalculatorMock.Object,
@@ -73,7 +73,7 @@ public class MockBuilder
         return new ScrapTextService(
             GraphSearchMock.Object,
             JobFactoryMock.Object,
-            ResourceRepositoryMock.Object,
+            new[]{ ResourceRepositoryMock.Object },
             PageRetrieverMock.Object,
             PageMarkerRepositoryMock.Object,
             LinkCalculatorMock.Object,
@@ -111,7 +111,7 @@ public class MockBuilder
         return new DownloadApplicationService(
             JobFactoryMock.Object,
             PageRetrieverMock.Object,
-            ResourceRepositoryMock.Object,
+            new[]{ ResourceRepositoryMock.Object },
             _streamProviderMock.Object,
             Mock.Of<ILogger<DownloadApplicationService>>());
     }

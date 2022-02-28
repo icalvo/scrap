@@ -1,4 +1,5 @@
 ﻿using Moq;
+using Scrap.Domain.JobDefinitions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,7 +18,7 @@ public class MarkVisitedApplicationServiceTests
     public async Task MarkVisitedPageAsync()
     {
         var builder = new MockBuilder(_output);
-        var jobDto = builder.BuildJobDto();
+        var jobDto = builder.BuildJobDto(ResourceType.DownloadLink);
         var service = builder.BuildMarkVisitedApplicationService(jobDto);
 
         await service.MarkVisitedPageAsync(jobDto, new Uri("https://example.com/a"));

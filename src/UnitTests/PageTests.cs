@@ -1,9 +1,7 @@
-﻿using System.Xml.XPath;
-using FluentAssertions;
+﻿using FluentAssertions;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Scrap.Domain;
 using Scrap.Domain.Pages;
 using Xunit;
 

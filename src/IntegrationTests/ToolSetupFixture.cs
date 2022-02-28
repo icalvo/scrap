@@ -11,8 +11,16 @@ public sealed class ToolSetupFixture : IDisposable
     public ToolSetupFixture()
     {
         const string version = "0.1.2-test1";
+        const string mainVersion = "0.1.2";
         Environment.CurrentDirectory = Environment.CurrentDirectory.Split("src")[0] + "src";
-        Directory.Delete("./CommandLine/nupkg", recursive: true);
+        if (Directory.Exists("./CommandLine/nupkg"))
+        {
+            Directory.Delete("./CommandLine/nupkg", recursive: true);
+        }
+
+        RunAndCheck("dotnet",
+            $"build ./CommandLine/CommandLine.csproj /p:Version=\"{version}\" /p:AssemblyVersion=\"{mainVersion}\" /p:FileVersion=\"{mainVersion}\" /p:InformationalVersion=\"{version}\"",
+            TimeSpan.FromSeconds(60));
         RunAndCheck("dotnet", $"pack /p:PackageVersion=\"{version}\" --no-build");
         Run("dotnet", $"tool uninstall scrap --tool-path install");
         RunAndCheck("dotnet", $"tool install scrap --tool-path install --add-source ./CommandLine/nupkg/ --version 0.1.2-test1");
@@ -42,17 +50,17 @@ public sealed class ToolSetupFixture : IDisposable
         File.Delete(_dbFullPath);
     }
 
-    private void RunAndCheck(string fileName, string arguments)
+    private void RunAndCheck(string fileName, string arguments, TimeSpan? timeout = null)
     {
-        Run(fileName, arguments, checkExitCode: true);
+        Run(fileName, arguments, timeout, checkExitCode: true);
     }
 
-    private void Run(string fileName, string arguments)
+    private void Run(string fileName, string arguments, TimeSpan? timeout = null)
     {
-        Run(fileName, arguments, checkExitCode: false);
+        Run(fileName, arguments, timeout, checkExitCode: false);
     }
 
-    private void Run(string fileName, string arguments, bool checkExitCode)
+    private void Run(string fileName, string arguments, TimeSpan? timeout, bool checkExitCode)
     {
         var psi = new ProcessStartInfo
         {
@@ -65,9 +73,10 @@ public sealed class ToolSetupFixture : IDisposable
             }
         };
         var process = Process.Start(psi) ?? throw new Exception("Could not start process");
-        if (!process.WaitForExit(20000))
+        timeout ??= TimeSpan.FromSeconds(20);
+        if (!process.WaitForExit((int)(timeout ?? TimeSpan.FromSeconds(20)).TotalMilliseconds))
         {
-            throw new Exception($"Could not run process in less than 20 seconds: {fileName} {arguments}");
+            throw new Exception($"Could not run process in less than {timeout}: {fileName} {arguments}");
         }
 
         var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));

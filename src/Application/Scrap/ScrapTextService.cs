@@ -14,7 +14,7 @@ public class ScrapTextService : IScrapTextService
     private readonly IGraphSearch _graphSearch;
     private readonly ILogger<ScrapTextService> _logger;
     private readonly IJobFactory _jobFactory;
-    private readonly IResourceRepository _resourceRepository;
+    private readonly IEnumerable<IResourceRepository> _resourceRepositories;
     private readonly IPageRetriever _pageRetriever;
     private readonly IPageMarkerRepository _pageMarkerRepository;
     private readonly ILinkCalculator _linkCalculator;
@@ -22,7 +22,7 @@ public class ScrapTextService : IScrapTextService
     public ScrapTextService(
         IGraphSearch graphSearch,
         IJobFactory jobFactory,
-        IResourceRepository resourceRepository,
+        IEnumerable<IResourceRepository> resourceRepositories,
         IPageRetriever pageRetriever,
         IPageMarkerRepository pageMarkerRepository,
         ILinkCalculator linkCalculator,
@@ -31,7 +31,7 @@ public class ScrapTextService : IScrapTextService
         _graphSearch = graphSearch;
         _logger = logger;
         _jobFactory = jobFactory;
-        _resourceRepository = resourceRepository;
+        _resourceRepositories = resourceRepositories;
         _pageRetriever = pageRetriever;
         _pageMarkerRepository = pageMarkerRepository;
         _linkCalculator = linkCalculator;
@@ -46,6 +46,7 @@ public class ScrapTextService : IScrapTextService
 
         var job = await _jobFactory.CreateAsync(jobDto);
 
+        var resourceRepository = _resourceRepositories.Single(x => x.Type == job.ResourceRepoArgs.RepositoryType);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
         var resourceXPath = job.ResourceXPath;
@@ -63,16 +64,16 @@ public class ScrapTextService : IScrapTextService
             Pages(rootUri, _pageRetriever, adjacencyXPath, _linkCalculator)
                 .DoAwait((page, pageIndex) =>
                     PageTexts(page, pageIndex)
-                        .WhereAwait(x => IsNotDownloadedAsync(x.info, _resourceRepository, job.DownloadAlways))
+                        .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository, job.DownloadAlways))
                         .Select(x => (
                             x.info,
                             stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
-                        .DoAwait(y => _resourceRepository.UpsertAsync(y.info, y.stream))
+                        .DoAwait(y => resourceRepository.UpsertAsync(y.info, y.stream))
                         .DoAwait(async x =>
                             _logger.LogInformation(
                                 "Downloaded text from {Url} to {Key}",
                                 x.info.ResourceUrl,
-                                await _resourceRepository.GetKeyAsync(x.info))))
+                                await resourceRepository.GetKeyAsync(x.info))))
                 .DoAwait(page => _pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();

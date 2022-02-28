@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Xml.XPath;
+﻿using System.Xml.XPath;
 using Microsoft.Extensions.Logging;
 
 namespace Scrap.Domain.Pages;

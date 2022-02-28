@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using LazyProxy.ServiceProvider;
 using LiteDB;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -26,14 +27,11 @@ public class ServicesLocator
 {
     private static readonly TimeSpan DefaultCacheTtl = TimeSpan.FromMinutes(5);
     private readonly IServiceProvider _serviceProvider;
-    
-    public ServicesLocator(ILoggerFactory loggerFactory, IConfiguration config)
+
+    public ServicesLocator(IConfiguration config, Action<ILoggingBuilder> configureLogging)
     {
-        ILogger logger = loggerFactory.CreateLogger<ServicesLocator>();
-        logger.LogDebug("Scrap DB: {ConnectionString}", config["Scrap:Database"]);
-        
         IServiceCollection container = new ServiceCollection();
-        ConfigureServices(config, container);
+        ConfigureServices(config, container, configureLogging);
 
         _serviceProvider = container.BuildServiceProvider();
     }
@@ -43,40 +41,66 @@ public class ServicesLocator
         return _serviceProvider.GetRequiredService<T>();
     }
 
-    private static void ConfigureServices(IConfiguration config, IServiceCollection container)
+    private static void ConfigureServices(IConfiguration cfg, IServiceCollection container,
+        Action<ILoggingBuilder> configureLogging)
     {
+        container.AddSingleton(cfg);
         container.AddOptions<MemoryCacheOptions>();
         container.AddMemoryCache();
-        container.AddLogging();
+        container.AddLogging(configureLogging);
+
+
+        container.AddTransient<JobDefinitionsApplicationService>();
+        container.AddTransient<ScrapApplicationService>();
+        container.AddLazyTransient<IScrapDownloadsService, ScrapDownloadsService>();
+        container.AddLazyTransient<IScrapTextService, ScrapTextService>();
+        container.AddLazyTransient<IDownloadApplicationService, DownloadApplicationService>();
+        container.AddLazyTransient<ITraversalApplicationService, TraversalApplicationService>();
+        container.AddLazyTransient<IResourcesApplicationService, ResourcesApplicationService>();
 
         container.AddSingleton<IAsyncCacheProvider, MemoryCacheProvider>();
         container.AddSingleton<FullScanLinkCalculator>();
         container.AddSingleton<LinkCalculator>();
-        container.AddSingleton(new ConnectionString(config["Scrap:Database"]));
+        container.AddSingleton(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<ServicesLocator>>();
+            var config = sp.GetRequiredService<IConfiguration>();
+            logger.LogDebug("Scrap DB: {ConnectionString}", config["Scrap:Database"]);
+            return new ConnectionString(config["Scrap:Database"]);
+        });
         container.AddSingleton<ILiteDatabase, LiteDatabase>();
-        container.AddTransient<IEntityRegistry<Job>, EntityRegistry<Job>>();
-        container.AddTransient(GetJob);
-        container.AddTransient(BuildLinkCalculator);
-        container.AddTransient<ScrapApplicationService>();
-        container.AddSingleton<JobDefinitionsApplicationService>();
-        container.AddSingleton<IJobDefinitionRepository, MemoryJobDefinitionRepository>();
+        container.AddSingleton<IEntityRegistry<Job>, EntityRegistry<Job>>();
+        container.AddSingleton<IEntityRegistry<JobDefinition>, EntityRegistry<JobDefinition>>();
+        container.AddSingleton(GetJob);
+        container.AddSingleton(BuildLinkCalculator);
+        container.AddSingleton<IJobFactory, JobFactory>();
+        container.AddSingleton<IJobDefinitionRepository>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<ServicesLocator>>();
+            var config = sp.GetRequiredService<IConfiguration>();
+            logger.LogDebug("Definitions file: {DefinitionsPath}", config["Scrap:Definitions"]);
+            return new MemoryJobDefinitionRepository(config["Scrap:Definitions"]);
+        });
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
-        container.AddSingleton<IPageRetriever, HttpPageRetriever>();
         container.AddSingleton<IPageRetriever, HttpPageRetriever>();
         container.AddSingleton<IPageMarkerRepository, LiteDbPageMarkerRepository>();
         container.AddSingleton<IPageRetriever, HttpPageRetriever>();
-        container.AddSingleton<IDestinationProvider, CompiledDestinationProvider>();
-        container.AddSingleton(BuildResourceRepositoryConfigurationValidator);
-        container.AddSingleton<CompiledDestinationProvider>();
-        container.AddSingleton(BuildDestinationProvider);
-        container.AddSingleton(BuildResourceRepository);
+        container.AddTransient(sp => (FileSystemResourceRepositoryConfiguration)GetJobResourceRepoArgs(sp));
+        container.AddLazyTransient<IDestinationProvider, CompiledDestinationProvider>();
+        container.AddLazySingleton<IResourceRepositoryConfigurationValidator, FileSystemResourceRepositoryConfigurationValidator>();
+        container.AddLazyTransient<IResourceRepository, FileSystemResourceRepository>(sp =>
+            new FileSystemResourceRepository(
+                sp.GetRequiredService<IDestinationProvider>(),
+                sp.GetRequiredService<FileSystemResourceRepositoryConfiguration>(),
+                sp.GetRequiredService<ILogger<FileSystemResourceRepository>>(),
+                GetJob(sp).DisableResourceWrites));
         container.AddSingleton(BuildDownloadStreamProvider);
         container.AddSingleton(BuildAsyncPolicy);
     }
 
     private static Job GetJob(IServiceProvider sp)
     {
-        return sp.GetRequiredService<EntityRegistry<Job>>().RegisteredEntity ?? throw new Exception("The job is not registered yet.");
+        return sp.GetRequiredService<IEntityRegistry<Job>>().RegisteredEntity ?? throw new Exception("The job is not registered yet.");
     }
 
     private static ILinkCalculator BuildLinkCalculator(IServiceProvider sp)
@@ -84,6 +108,24 @@ public class ServicesLocator
         return sp.GetRequiredService<Job>().FullScan
             ? sp.GetRequiredService<FullScanLinkCalculator>()
             : sp.GetRequiredService<LinkCalculator>();
+    }
+
+    private static IResourceRepositoryConfiguration GetJobResourceRepoArgs(IServiceProvider sp)
+    {
+        var jobRegistry = sp.GetService<IEntityRegistry<Job>>();
+        var jobDefinitionRegistry = sp.GetService<IEntityRegistry<JobDefinition>>();
+
+        if (jobRegistry?.RegisteredEntity != null)
+        {
+            return jobRegistry.RegisteredEntity.ResourceRepoArgs;
+        }
+
+        if (jobDefinitionRegistry?.RegisteredEntity != null)
+        {
+            return jobDefinitionRegistry.RegisteredEntity.ResourceRepoArgs;
+        }
+
+        throw new Exception("Neither a job or job definition is registered yet");
     }
 
     private static IAsyncPolicy BuildAsyncPolicy(IServiceProvider sp)
@@ -126,47 +168,17 @@ public class ServicesLocator
     {
         var job = sp.GetRequiredService<Job>();
         var resourceRepoArgs = job.ResourceRepoArgs;
-        return resourceRepoArgs switch
+        var repos = sp.GetServices<IResourceRepository>().ToDictionary(x => x.GetType().Name);
+
+        if (repos.TryGetValue(resourceRepoArgs.RepositoryType, out var repo))
         {
-            FileSystemResourceRepositoryConfiguration => sp.GetRequiredService<FileSystemResourceRepository>(),
-            _ => throw new ArgumentException(
-                $"Unknown resource processor config type: {resourceRepoArgs.GetType().Name}",
-                nameof(resourceRepoArgs))
-        };
+            return repo;
+        }
+
+        throw new InvalidOperationException(
+            $"Unknown resource processor config type: {resourceRepoArgs.GetType().Name}");
     }
-
-    private static IDestinationProvider BuildDestinationProvider(IServiceProvider sp)
-    {
-        IResourceRepositoryConfiguration jobResourceRepoArgs = GetJobResourceRepoArgs(sp);
-
-        return jobResourceRepoArgs switch
-        {
-            FileSystemResourceRepositoryConfiguration => sp.GetRequiredService<CompiledDestinationProvider>(),
-            _ => throw new ArgumentException(
-                $"Unknown resource processor config type: {jobResourceRepoArgs.GetType().Name}",
-                nameof(jobResourceRepoArgs))
-        };
-    }
-
-    private static IResourceRepositoryConfigurationValidator BuildResourceRepositoryConfigurationValidator(
-        IServiceProvider sp)
-    {
-        var jobResourceRepoArgs = GetJobResourceRepoArgs(sp);
-
-        return BuildResourceRepositoryConfigurationValidator(sp, jobResourceRepoArgs);
-    }
-
-    private static IResourceRepositoryConfigurationValidator BuildResourceRepositoryConfigurationValidator(
-        IServiceProvider sp, IResourceRepositoryConfiguration jobResourceRepoArgs) =>
-        jobResourceRepoArgs switch
-        {
-            FileSystemResourceRepositoryConfiguration => sp
-                .GetRequiredService<FileSystemResourceRepositoryConfigurationValidator>(),
-            _ => throw new ArgumentException(
-                $"Unknown resource processor config type: {jobResourceRepoArgs.GetType().Name}",
-                nameof(jobResourceRepoArgs))
-        };
-
+    
     private static IDownloadStreamProvider BuildDownloadStreamProvider(
         IAsyncPolicy policy,
         string protocol,
@@ -195,26 +207,7 @@ public class ServicesLocator
                 throw new ArgumentException($"Unknown URI protocol {protocol}", nameof(protocol));
         }
     }
-
-    private static IResourceRepositoryConfiguration GetJobResourceRepoArgs(IServiceProvider sp)
-    {
-        var jobRegistry = sp.GetService<EntityRegistry<Job>>();
-        var jobDefinitionRegistry = sp.GetService<EntityRegistry<JobDefinition>>();
-
-        if (jobRegistry?.RegisteredEntity != null)
-        {
-            return jobRegistry.RegisteredEntity.ResourceRepoArgs;
-        }
-
-        if (jobDefinitionRegistry?.RegisteredEntity != null)
-        {
-            return jobDefinitionRegistry.RegisteredEntity.ResourceRepoArgs;
-        }
-
-        throw new Exception("Neither a job or job definition is registered yet");
-    }
-
-
+    
     private class PollyMessageHandler: DelegatingHandler
     {
         private readonly IAsyncPolicy _policy;

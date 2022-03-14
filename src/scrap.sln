@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "Integra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{782092AF-0482-49D5-BB42-B3CEFA1670C0}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "..\build\_build.csproj", "{A61AC122-77B3-4FCE-9274-660399CBDFBB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,6 +30,8 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7440D748-611F-4627-9AFA-F04675720952}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7440D748-611F-4627-9AFA-F04675720952}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7440D748-611F-4627-9AFA-F04675720952}.Debug|x64.ActiveCfg = Debug|Any CPU

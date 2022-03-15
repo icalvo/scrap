@@ -106,7 +106,7 @@ class Build : NukeBuild
             DotNetTest(o => o
                 .SetProjectFile(SourceDirectory / "UnitTests")
                 .EnableNoBuild()
-                .SetLoggers("console;verbosity=normal"));
+                .SetLoggers("\"console;verbosity=normal\""));
         });
 
 
@@ -118,7 +118,7 @@ class Build : NukeBuild
             DotNetTest(o => o
                 .SetProjectFile(SourceDirectory / "IntegrationTests")
                 .EnableNoBuild()
-                .SetLoggers("console;verbosity=normal")
+                .SetLoggers("\"console;verbosity=normal\"")
                 .SetProcessEnvironmentVariable(
                     "Scrap_GlobalConfigurationFolder",
                     GetEnvironmentVariable("Scrap_GlobalConfigurationFolder")));

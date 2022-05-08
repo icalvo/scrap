@@ -7,7 +7,7 @@
 
 A scraping process walks through the structure of a web site and downloads specific resources from it. The resources could be images, PDF documents, videos, or text elements within the HTML files.
 
-## <a id="Installation"></a>Installation
+## Installation
 
 ```
 > dotnet tool install --global scrap

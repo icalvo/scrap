@@ -2,14 +2,17 @@ namespace Scrap.Domain.Jobs.Graphs;
 
 public class DepthFirstGraphSearch : IGraphSearch
 {
-    public async IAsyncEnumerable<T> SearchAsync<TRef, T>(TRef startRef, Func<TRef, Task<T>> visit, Func<T, IAsyncEnumerable<TRef>> adj)
+    public async IAsyncEnumerable<T> SearchAsync<TRef, T>(
+        TRef startRef,
+        Func<TRef, Task<T>> visit,
+        Func<T, IAsyncEnumerable<TRef>> adj)
     {
         HashSet<TRef> visitedRefs = new(EqualityComparer<TRef>.Default);
-        Stack<TRef> stack = new();
-        stack.Push(startRef);
-        while (stack.Any())
+        Stack<TRef> unvisitedRefStack = new();
+        unvisitedRefStack.Push(startRef);
+        while (unvisitedRefStack.Any())
         {
-            var currentRef = stack.Pop();
+            var currentRef = unvisitedRefStack.Pop();
             if (visitedRefs.Contains(currentRef))
             {
                 continue;
@@ -19,10 +22,11 @@ public class DepthFirstGraphSearch : IGraphSearch
             visitedRefs.Add(currentRef);
             yield return currentNode;
 
-            var unvisitedAdjacent = adj(currentNode).Where(n => !visitedRefs.Contains(n)).Reverse();
-            await foreach (var adjacentNode in unvisitedAdjacent)
+            var adjacentRefs = adj(currentNode);
+            var unvisitedAdjacentRefs = adjacentRefs.Where(n => !visitedRefs.Contains(n)).Reverse();
+            await foreach (var adjacentRef in unvisitedAdjacentRefs)
             {
-                stack.Push(adjacentNode);
+                unvisitedRefStack.Push(adjacentRef);
             }
         }
     }        

@@ -1,4 +1,4 @@
-namespace Scrap.Resources.FileSystem;
+namespace Scrap.Domain.Resources.FileSystem;
 
 public class FileSystemResourceId: IResourceId
 {

@@ -1,15 +1,15 @@
 using Microsoft.Extensions.Logging;
-using Scrap.JobDefinitions;
-using Scrap.Resources;
+using Scrap.Domain.JobDefinitions;
+using Scrap.Domain.Resources;
 
-namespace Scrap.Jobs;
+namespace Scrap.Domain.Jobs;
 
 public class Job
 {
     public const int DefaultHttpRequestRetries = 5;
     public static readonly TimeSpan DefaultHttpRequestDelayBetweenRetries = TimeSpan.FromSeconds(1);
 
-    public Job(NewJobDto dto)
+    public Job(JobDto dto)
     {
         Id = new JobId();
         AdjacencyXPath = dto.AdjacencyXPath == null ? null : new XPath(dto.AdjacencyXPath);

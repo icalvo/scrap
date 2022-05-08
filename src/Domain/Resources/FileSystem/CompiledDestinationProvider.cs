@@ -5,41 +5,44 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.Extensions.Logging;
-using Scrap.Pages;
+using Scrap.Domain.Pages;
 
-namespace Scrap.Resources.FileSystem;
+namespace Scrap.Domain.Resources.FileSystem;
 
 public class CompiledDestinationProvider : IDestinationProvider
 {
-    private readonly string[] _destinationFolderPattern;
     private IDestinationProvider _compiledDestinationProvider = null!;
+    private readonly FileSystemResourceRepositoryConfiguration _config;
     private readonly ILogger<CompiledDestinationProvider> _logger;
-    private CompiledDestinationProvider(string[] destinationFolderPattern, ILogger<CompiledDestinationProvider> logger)
+
+    public CompiledDestinationProvider(
+        FileSystemResourceRepositoryConfiguration config,
+        ILogger<CompiledDestinationProvider> logger)
     {
-        _destinationFolderPattern = destinationFolderPattern;
+        _config = config;
         _logger = logger;
     }
 
-    public static async Task<CompiledDestinationProvider> CreateCompiledAsync(string[] destinationFolderPattern, ILogger<CompiledDestinationProvider> logger)
-    {
-        var result = new CompiledDestinationProvider(destinationFolderPattern, logger);
-        await result.Compile();
-        return result;
-    }
-
-    public Task<string> GetDestinationAsync(
+    public async Task<string> GetDestinationAsync(
         string destinationRootFolder,
         IPage page,
         int pageIndex,
         Uri resourceUrl,
         int resourceIndex)
     {
-        return _compiledDestinationProvider.GetDestinationAsync(destinationRootFolder, page, pageIndex, resourceUrl, resourceIndex);
+        await CompileAsync(_config);
+        return await _compiledDestinationProvider.GetDestinationAsync(destinationRootFolder, page, pageIndex, resourceUrl, resourceIndex);
     }
 
-    private async Task Compile()
+    public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config)
     {
-        string sourceCode = await GenerateSourceCodeAsync();
+        return CompileAsync(config);
+    }
+
+    private async Task CompileAsync(FileSystemResourceRepositoryConfiguration config)
+    {
+        var destinationFolderPattern = config.PathFragments;
+        string sourceCode = await GenerateSourceCodeAsync(destinationFolderPattern);
         try
         {
             var assembly = CompileSourceCode(sourceCode);
@@ -52,18 +55,17 @@ public class CompiledDestinationProvider : IDestinationProvider
         }
     }
 
-    private async Task<string> GenerateSourceCodeAsync()
+    private static async Task<string> GenerateSourceCodeAsync(string[] destinationFolderPattern)
     {
         await using var stream =
             typeof(CompiledDestinationProvider).Assembly
-                .GetManifestResourceStream("Scrap.Resources.FileSystem.TemplateDestinationProvider.cs")
+                .GetManifestResourceStream("Scrap.Domain.Resources.FileSystem.TemplateDestinationProvider.cs")
             ?? throw new Exception("TemplateDestinationProvider resource not found");
         using var reader = new StreamReader(stream);
         
         string sourceCode = await reader.ReadToEndAsync();
-        var callChain = string.Join("", _destinationFolderPattern.Select(p => $".C({p})"));
-        var pattern = $"rootFolder{callChain}.ToPath()";
-        sourceCode = sourceCode.Replace("\"destinationFolderPattern\"", pattern);
+        var callChain = string.Join("", destinationFolderPattern.Select(p => $"ToArray({p}),\n"));
+        sourceCode = sourceCode.Replace("/* DestinationPattern */", callChain);
         return sourceCode;
     }
 
@@ -103,6 +105,7 @@ public class CompiledDestinationProvider : IDestinationProvider
             {
                 _logger.LogError("{Id}: {Message} at {Location}", diagnostic.Id, diagnostic.GetMessage(),
                     diagnostic.Location);
+                _logger.LogDebug("{SourceCode}", sourceCode);
             }
 
             throw new Exception("Compilation error");

@@ -1,4 +1,4 @@
-namespace Scrap.Pages;
+namespace Scrap.Domain.Pages;
 
 public class PageMarker
 {

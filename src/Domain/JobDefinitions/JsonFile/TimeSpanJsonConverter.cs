@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Scrap.JobDefinitions.JsonFile;
+namespace Scrap.Domain.JobDefinitions.JsonFile;
 
 public class TimeSpanJsonConverter : JsonConverter<TimeSpan>
 {

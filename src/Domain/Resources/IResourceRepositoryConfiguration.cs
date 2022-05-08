@@ -1,8 +1,6 @@
-using Microsoft.Extensions.Logging;
-namespace Scrap.Resources;
+namespace Scrap.Domain.Resources;
 
 public interface IResourceRepositoryConfiguration
 {
-    Task ValidateAsync(ILoggerFactory loggerFactory);
-    string Type { get; }
+    string RepositoryType { get; }
 }

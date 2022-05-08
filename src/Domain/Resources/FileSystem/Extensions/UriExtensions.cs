@@ -1,4 +1,4 @@
-namespace Scrap.Resources.FileSystem.Extensions;
+namespace Scrap.Domain.Resources.FileSystem.Extensions;
 
 public static class UriExtensions
 {

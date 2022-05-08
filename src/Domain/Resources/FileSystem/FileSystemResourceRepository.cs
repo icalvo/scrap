@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace Scrap.Resources.FileSystem;
+namespace Scrap.Domain.Resources.FileSystem;
 
 public class FileSystemResourceRepository : BaseResourceRepository<FileSystemResourceId>
 {
@@ -11,12 +11,12 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
 
     public FileSystemResourceRepository(
         IDestinationProvider destinationProvider,
-        string destinationRootFolder,
+        FileSystemResourceRepositoryConfiguration config,
         ILogger<FileSystemResourceRepository> logger,
         bool disableWrites)
     {
         _destinationProvider = destinationProvider;
-        _destinationRootFolder = destinationRootFolder;
+        _destinationRootFolder = config.RootFolder;
         _logger = logger;
         _disableWrites = disableWrites;
     }

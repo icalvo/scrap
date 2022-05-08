@@ -2,11 +2,12 @@
 
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
-        <RootNamespace>Scrap</RootNamespace>
+        <RootNamespace>Scrap.Domain</RootNamespace>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
         <ImplicitUsings>true</ImplicitUsings>
+        <AssemblyName>Scrap.Domain</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -22,10 +23,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Remove="Resources\FileSystem\TemplateDestinationProvider.cs" />
       <EmbeddedResource Include="Resources\FileSystem\TemplateDestinationProvider.cs">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+      <Compile Remove="Resources\FileSystem\TemplateDestinationProvider.cs" />
     </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-namespace Scrap.Resources;
+namespace Scrap.Domain.Resources;
 
 public interface IResourceRepository
 {
@@ -12,6 +12,7 @@ public interface IResourceRepository
     Task UpsertAsync(ResourceInfo resourceInfo, Stream resourceStream);
 
     Task<string> GetKeyAsync(ResourceInfo resourceInfo);
+    string Type { get; }
 }    
 
 public interface IResourceRepository<TResourceId>: IResourceRepository

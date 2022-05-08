@@ -1,6 +1,6 @@
-using Scrap.Resources;
+using Scrap.Domain.Resources;
 
-namespace Scrap.JobDefinitions;
+namespace Scrap.Domain.JobDefinitions;
 
 public record JobDefinitionDto(
     Guid Id,

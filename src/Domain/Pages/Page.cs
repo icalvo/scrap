@@ -1,14 +1,14 @@
-﻿using System.Diagnostics;
-using System.Xml.XPath;
+﻿using System.Xml.XPath;
 using Microsoft.Extensions.Logging;
 
-namespace Scrap.Pages;
+namespace Scrap.Domain.Pages;
 
 public class Page: IPage
 {
     private readonly IPageRetriever _pageRetriever;
     private readonly Uri _baseUri;
     private readonly ILogger<Page> _logger;
+    private readonly XPathNavigator _navigator;
 
     public Page(Uri uri, IXPathNavigable document, IPageRetriever pageRetriever, ILogger<Page> logger)
     {
@@ -16,6 +16,7 @@ public class Page: IPage
         _logger = logger;
         Uri = uri;
         Document = document;
+        _navigator = document.CreateNavigator() ?? throw new ArgumentException("Cannot build an XPathNavigator from this doc", nameof(document));
         var portSuffix = uri.IsDefaultPort ? "" : $":{uri.Port}";
         _baseUri = new Uri($"{uri.Scheme}://{uri.Host}{portSuffix}");
     }
@@ -46,7 +47,7 @@ public class Page: IPage
         return
             Contents(xPath)
                 .Where(url => !string.IsNullOrEmpty(url))
-                .Select(url => new Uri(_baseUri, url!));
+                .Select(url => new Uri(_baseUri, url));
     }
 
     public Uri? Link(XPath xPath)
@@ -64,14 +65,31 @@ public class Page: IPage
         return Contents(xPath).FirstOrDefault();
     }
 
-    public IEnumerable<string?> Contents(XPath xPath)
+    public IEnumerable<string> Contents(XPath xPath)
     {
-        var result = Document.Contents(xPath).ToArray();
-
-        LogXPathEval(result, xPath);
-        return result;
+        var nodesEnumerable = ToEnumerable(_navigator.Select(xPath));
+        var results = xPath.IsHtml
+            ? nodesEnumerable.Select(x => x.InnerXml)
+            : nodesEnumerable.Select(x => x.Value);
+        var resultsArray = results
+            .RemoveNulls()
+            .Where(url => !string.IsNullOrEmpty(url))
+            .ToArray();
+        LogXPathEval(resultsArray, xPath);
+        return resultsArray;
     }
-    
+
+    private static IEnumerable<XPathNavigator> ToEnumerable(XPathNodeIterator iterator)
+    {
+        while (iterator.MoveNext())
+        {
+            if (iterator.Current != null)
+            {
+                yield return iterator.Current;
+            }
+        }
+    }
+
     public string Content(XPath xPath)
     {
         var result = Contents(xPath).FirstOrDefault();
@@ -86,9 +104,15 @@ public class Page: IPage
     public async Task<IPage?> LinkedDoc(string xPath)
     {
         var link = Link(xPath);
+        if (link == null)
+        {
+            return null;
+        }
+
         try
         {
-            return await Doc(link);
+            var linkedPage = await _pageRetriever.GetPageAsync(link);
+            return new Page(link, linkedPage.Document, _pageRetriever, _logger);            
         }
         catch (Exception ex)
         {
@@ -113,10 +137,4 @@ public class Page: IPage
         string output = string.Join(",", elementsToDisplay.Select(x => x == null ? "" : x.Length <= maxCharsPerElement ? x : x[..(maxCharsPerElement - 3)] + "...")) + suffix;
         _logger.LogTrace("Eval XPath {XPath} => [{Result}]", xPath, output);
     }
-    private async Task<IPage?> Doc(Uri? link)
-    {
-        Debug.Assert(_pageRetriever != null, nameof(_pageRetriever) + " != null");
-
-        return link == null ? null : new Page(link, (await _pageRetriever.GetPageAsync(link)).Document, _pageRetriever, _logger);
-    }        
 }

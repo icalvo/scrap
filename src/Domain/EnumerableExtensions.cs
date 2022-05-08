@@ -1,4 +1,4 @@
-﻿namespace Scrap;
+﻿namespace Scrap.Domain;
 
 public static class EnumerableExtensions
 {

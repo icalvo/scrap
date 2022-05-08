@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Scrap.Jobs.Graphs;
+using Scrap.Domain.Jobs.Graphs;
 using Xunit;
 
 namespace Scrap.Tests;

@@ -6,10 +6,13 @@ using CLAP.Interception;
 using Figgle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Scrap.Application;
+using Scrap.Application.Scrap;
 using Scrap.CommandLine.Logging;
-using Scrap.JobDefinitions;
-using Scrap.Jobs;
 using Scrap.DependencyInjection;
+using Scrap.Domain;
+using Scrap.Domain.JobDefinitions;
+using Scrap.Domain.Jobs;
 
 namespace Scrap.CommandLine;
 
@@ -21,7 +24,6 @@ public class ScrapCommandLine
     private bool _verbose;
     private bool _debug;
     private IConfiguration _configuration = null!;
-    private ILogger<ScrapCommandLine> _logger = null!;
 
     public ScrapCommandLine(Parser<ScrapCommandLine> parser, string[] args)
     {
@@ -84,9 +86,9 @@ public class ScrapCommandLine
     {
         PrintHeader();
 
-        using var loggerFactory = SetupLoggingWithConsole();
-        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
-        var definitionsApplicationService = await serviceResolver.GetJobDefinitionsApplicationServiceAsync();
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithConsole);
+        var logger = serviceResolver.Get<ILogger<ScrapCommandLine>>();
+        var definitionsApplicationService = serviceResolver.Get<JobDefinitionsApplicationService>();
     
         var jobDefs = new List<JobDefinitionDto>();
         var envRootUrl = _configuration[JobDefRootUrlEnvironment];
@@ -105,7 +107,7 @@ public class ScrapCommandLine
         else
         {
             var envName = _configuration[JobDefNameEnvironment];
-            var jobDef = await GetJobDefinition(name, rootUrl, definitionsApplicationService, envName, envRootUrl);
+            var jobDef = await GetJobDefinition(name, rootUrl, definitionsApplicationService, envName, envRootUrl, logger);
 
             if (jobDef == null)
             {
@@ -117,18 +119,18 @@ public class ScrapCommandLine
 
         if (jobDefs.Count == 0)
         {
-            _logger.LogWarning("No job definition found, nothing will be done");
+            logger.LogWarning("No job definition found, nothing will be done");
             return;
         }
 
-        _logger.LogInformation("The following job def(s). will be run: {JobDefs}", string.Join(", ", jobDefs.Select(x => x.Name)));
+        logger.LogInformation("The following job def(s). will be run: {JobDefs}", string.Join(", ", jobDefs.Select(x => x.Name)));
         foreach (var jobDef in jobDefs)
         {
-            var newJob = new NewJobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
-            var scrapAppService = serviceResolver.GetJobApplicationService();
-            _logger.LogInformation("Starting {Definition}...", jobDef.Name);
+            var newJob = new JobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
+            var scrapAppService = serviceResolver.Get<ScrapApplicationService>();
+            logger.LogInformation("Starting {Definition}...", jobDef.Name);
             await scrapAppService.ScrapAsync(newJob);
-            _logger.LogInformation("Finished!");
+            logger.LogInformation("Finished!");
         }
     }
 
@@ -139,16 +141,15 @@ public class ScrapCommandLine
         [Description("URL where the scrapping starts")]string? rootUrl = null,
         [Description("Navigate through already visited pages")]bool fullScan = false)
     {
-        var loggerFactory = SetupLoggingWithoutConsole();
-        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
         var newJob = await BuildJobDto(serviceResolver, name, rootUrl,  fullScan, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
         if (newJob == null)
         {
             return;
         }
 
-        var scrapAppService = serviceResolver.GetJobApplicationService();
-        await scrapAppService.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
+        var service = serviceResolver.Get<ITraversalApplicationService>();
+        await service.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
     }
 
     [Verb(Description = "Lists all the pages reachable with the adjacency path")]
@@ -159,8 +160,7 @@ public class ScrapCommandLine
         [Description("Pipeline")]string[]? pipeline = null,
         [Description("Output only the resource link instead of the format expected by 'scrap download'")]bool onlyResourceLink = false)
     {
-        var loggerFactory = SetupLoggingWithoutConsole();
-        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -174,7 +174,7 @@ public class ScrapCommandLine
             return;
         }
 
-        var scrapAppService = serviceResolver.GetJobApplicationService();
+        var scrapAppService = serviceResolver.Get<IResourcesApplicationService>();
         var pageIndex = 0;
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
@@ -197,8 +197,7 @@ public class ScrapCommandLine
         [Description("Download resources even if they are already downloaded")]bool downloadAlways = false,
         [Description("Pipeline")]string[]? pipeline = null)
     {
-        var loggerFactory = SetupLoggingWithoutConsole();
-        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -212,7 +211,7 @@ public class ScrapCommandLine
             return;
         }
 
-        var scrapAppService = serviceResolver.GetJobApplicationService();
+        var scrapAppService = serviceResolver.Get<IDownloadApplicationService>();
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
         {
@@ -233,8 +232,7 @@ public class ScrapCommandLine
         [Description("URL where the scrapping starts")]string? rootUrl = null,
         [Description("Pipeline")]string[]? pipeline = null)
     {
-        var loggerFactory = SetupLoggingWithoutConsole();
-        var serviceResolver = new ServicesResolver(loggerFactory, _configuration);
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
         var newJob = await BuildJobDto(
             serviceResolver,
             name,
@@ -248,7 +246,7 @@ public class ScrapCommandLine
             return;
         }
 
-        var scrapAppService = serviceResolver.GetJobApplicationService();
+        var scrapAppService = serviceResolver.Get<IMarkVisitedApplicationService>();
         IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
         foreach (var line in inputLines)
         {
@@ -325,11 +323,6 @@ public class ScrapCommandLine
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public void After(PostVerbExecutionContext context)
     {
-        if (context.Failed)
-        {
-            _logger.LogCritical(context.Exception, "Critical error");
-        }
-
         if (_debug)
         {
             Console.ReadKey();
@@ -450,42 +443,24 @@ public class ScrapCommandLine
         Console.WriteLine($"{key}={value}");
     }
 
-    private ILoggerFactory SetupLoggingWithoutConsole()
+    private void ConfigureLoggingWithConsole(ILoggingBuilder builder) => ConfigureLogging(builder, true);
+    private void ConfigureLoggingWithoutConsole(ILoggingBuilder builder) => ConfigureLogging(builder, false);
+    private void ConfigureLogging(ILoggingBuilder builder, bool withConsole)
     {
-        return SetupLogging(withConsole: false);
-    }
+        builder.ClearProviders();
+        builder.AddConfiguration(_configuration.GetSection("Logging"));
+        builder.AddFile(_configuration.GetSection("Logging:File"), options => options.FolderPath = GetGlobalUserConfigFolder());
 
-    private ILoggerFactory SetupLoggingWithConsole()
-    {
-        return SetupLogging(withConsole: true);
-    }
-
-    private ILoggerFactory SetupLogging(bool withConsole)
-    {
-        var loggerFactory = LoggerFactory.Create(builder =>
+        if (!_verbose)
         {
-            builder.ClearProviders();
-            builder.AddConfiguration(_configuration.GetSection("Logging"));
-            builder.AddFile(
-                _configuration.GetSection("Logging:File"),
-                options => options.FolderPath = GetGlobalUserConfigFolder());
+            builder.AddFilter(level => level != LogLevel.Trace);
+        }
 
-            if (!_verbose)
-            {
-                builder.AddFilter(level => level != LogLevel.Trace);
-            }
-
-            if (withConsole)
-            {
-                builder.AddConsole();
-                builder.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
-            }
-        });
-
-        _logger = new Logger<ScrapCommandLine>(loggerFactory);
-        _logger.LogTrace("Trace enabled");
-
-        return loggerFactory;
+        if (withConsole)
+        {
+            builder.AddConsole();
+            builder.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
+        }
     }
 
     private static void PrintHeader()
@@ -513,8 +488,8 @@ public class ScrapCommandLine
         }
     }
 
-    private async Task<NewJobDto?> BuildJobDto(
-        ServicesResolver serviceResolver,
+    private async Task<JobDto?> BuildJobDto(
+        ServicesLocator serviceLocator,
         string? name,
         string? rootUrl,
         bool? fullScan,
@@ -522,20 +497,21 @@ public class ScrapCommandLine
         bool? disableMarkingVisited,
         bool? disableResourceWrites)
     {
-        var definitionsApplicationService = await serviceResolver.GetJobDefinitionsApplicationServiceAsync();
+        var definitionsApplicationService = serviceLocator.Get<JobDefinitionsApplicationService>();
+        var logger = serviceLocator.Get<ILogger<ScrapCommandLine>>();
         var envName = _configuration[JobDefNameEnvironment];
         var envRootUrl = _configuration[JobDefRootUrlEnvironment];
         
-        var jobDef = await GetJobDefinition(name, rootUrl, definitionsApplicationService, envName, envRootUrl);
+        var jobDef = await GetJobDefinition(name, rootUrl, definitionsApplicationService, envName, envRootUrl, logger);
 
         if (jobDef == null)
         {
             return null;
         }
         
-        _logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
+        logger.LogInformation("The following job def will be run: {JobDef}", jobDef);
         
-        return new NewJobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);        
+        return new JobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);        
     }
 
     private async Task<JobDefinitionDto?> GetJobDefinition(
@@ -543,7 +519,8 @@ public class ScrapCommandLine
         string? rootUrl,
         JobDefinitionsApplicationService definitionsApplicationService,
         string? envName,
-        string? envRootUrl)
+        string? envRootUrl,
+        ILogger logger)
     {
         JobDefinitionDto? jobDef = null;
         if (name != null)
@@ -551,7 +528,7 @@ public class ScrapCommandLine
             jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
             if (jobDef == null)
             {
-                _logger.LogError("Job definition {Name} does not exist", name);
+                logger.LogError("Job definition {Name} does not exist", name);
             }
 
             return jobDef;
@@ -562,11 +539,11 @@ public class ScrapCommandLine
             var jobDefs = await definitionsApplicationService.FindJobsByRootUrlAsync(rootUrl).ToArrayAsync();
             if (jobDefs.Length == 0)
             {
-                _logger.LogWarning("No job definition matches with {RootUrl}", rootUrl);
+                logger.LogWarning("No job definition matches with {RootUrl}", rootUrl);
             }
             else if (jobDefs.Length > 1)
             {
-                _logger.LogWarning("More than one definition matched with {RootUrl}", rootUrl);
+                logger.LogWarning("More than one definition matched with {RootUrl}", rootUrl);
             }
             else
             {
@@ -579,7 +556,7 @@ public class ScrapCommandLine
             jobDef = await definitionsApplicationService.FindJobByNameAsync(envName);
             if (jobDef == null)
             {
-                _logger.LogError("Job definition {Name} does not exist", envName);
+                logger.LogError("Job definition {Name} does not exist", envName);
             }
 
             return jobDef;
@@ -590,11 +567,11 @@ public class ScrapCommandLine
             var jobDefs = await definitionsApplicationService.FindJobsByRootUrlAsync(envRootUrl).ToArrayAsync();
             if (jobDefs.Length == 0)
             {
-                _logger.LogWarning("No job definition matches with {RootUrl}", envRootUrl);
+                logger.LogWarning("No job definition matches with {RootUrl}", envRootUrl);
             }
             else if (jobDefs.Length > 1)
             {
-                _logger.LogWarning("More than one definition matched with {RootUrl}", envRootUrl);
+                logger.LogWarning("More than one definition matched with {RootUrl}", envRootUrl);
             }
             else
             {
@@ -604,7 +581,7 @@ public class ScrapCommandLine
 
         if (jobDef == null)
         {
-            _logger.LogWarning("No single job definition was found, nothing will be done");
+            logger.LogWarning("No single job definition was found, nothing will be done");
         }
 
         return jobDef;

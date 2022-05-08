@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
-namespace Scrap.Resources;
+namespace Scrap.Domain.Resources;
 
 public class ListResourceRepositoryConfiguration : IResourceRepositoryConfiguration
 {
@@ -22,5 +22,5 @@ public class ListResourceRepositoryConfiguration : IResourceRepositoryConfigurat
         return Task.CompletedTask;
     }
 
-    public string Type => "list";
+    public string RepositoryType => "list";
 }

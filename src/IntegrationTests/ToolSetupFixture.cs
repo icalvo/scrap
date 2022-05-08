@@ -72,13 +72,13 @@ public sealed class ToolSetupFixture : IDisposable
             }
         };
         var process = Process.Start(psi) ?? throw new Exception("Could not start process");
-        timeout ??= TimeSpan.FromSeconds(20);
-        if (!process.WaitForExit((int)(timeout ?? TimeSpan.FromSeconds(20)).TotalMilliseconds))
+        var finalTimeout = timeout ?? TimeSpan.FromSeconds(20);
+        if (!process.WaitForExit((int)finalTimeout.TotalMilliseconds))
         {
-            throw new Exception($"Could not run process in less than {timeout}: {fileName} {arguments}");
+            throw new Exception($"Could not run process in less than {finalTimeout}: {fileName} {arguments}");
         }
 
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
         var output = GetCommandLineOutput(process, cts.Token).ToArray();
 
         if (checkExitCode && process.ExitCode != 0)

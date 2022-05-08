@@ -12,6 +12,7 @@
     <ToolCommandName>scrap</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <Description>Scrap is a web scrapping command line tool.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/icalvo/scrap</PackageProjectUrl>
     <RepositoryUrl>https://github.com/icalvo/scrap.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

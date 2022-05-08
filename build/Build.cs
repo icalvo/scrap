@@ -11,6 +11,7 @@ using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Utilities.Collections;
+using Octokit;
 using static System.Environment;
 using static Nuke.Common.EnvironmentInfo;
 using static Nuke.Common.IO.FileSystemTasks;
@@ -153,11 +154,29 @@ class Build : NukeBuild
         .Description("🏷 Tag commit and push")
         .Requires(() => GitHubActions)
         .Requires(() => Version)
-        .Executes(() =>
+        .Executes(async () =>
         {
-            Git($"config --global user.email \"{GitHubActions.Actor}@users.noreply.github.com\"");
-            Git($"config --global user.name \"{GitHubActions.Actor}\"");
-            Git($"tag v{Version}");
-            Git($"push origin --tags");
+            var tokenAuth = new Credentials(GitHubActions.Token);
+            var github = new GitHubClient(new ProductHeaderValue("build-script"))
+            {
+                Credentials = tokenAuth
+            };
+            var split = GitHubActions.Repository.Split("/");
+            GitTag tag = await github.Git.Tag.Create(
+                split[0],
+                split[1],
+                new NewTag
+                {
+                    Tag = $"v{Version}",
+                    Object = GitHubActions.Sha,
+                    Type = TaggedType.Commit,
+                    Tagger = new Committer(GitHubActions.Actor, $"{GitHubActions.Actor}@users.noreply.github.com", DateTimeOffset.UtcNow),
+                    Message = "Package published in NuGet.org"
+                });
+
+            await github.Git.Reference.Create(
+                split[0],
+                split[1],
+                new NewReference($"refs/tags/v{Version}", tag.Object.Sha));
         });
 }

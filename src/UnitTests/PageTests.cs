@@ -152,6 +152,7 @@ public class PageTests
     <div id=""downloadCount"" data=""expectedData"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t3</div>
     <a href=""link1""></a>
     <a href=""link2""><span>t4</span></a>
+    <a href=""""></a>
 </body>
 </html>");
 

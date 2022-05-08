@@ -47,7 +47,7 @@ public class Page: IPage
         return
             Contents(xPath)
                 .Where(url => !string.IsNullOrEmpty(url))
-                .Select(url => new Uri(_baseUri, url!));
+                .Select(url => new Uri(_baseUri, url));
     }
 
     public Uri? Link(XPath xPath)
@@ -65,13 +65,16 @@ public class Page: IPage
         return Contents(xPath).FirstOrDefault();
     }
 
-    public IEnumerable<string?> Contents(XPath xPath)
+    public IEnumerable<string> Contents(XPath xPath)
     {
         var nodesEnumerable = ToEnumerable(_navigator.Select(xPath));
         var results = xPath.IsHtml
             ? nodesEnumerable.Select(x => x.InnerXml)
             : nodesEnumerable.Select(x => x.Value);
-        var resultsArray = results.ToArray();
+        var resultsArray = results
+            .RemoveNulls()
+            .Where(url => !string.IsNullOrEmpty(url))
+            .ToArray();
         LogXPathEval(resultsArray, xPath);
         return resultsArray;
     }

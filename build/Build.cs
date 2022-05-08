@@ -22,14 +22,14 @@ using static Nuke.Common.Tools.Git.GitTasks;
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions(
-    "publish-nuget-nuke",
+    "PublishNuGet",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnWorkflowDispatchRequiredInputs = new[] { nameof(Version) },
     InvokedTargets = new []{ nameof(Push) },
-    ImportSecrets = new[] { "NUGET_TOKEN"})]
+    ImportSecrets = new[] { "NUGET_TOKEN", "GITHUB_TOKEN" })]
 [GitHubActions(
-    "pull-request-nuke",
+    "PullRequest",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPullRequestBranches = new[] { "main" },
@@ -55,6 +55,8 @@ class Build : NukeBuild
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
     AbsolutePath OutputDirectory => RootDirectory / "output";
+    AbsolutePath TargetProjectDirectory => SourceDirectory / "CommandLine";
+    AbsolutePath PackageDirectory => TargetProjectDirectory / "nupkg";
 
     string MainVersion
     {
@@ -72,7 +74,6 @@ class Build : NukeBuild
         {
             SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
             EnsureCleanDirectory(OutputDirectory);
-            DeleteFile(SourceDirectory / "scrap.db");
         });
 
     Target Restore => _ => _
@@ -117,25 +118,29 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            DotNetTest(o => o
-                .SetProjectFile(SourceDirectory / "IntegrationTests")
-                .SetConfiguration(Configuration)
-                .EnableNoBuild()
-                .SetLoggers("console;verbosity=normal")
-                .SetProcessEnvironmentVariable(
-                    "Scrap_GlobalConfigurationFolder",
-                    GetEnvironmentVariable("Scrap_GlobalConfigurationFolder")));
+            // DotNetTest(o => o
+            //     .SetProjectFile(SourceDirectory / "IntegrationTests")
+            //     .SetConfiguration(Configuration)
+            //     .EnableNoBuild()
+            //     .SetLoggers("console;verbosity=normal")
+            //     .SetProcessEnvironmentVariable(
+            //         "Sched_GlobalConfigurationFolder",
+            //         GetEnvironmentVariable("Sched_GlobalConfigurationFolder")));
         });
 
     Target Pack => _ => _
         .Description("📦 NuGet Pack")
         .DependsOn(Compile)
         .Requires(() => Version)
+        .Produces(PackageDirectory / "*.nupkg")
         .Executes(() =>
         {
             DotNetPack(s => s
+                .SetProject(TargetProjectDirectory)
+                .SetConfiguration(Configuration)
                 .EnableNoBuild()
                 .SetProperty("PackageVersion", Version));
+
         });
 
     public Target Push => _ => _
@@ -145,8 +150,8 @@ class Build : NukeBuild
         .Executes(() =>
         {
             DotNetNuGetPush(s => s
-                .SetTargetPath(SourceDirectory / "CommandLine" / "nupkg" / "scrap.*.nupkg")
-                .SetApiKey(GetEnvironmentVariable("NUGET_AUTH_TOKEN"))
+                .SetTargetPath(PackageDirectory / "*.nupkg")
+                .SetApiKey(GetEnvironmentVariable("NUGET_TOKEN"))
                 .SetSource("https://api.nuget.org/v3/index.json"));
         });
 

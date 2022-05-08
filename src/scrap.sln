@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandLine", "CommandLine\CommandLine.csproj", "{7440D748-611F-4627-9AFA-F04675720952}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommandLine", "CommandLine\CommandLine.csproj", "{7440D748-611F-4627-9AFA-F04675720952}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csproj", "{DC01283F-FFD4-4DC8-8E86-C3B2E7A5D6CC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "Domain\Domain.csproj", "{DC01283F-FFD4-4DC8-8E86-C3B2E7A5D6CC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyInjection", "DependencyInjection\DependencyInjection.csproj", "{FBB009F0-D550-40FD-B5A1-BFE0171D4398}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyInjection", "DependencyInjection\DependencyInjection.csproj", "{FBB009F0-D550-40FD-B5A1-BFE0171D4398}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{5C325A69-2AA1-4AC2-87C7-A7934237BB22}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests", "UnitTests\UnitTests.csproj", "{5C325A69-2AA1-4AC2-87C7-A7934237BB22}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "IntegrationTests\IntegrationTests.csproj", "{D15D6566-1470-4157-AE64-36385558AAF9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegrationTests", "IntegrationTests\IntegrationTests.csproj", "{D15D6566-1470-4157-AE64-36385558AAF9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{782092AF-0482-49D5-BB42-B3CEFA1670C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Application", "Application\Application.csproj", "{782092AF-0482-49D5-BB42-B3CEFA1670C0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "..\build\_build.csproj", "{A61AC122-77B3-4FCE-9274-660399CBDFBB}"
 EndProject
@@ -26,12 +26,7 @@ Global
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7440D748-611F-4627-9AFA-F04675720952}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7440D748-611F-4627-9AFA-F04675720952}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7440D748-611F-4627-9AFA-F04675720952}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -104,5 +99,21 @@ Global
 		{782092AF-0482-49D5-BB42-B3CEFA1670C0}.Release|x64.Build.0 = Release|Any CPU
 		{782092AF-0482-49D5-BB42-B3CEFA1670C0}.Release|x86.ActiveCfg = Release|Any CPU
 		{782092AF-0482-49D5-BB42-B3CEFA1670C0}.Release|x86.Build.0 = Release|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Debug|x64.Build.0 = Debug|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Debug|x86.Build.0 = Debug|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Release|x64.ActiveCfg = Release|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Release|x64.Build.0 = Release|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Release|x86.ActiveCfg = Release|Any CPU
+		{A61AC122-77B3-4FCE-9274-660399CBDFBB}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8631A18F-AF4B-483C-B9B9-958D62A5B4B7}
 	EndGlobalSection
 EndGlobal

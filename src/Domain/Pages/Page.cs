@@ -1,4 +1,5 @@
-﻿using System.Xml.XPath;
+﻿using System.Net;
+using System.Xml.XPath;
 using Microsoft.Extensions.Logging;
 
 namespace Scrap.Domain.Pages;
@@ -70,7 +71,7 @@ public class Page: IPage
         var nodesEnumerable = ToEnumerable(_navigator.Select(xPath));
         var results = xPath.IsHtml
             ? nodesEnumerable.Select(x => x.InnerXml)
-            : nodesEnumerable.Select(x => x.Value);
+            : nodesEnumerable.Select(x => WebUtility.HtmlDecode(x.Value));
         var resultsArray = results
             .RemoveNulls()
             .Where(url => !string.IsNullOrEmpty(url))

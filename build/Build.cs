@@ -1,39 +1,33 @@
 using System;
+using System.IO;
 using System.Linq;
-using JetBrains.Annotations;
 using Nuke.Common;
 using Nuke.Common.CI;
 using Nuke.Common.CI.GitHubActions;
-using Nuke.Common.Execution;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
-using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Utilities.Collections;
 using Octokit;
 using static System.Environment;
-using static Nuke.Common.EnvironmentInfo;
 using static Nuke.Common.IO.FileSystemTasks;
-using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
-using static Nuke.Common.Tools.Git.GitTasks;
 
-[CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions(
-    "PublishNuGet",
+    nameof(PublishNuGet),
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnWorkflowDispatchRequiredInputs = new[] { nameof(Version) },
-    InvokedTargets = new []{ nameof(Push) },
+    InvokedTargets = new []{ nameof(PublishNuGet) },
     ImportSecrets = new[] { "NUGET_TOKEN", "GITHUB_TOKEN" })]
 [GitHubActions(
-    "PullRequest",
+    nameof(PullRequest),
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPullRequestBranches = new[] { "main" },
-    InvokedTargets = new []{ nameof(IntegrationTests) })]
+    InvokedTargets = new []{ nameof(PullRequest) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -112,7 +106,6 @@ class Build : NukeBuild
                 .SetLoggers("console;verbosity=normal"));
         });
 
-
     Target IntegrationTests => _ => _
         .Description("🐛 Integration Tests")
         .DependsOn(Compile)
@@ -143,9 +136,20 @@ class Build : NukeBuild
 
         });
 
+    Target ChangelogVerification => _ => _
+        .Description("👀 Changelog Verification")
+        .Requires(() => Version)
+        .Executes(() =>
+        {
+            Assert.FileExists(RootDirectory / "CHANGELOG.md");
+            Assert.True(
+                File.ReadLines(RootDirectory / "CHANGELOG.md").Any(line => line.StartsWith("## [" + MainVersion)),
+                $"There is no entry for version {Version} in CHANGELOG.md");
+        });
+
     public Target Push => _ => _
         .Description("📢 NuGet Push")
-        .DependsOn(Pack, UnitTests, IntegrationTests)
+        .DependsOn(Pack, UnitTests, IntegrationTests, ChangelogVerification)
         .Triggers(TagCommit)
         .Executes(() =>
         {
@@ -167,9 +171,11 @@ class Build : NukeBuild
                 Credentials = tokenAuth
             };
             var split = GitHubActions.Repository.Split("/");
+            var owner = split[0];
+            var name = split[1];
             GitTag tag = await github.Git.Tag.Create(
-                split[0],
-                split[1],
+                owner,
+                name,
                 new NewTag
                 {
                     Tag = $"v{Version}",
@@ -180,8 +186,33 @@ class Build : NukeBuild
                 });
 
             await github.Git.Reference.Create(
-                split[0],
-                split[1],
+                owner,
+                name,
                 new NewReference($"refs/tags/v{Version}", tag.Object.Sha));
         });
+
+    Target PullRequest => _ => _
+        .Description("🏷 Pull Request")
+        .Requires(() => GitHubActions)
+        .Triggers(IntegrationTests)
+        .Executes(async () =>
+        {
+            var tokenAuth = new Credentials(GitHubActions.Token);
+            var github = new GitHubClient(new ProductHeaderValue("build-script"))
+            {
+                Credentials = tokenAuth
+            };
+            var split = GitHubActions.Repository.Split("/");
+            var owner = split[0];
+            var name = split[1];
+            if (GitHubActions.PullRequestNumber != null)
+            {
+                var pullRequestFiles = await github.PullRequest.Files(owner, name, GitHubActions.PullRequestNumber.Value);
+                Assert.True(pullRequestFiles.Any(x => x.FileName == RootDirectory / "CHANGELOG.md"));
+            }
+        });
+
+    Target PublishNuGet => _ => _
+        .Description("Publish NuGet")
+        .Triggers(Push);
 }

@@ -29,6 +29,7 @@
             "AppVeyor",
             "AzurePipelines",
             "Bamboo",
+            "Bitbucket",
             "Bitrise",
             "GitHubActions",
             "GitLab",
@@ -71,10 +72,13 @@
           "items": {
             "type": "string",
             "enum": [
+              "ChangelogVerification",
               "Clean",
               "Compile",
               "IntegrationTests",
               "Pack",
+              "PublishNuGet",
+              "PullRequest",
               "Push",
               "Restore",
               "TagCommit",
@@ -92,10 +96,13 @@
           "items": {
             "type": "string",
             "enum": [
+              "ChangelogVerification",
               "Clean",
               "Compile",
               "IntegrationTests",
               "Pack",
+              "PublishNuGet",
+              "PullRequest",
               "Push",
               "Restore",
               "TagCommit",

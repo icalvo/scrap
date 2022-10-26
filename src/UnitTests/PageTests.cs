@@ -131,25 +131,25 @@ public class PageTests
 
     [Theory]
     // Attribute value
-    [InlineData("//*[@id='downloadCount']/@data", new[]{"expectedData"})]
+    [InlineData("//*[@id='downloadCount']/@data", new[]{"expected'Data"})]
     // For all selected nodes, inner recursive texts, concatenated
-    [InlineData("//*[@id='downloadCount']", new[]{"t1t2at2bt2ct3"})]
+    [InlineData("//*[@id='downloadCount']", new[]{"t1t2at2bt2ct'3"})]
     // For all selected nodes, one element with the inner non-recursive text
-    [InlineData("//*[@id='downloadCount']/text()", new[]{"t1", "t3"})]
+    [InlineData("//*[@id='downloadCount']/text()", new[]{"t1", "t'3"})]
     // Concatenated inner recursive text of immediate children
     [InlineData("//*[@id='downloadCount']/*", new[]{"t2at2bt2c"})]
     // For each immediate children: Split inner text, non recursive
     [InlineData("//*[@id='downloadCount']//*/text()", new[]{"t2a", "t2b", "t2c"})]
     // node() iterates all direct children nodes (text nodes and tag nodes).
-    [InlineData("//*[@id='downloadCount']/node()", new[]{"t1", "t2at2bt2c", "t3"})]
+    [InlineData("//*[@id='downloadCount']/node()", new[]{"t1", "t2at2bt2c", "t'3"})]
     [InlineData("//a/@href", new[]{"link1", "link2"})]
-    [InlineData("html://*[@id='downloadCount'] | //a[2]", new[]{"t1<div>t2a<span>t2b</span><span>t2c</span></div>t3", "<span>t4</span>"})]
+    [InlineData("html://*[@id='downloadCount'] | //a[2]", new[]{"t1<div>t2a<span>t2b</span><span>t2c</span></div>t&amp;#039;3", "<span>t4</span>"})]
     public void Contents_XPathTests(string xPath, string[] expected)
     {
         var doc = new HtmlDocument();
         doc.LoadHtml(@"<html>
 <body>
-    <div id=""downloadCount"" data=""expectedData"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t3</div>
+    <div id=""downloadCount"" data=""expected&#039;Data"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t&#039;3</div>
     <a href=""link1""></a>
     <a href=""link2""><span>t4</span></a>
     <a href=""""></a>
@@ -205,5 +205,27 @@ public class PageTests
         var actual = page.ContentOrNull("//xxx");
 
         actual.Should().BeNull();
+    }
+
+
+    [Fact]
+    public void Links_RemovesHTMLEntities()
+    {
+        var doc = new HtmlDocument();
+        doc.LoadHtml(@"<html>
+<body>
+    <a href=""https://other.com/pete&#039;s%20restaurant"">link</a>
+</body>
+</html>");
+
+        var page = new Page(
+            new Uri("https://example.com"),
+            doc,
+            Mock.Of<IPageRetriever>(),
+            Mock.Of<ILogger<Page>>());
+
+        var links = page.Links("//a/@href");
+
+        links.Should().BeEquivalentTo(new[] {new Uri("https://other.com/pete's%20restaurant")});
     }
 }

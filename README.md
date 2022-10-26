@@ -22,4 +22,4 @@ After installing, invoke it a first time with `scrap config` in order to make th
 After uninstalling, the global configuration file (stored under the user profile folder at `.scrap/scrap-user.json`) will NOT be deleted.
 
 ## Configuration and usage
-Please head to the [wiki page](https://github.com/icalvo/scrap/wiki) to find documentaion on configuration and usage.
+Please head to the [wiki page](https://github.com/icalvo/scrap/wiki) to find documentation on configuration and usage.

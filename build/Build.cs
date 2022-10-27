@@ -10,6 +10,7 @@ using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Utilities.Collections;
 using Octokit;
+using Serilog;
 using static System.Environment;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
@@ -206,6 +207,11 @@ class Build : NukeBuild
             if (GitHubActions.PullRequestNumber != null)
             {
                 var pullRequestFiles = await github.PullRequest.Files(owner, name, GitHubActions.PullRequestNumber.Value);
+                foreach (string fileName in pullRequestFiles.Select(x => x.FileName))
+                {
+                    Log.Information("PR File: {FileName}", fileName);
+                }
+
                 Assert.True(pullRequestFiles.Any(x => x.FileName == RootDirectory / "CHANGELOG.md"));
             }
         });

@@ -11,7 +11,6 @@ using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Utilities.Collections;
 using Octokit;
 using Serilog;
-using static System.Environment;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
@@ -45,6 +44,7 @@ class Build : NukeBuild
     [CI] readonly GitHubActions GitHubActions;
 
     [Parameter] [Secret] readonly string NugetToken;
+    const string ChangelogFileName = "CHANGELOG.md";
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
     AbsolutePath OutputDirectory => RootDirectory / "output";
@@ -140,10 +140,10 @@ class Build : NukeBuild
         .Requires(() => Version)
         .Executes(() =>
         {
-            Assert.FileExists(RootDirectory / "CHANGELOG.md");
+            Assert.FileExists(RootDirectory / ChangelogFileName);
             Assert.True(
-                File.ReadLines(RootDirectory / "CHANGELOG.md").Any(line => line.StartsWith("## [" + MainVersion)),
-                $"There is no entry for version {Version} in CHANGELOG.md");
+                File.ReadLines(RootDirectory / ChangelogFileName).Any(line => line.StartsWith("## [" + MainVersion)),
+                $"There is no entry for version {Version} in {ChangelogFileName}");
         });
 
     public Target Push => _ => _
@@ -207,12 +207,19 @@ class Build : NukeBuild
             if (GitHubActions.PullRequestNumber != null)
             {
                 var pullRequestFiles = await github.PullRequest.Files(owner, name, GitHubActions.PullRequestNumber.Value);
-                foreach (string fileName in pullRequestFiles.Select(x => x.FileName))
+                try
                 {
-                    Log.Information("PR File: {FileName}", fileName);
+                    Assert.True(pullRequestFiles.Any(x => x.FileName == ChangelogFileName));
                 }
+                catch
+                {
+                    foreach (string fileName in pullRequestFiles.Select(x => x.FileName))
+                    {
+                        Log.Information("PR File: {FileName}", fileName);
+                    }
 
-                Assert.True(pullRequestFiles.Any(x => x.FileName == RootDirectory / "CHANGELOG.md"));
+                    throw;
+                }
             }
         });
 

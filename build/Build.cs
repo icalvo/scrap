@@ -27,15 +27,11 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPullRequestBranches = new[] { "main" },
-    InvokedTargets = new []{ nameof(PullRequest) })]
+    InvokedTargets = new []{ nameof(PullRequest) },
+    EnableGitHubToken = true,
+    ImportSecrets = new[] { nameof(NugetToken) })]
 class Build : NukeBuild
 {
-    /// Support plugins are available for:
-    ///   - JetBrains ReSharper        https://nuke.build/resharper
-    ///   - JetBrains Rider            https://nuke.build/rider
-    ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
-    ///   - Microsoft VSCode           https://nuke.build/vscode
-
     public static int Main () => Execute<Build>(x => x.Compile);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
@@ -45,7 +41,9 @@ class Build : NukeBuild
 
     [Solution] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
-    [CI] readonly GitHubActions GitHubActions;
+    GitHubActions GitHubActions => GitHubActions.Instance;
+
+    [Parameter] [Secret] readonly string NugetToken;
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
     AbsolutePath OutputDirectory => RootDirectory / "output";
@@ -155,7 +153,7 @@ class Build : NukeBuild
         {
             DotNetNuGetPush(s => s
                 .SetTargetPath(PackageDirectory / "*.nupkg")
-                .SetApiKey(GetEnvironmentVariable("NUGET_TOKEN"))
+                .SetApiKey(NugetToken)
                 .SetSource("https://api.nuget.org/v3/index.json"));
         });
 

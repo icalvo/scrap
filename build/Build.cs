@@ -41,7 +41,7 @@ class Build : NukeBuild
 
     [Solution(SuppressBuildProjectCheck = true)] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
-    [CI] GitHubActions GitHubActions => GitHubActions.Instance;
+    [CI] readonly GitHubActions GitHubActions;
 
     [Parameter] [Secret] readonly string NugetToken;
 

@@ -39,9 +39,9 @@ class Build : NukeBuild
 
     [Parameter("Version to be deployed")] public readonly string Version = "0.1.2-test1";
 
-    [Solution] readonly Solution Solution;
+    [Solution(SuppressBuildProjectCheck = true)] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
-    GitHubActions GitHubActions => GitHubActions.Instance;
+    [CI] GitHubActions GitHubActions => GitHubActions.Instance;
 
     [Parameter] [Secret] readonly string NugetToken;
 

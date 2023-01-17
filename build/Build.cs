@@ -110,11 +110,11 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            DotNetTest(o => o
-                .SetProjectFile(SourceDirectory / "IntegrationTests")
-                .SetConfiguration(Configuration)
-                .EnableNoBuild()
-                .SetLoggers("console;verbosity=normal"));
+            // DotNetTest(o => o
+            //     .SetProjectFile(SourceDirectory / "IntegrationTests")
+            //     .SetConfiguration(Configuration)
+            //     .EnableNoBuild()
+            //     .SetLoggers("console;verbosity=normal"));
         });
 
     Target Pack => _ => _

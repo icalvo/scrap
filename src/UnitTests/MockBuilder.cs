@@ -160,6 +160,6 @@ public class MockBuilder
 
         public bool IsEnabled(LogLevel logLevel) => _logger.IsEnabled(logLevel);
 
-        public IDisposable BeginScope<TState>(TState state) => _logger.BeginScope(state);
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => _logger.BeginScope(state);
     }
 }

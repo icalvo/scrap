@@ -77,8 +77,14 @@ public class ServicesLocator
         {
             var logger = sp.GetRequiredService<ILogger<ServicesLocator>>();
             var config = sp.GetRequiredService<IConfiguration>();
-            logger.LogDebug("Definitions file: {DefinitionsPath}", config["Scrap:Definitions"]);
-            return new MemoryJobDefinitionRepository(config["Scrap:Definitions"]);
+            var definitions = config["Scrap:Definitions"];
+            if (definitions == null)
+            {
+                throw new Exception("No definitions file in the configuration!");
+            }
+
+            logger.LogDebug("Definitions file: {DefinitionsPath}", definitions);
+            return new MemoryJobDefinitionRepository(definitions);
         });
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
         container.AddSingleton<IPageRetriever, HttpPageRetriever>();

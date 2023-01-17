@@ -49,7 +49,6 @@ public class ServicesLocator
         container.AddMemoryCache();
         container.AddLogging(configureLogging);
 
-
         container.AddTransient<JobDefinitionsApplicationService>();
         container.AddTransient<ScrapApplicationService>();
         container.AddLazyTransient<IScrapDownloadsService, ScrapDownloadsService>();

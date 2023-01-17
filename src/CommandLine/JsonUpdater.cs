@@ -12,7 +12,7 @@ public class JsonUpdater
         _jsonFilePath = jsonFilePath;
     }
 
-    public void AddOrUpdate(IEnumerable<KeyValuePair<string, object>> updates)
+    public void AddOrUpdate(IEnumerable<KeyValuePair<string, object?>> updates)
     {
         try
         {
@@ -36,7 +36,7 @@ public class JsonUpdater
         }
     }
 
-    private static void SetValue(string sectionPathKey, JProperty rootProp, object value)
+    private static void SetValue(string sectionPathKey, JProperty rootProp, object? value)
     {
         if (string.IsNullOrWhiteSpace(sectionPathKey))
         {

@@ -45,6 +45,14 @@ public class ScrapCommandLine
         _configuration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
         var globalUserConfigFolder = GetGlobalUserConfigFolder();
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
+
+        if (!File.Exists(globalUserConfigPath))
+        {
+            Console.WriteLine("The tool is not configured, please run 'scrap configure'.");
+            context.Cancel = true;
+            return;
+        }
+
         var configBuilder = new ConfigurationBuilder()
             .AddJsonFile("scrap.json", optional: false, reloadOnChange: false);
         if (!context.Method.Names.Contains("configure"))
@@ -61,12 +69,14 @@ public class ScrapCommandLine
     }
 
     [Global(Aliases="dbg", Description = "Runs a debugger session at the beginning")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public void Debug()
     {
         _debug = true;
     }
 
     [Global(Aliases="v", Description = "Verbose output")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public void Verbose()
     {
         _verbose = true;
@@ -385,7 +395,7 @@ public class ScrapCommandLine
             updater.AddOrUpdate(updates);
         }
             
-        KeyValuePair<string, object>? EnsureGlobalConfigValue(GlobalConfig globalConfig)
+        KeyValuePair<string, object?>? EnsureGlobalConfigValue(GlobalConfig globalConfig)
         {
             var (key, defaultValue, prompt) = globalConfig;
             if (cfg[key] != null)
@@ -405,7 +415,7 @@ public class ScrapCommandLine
                 return null;
             }
 
-            return new KeyValuePair<string, object>(key, value);
+            return new KeyValuePair<string, object?>(key, value);
         }
     }
 
@@ -439,7 +449,7 @@ public class ScrapCommandLine
         }
         
         var updater = new JsonUpdater(globalUserConfigPath);
-        updater.AddOrUpdate(new[] { new KeyValuePair<string, object>(key, value) });
+        updater.AddOrUpdate(new[] { new KeyValuePair<string, object?>(key, value) });
         Console.WriteLine($"{key}={value}");
     }
 
@@ -481,8 +491,7 @@ public class ScrapCommandLine
 
     private static IEnumerable<string> ConsoleInput()
     {
-        string? line;
-        while ((line = Console.ReadLine()) != null)
+        while (Console.ReadLine() is { } line)
         {
             yield return line;
         }

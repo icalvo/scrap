@@ -9,7 +9,7 @@ namespace Scrap.CommandLine.Logging;
 public sealed class CustomConsoleFormatter : ConsoleFormatter, IDisposable
 {
     private CustomConsoleFormatterOptions _formatterOptions;
-    private readonly IDisposable _optionsReloadToken;
+    private readonly IDisposable? _optionsReloadToken;
 
     public CustomConsoleFormatter(IOptionsMonitor<CustomConsoleFormatterOptions> options) : base(nameof(CustomConsoleFormatter))
     {
@@ -19,7 +19,7 @@ public sealed class CustomConsoleFormatter : ConsoleFormatter, IDisposable
 
     public override void Write<TState>(
         in LogEntry<TState> logEntry,
-        IExternalScopeProvider scopeProvider,
+        IExternalScopeProvider? scopeProvider,
         TextWriter textWriter)
     {
         var logLevel = logEntry.LogLevel;
@@ -27,7 +27,7 @@ public sealed class CustomConsoleFormatter : ConsoleFormatter, IDisposable
         var state = logEntry.State;
         var formatter = logEntry.Formatter;
 
-        var formattedMessage = formatter?.Invoke(state, exception) ?? state?.ToString();
+        var formattedMessage = formatter(state, exception);
 
         ConsoleColor? foregroundColor =
             _formatterOptions.EnableColors
@@ -53,5 +53,5 @@ public sealed class CustomConsoleFormatter : ConsoleFormatter, IDisposable
         textWriter.ResetForegroundColor(foregroundColor);
     }
 
-    public void Dispose() => _optionsReloadToken.Dispose();
+    public void Dispose() => _optionsReloadToken?.Dispose();
 }

@@ -114,10 +114,7 @@ class Build : NukeBuild
             //     .SetProjectFile(SourceDirectory / "IntegrationTests")
             //     .SetConfiguration(Configuration)
             //     .EnableNoBuild()
-            //     .SetLoggers("console;verbosity=normal")
-            //     .SetProcessEnvironmentVariable(
-            //         "Sched_GlobalConfigurationFolder",
-            //         GetEnvironmentVariable("Sched_GlobalConfigurationFolder")));
+            //     .SetLoggers("console;verbosity=normal"));
         });
 
     Target Pack => _ => _

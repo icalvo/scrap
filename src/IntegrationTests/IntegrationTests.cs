@@ -16,7 +16,7 @@ public class IntegrationTests
         _fixture = fixture;
         _output = output;
     }
-    
+
     [Fact]
     public async Task CommandLine_Version()
     {
@@ -40,15 +40,16 @@ public class IntegrationTests
         downloadedContent.Should().Be("My text.");
     }
 
-    private async IAsyncEnumerable<string> GetCommandLineOutput(string args)
+    private async IAsyncEnumerable<string> GetCommandLineOutput(string args, string? configFolderPath = null)
     {
+        configFolderPath ??= _fixture.InstallFullPath;
         var psi = new ProcessStartInfo(
             Path.Combine(_fixture.InstallFullPath, "scrap.exe"), args)
         {
             RedirectStandardOutput = true,
             Environment =
             {
-                ["Scrap_GlobalConfigurationFolder"] = _fixture.InstallFullPath
+                ["Scrap_GlobalConfigurationFolder"] = configFolderPath
             }
         };
         var p = Process.Start(psi);

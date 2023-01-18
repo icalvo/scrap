@@ -13,7 +13,7 @@ public class FileLogger : ILogger
             configuration.FilePath.Replace("{date}", DateTimeOffset.UtcNow.ToString("yyyyMMdd")));
     }
  
-    public IDisposable BeginScope<TState>(TState state)
+    public IDisposable BeginScope<TState>(TState state) where TState : notnull
     {
         return new NullDisposable();
     }

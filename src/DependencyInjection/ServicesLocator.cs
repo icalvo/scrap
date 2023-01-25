@@ -79,17 +79,16 @@ public class ServicesLocator
             return new MemoryJobDefinitionRepository(definitions);
         });
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
-        container.AddTransient<IDestinationProvider, CompiledDestinationProvider>();
         container.AddSingleton<IResourceRepositoryConfigurationValidator, FileSystemResourceRepositoryConfigurationValidator>();
         
         container.AddSingleton<IDatabaseApplicationService, DatabaseApplicationService>();
 
-        container.AddSingleton<IAsyncFactory<JobDto, Job>, JobFactory>();
-        container.AddSingleton<IFactory<Job,IPageRetriever>, PageRetrieverFactory>();
-        container.AddSingleton<IFactory<Job,IDownloadStreamProvider>, DownloadStreamProviderFactory>();
-        container.AddSingleton<IFactory<Job, IAsyncPolicy>, AsyncPolicyFactory>();
-        container.AddSingleton<IFactory<Job, IResourceRepository>, ResourceRepositoryFactory>();
-        container.AddSingleton<IFactory<IResourceRepoArgs, IResourceRepositoryConfiguration>,
+        container.AddAsyncFactory<JobDto, Job, JobFactory>();
+        container.AddFactory<Job, IPageRetriever, PageRetrieverFactory>();
+        container.AddFactory<Job,IDownloadStreamProvider, DownloadStreamProviderFactory>();
+        container.AddFactory<Job, IAsyncPolicy, AsyncPolicyFactory>();
+        container.AddFactory<Job, IResourceRepository, ResourceRepositoryFactory>();
+        container.AddFactory<IResourceRepoArgs, IResourceRepositoryConfiguration,
                 ResourceRepositoryConfigurationJobFactory>();
         container.AddSingleton<IFactory<Job, ILinkCalculator>, LinkCalculatorFactory>();
         container.AddSingleton<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>, ResourceRepositoryConfigurationValidatorFactory>();

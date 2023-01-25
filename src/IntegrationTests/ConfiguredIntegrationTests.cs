@@ -3,7 +3,7 @@ using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Integration;
 
 [Collection(nameof(ConfiguredCollection))]
 public class ConfiguredIntegrationTests
@@ -45,7 +45,7 @@ public class ConfiguredIntegrationTests
     {
         configFolderPath ??= _fixture.InstallFullPath;
         var psi = new ProcessStartInfo(
-            Path.Combine(_fixture.InstallFullPath, "scrap.exe"), args)
+            Path.Combine(_fixture.InstallFullPath, "scrap"), args)
         {
             RedirectStandardOutput = true,
             Environment =

@@ -5,6 +5,22 @@ namespace Scrap.DependencyInjection;
 
 internal static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddFactory<TIn, TOut, TFactoryImpl>(this IServiceCollection container)
+        where TFactoryImpl : class, IFactory<TIn, TOut>
+    {
+        container.AddSingleton<IFactory<TIn, TOut>, TFactoryImpl>();
+
+        return container;
+    }
+
+    public static IServiceCollection AddAsyncFactory<TIn, TOut, TFactoryImpl>(this IServiceCollection container)
+        where TFactoryImpl : class, IAsyncFactory<TIn, TOut>
+    {
+        container.AddSingleton<IAsyncFactory<TIn, TOut>, TFactoryImpl>();
+
+        return container;
+    }
+
     public static IServiceCollection AddOptionalFactory<TIn, TOut, TFactoryImpl>(this IServiceCollection container)
         where TFactoryImpl : class, IFactory<TOut>, IFactory<TIn, TOut>
     {

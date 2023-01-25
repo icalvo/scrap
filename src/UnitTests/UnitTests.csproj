@@ -3,20 +3,20 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <AssemblyName>Scrap.Tests</AssemblyName>
-    <RootNamespace>Scrap.Tests</RootNamespace>
+    <AssemblyName>Scrap.Tests.Unit</AssemblyName>
+    <RootNamespace>Scrap.Tests.Unit</RootNamespace>
     <ImplicitUsings>true</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>Nullable</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="6.9.0"/>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.46"/>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0"/>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1"/>
-    <PackageReference Include="Moq" Version="4.18.4"/>
-    <PackageReference Include="xunit" Version="2.4.2"/>
+    <PackageReference Include="FluentAssertions" Version="6.9.0" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
+    <PackageReference Include="Moq" Version="4.18.4" />
+    <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -28,8 +28,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Application\Application.csproj"/>
-    <ProjectReference Include="..\Domain\Domain.csproj"/>
+    <ProjectReference Include="..\Application\Application.csproj" />
+    <ProjectReference Include="..\Domain\Domain.csproj" />
   </ItemGroup>
 
 </Project>

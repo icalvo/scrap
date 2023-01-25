@@ -3,7 +3,7 @@ using Scrap.Domain.JobDefinitions;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Scrap.Tests.ApplicationServices;
+namespace Scrap.Tests.Unit.ApplicationServices;
 
 public class MarkVisitedApplicationServiceTests
 {

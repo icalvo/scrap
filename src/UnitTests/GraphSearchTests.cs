@@ -2,7 +2,7 @@ using FluentAssertions;
 using Scrap.Domain.Jobs.Graphs;
 using Xunit;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Unit;
 
 public class GraphSearchTests
 {

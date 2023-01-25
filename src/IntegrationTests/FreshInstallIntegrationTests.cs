@@ -3,7 +3,7 @@ using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Integration;
 
 [Collection(nameof(FreshInstallCollection))]
 public class FreshInstallIntegrationTests
@@ -20,7 +20,7 @@ public class FreshInstallIntegrationTests
     [Fact]
     public void CommandLine_NotConfigured()
     {
-        var psi = new ProcessStartInfo(Path.Combine(_fixture.InstallFullPath, "scrap.exe"))
+        var psi = new ProcessStartInfo(Path.Combine(_fixture.InstallFullPath, "scrap"))
         {
             Environment =
             {

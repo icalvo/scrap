@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Integration;
 
 public sealed class ConfiguredFixture : FreshInstallSetupFixture, IDisposable
 {
@@ -12,8 +12,8 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture, IDisposable
         Console.WriteLine($"Setting up {nameof(ConfiguredFixture)} (configured tool)");
         var jobDefsFullPath = Path.GetFullPath("./IntegrationTests/jobDefinitions.json");
         _dbFullPath = Path.GetFullPath("./scrap.db");
-        RunAndCheck($"{InstallFullPath}/scrap.exe", $"config /key=Scrap:Definitions /value={jobDefsFullPath}", outputToConsole: true);
-        RunAndCheck($"{InstallFullPath}/scrap.exe", $"config /key=Scrap:Database /value=\"Filename={_dbFullPath};Connection=shared\"");
+        RunAndCheck($"{InstallFullPath}/scrap", $"config /key=Scrap:Definitions /value={jobDefsFullPath}", outputToConsole: true);
+        RunAndCheck($"{InstallFullPath}/scrap", $"config /key=Scrap:Database /value=\"Filename={_dbFullPath};Connection=shared\"");
         RunAndCheck("dotnet", $"tool install dotnet-serve --tool-path \"{InstallFullPath}\"");
         var wwwPath = Path.GetFullPath("./IntegrationTests/www/");
         

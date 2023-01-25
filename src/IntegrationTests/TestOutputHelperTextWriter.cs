@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using Xunit.Abstractions;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Integration;
 
 public class TestOutputHelperTextWriter : TextWriter
 {

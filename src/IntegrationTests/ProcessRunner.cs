@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Integration;
 
 public static class ProcessRunner
 {

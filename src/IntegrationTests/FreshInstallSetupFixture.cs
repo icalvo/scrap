@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
-using System.Text;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Integration;
 
 public class FreshInstallSetupFixture : IDisposable
 {
@@ -31,7 +30,6 @@ public class FreshInstallSetupFixture : IDisposable
             $"build ./CommandLine/CommandLine.csproj /p:Version=\"{version}\" /p:AssemblyVersion=\"{mainVersion}\" /p:FileVersion=\"{mainVersion}\" /p:InformationalVersion=\"{version}\"");
         RunAndCheck("dotnet", $"pack /p:PackageVersion=\"{version}\" --no-build");
         RunAndCheck("dotnet", $"tool install scrap --tool-path \"{InstallFullPath}\" --add-source ./CommandLine/nupkg/ --version {version}");
-        Run("ls", $"\"{InstallFullPath}\"");
     }
 
     public virtual void Dispose()

@@ -12,7 +12,7 @@ using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
 using Xunit.Abstractions;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Unit;
 
 public class MockBuilder
 {

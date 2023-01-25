@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <AssemblyName>Scrap.Tests</AssemblyName>
-    <RootNamespace>Scrap.Tests</RootNamespace>
+    <AssemblyName>Scrap.Tests.Integration</AssemblyName>
+    <RootNamespace>Scrap.Tests.Integration</RootNamespace>
     <ImplicitUsings>true</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>Nullable</WarningsAsErrors>

@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Unit;
 
 public class StringExtensionsTests
 {

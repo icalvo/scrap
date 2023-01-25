@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Integration;
 
 [CollectionDefinition(nameof(FreshInstallCollection))]
 public class FreshInstallCollection : ICollectionFixture<FreshInstallSetupFixture>

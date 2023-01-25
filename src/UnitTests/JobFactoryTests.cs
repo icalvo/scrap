@@ -6,7 +6,7 @@ using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 using Xunit;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Unit;
 
 public class JobFactoryTests
 {

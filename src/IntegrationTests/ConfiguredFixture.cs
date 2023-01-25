@@ -12,6 +12,9 @@ public sealed class ConfiguredFixture : IDisposable
     {
         const string version = "0.1.2-test1";
         const string mainVersion = "0.1.2";
+        
+        
+        Console.WriteLine($"Setting up {nameof(ConfiguredFixture)} (configured tool with http server on test files)");
         InstallFullPath = Path.GetFullPath("./install");
 
         Environment.CurrentDirectory = $"{Environment.CurrentDirectory.Split("src")[0]}src";
@@ -77,7 +80,10 @@ public sealed class ConfiguredFixture : IDisposable
                 ["Scrap_GlobalConfigurationFolder"] = InstallFullPath
             }
         };
-        var (process, standardOutput, _, _) = psi.Run(timeout, outputToConsole? Console.Out : null);
+
+        // var outputWriter = outputToConsole? Console.Out : null;
+        var outputWriter = Console.Out;
+        var (process, standardOutput, _, _) = psi.Run(timeout, outputWriter);
 
         if (checkExitCode && process.ExitCode != 0)
         {

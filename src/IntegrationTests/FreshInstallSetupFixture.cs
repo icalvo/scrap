@@ -11,6 +11,9 @@ public sealed class FreshInstallSetupFixture : IDisposable
     {
         const string version = "0.1.2-test1";
         const string mainVersion = "0.1.2";
+
+        Console.WriteLine($"Setting up {nameof(FreshInstallSetupFixture)} (freshly installed tool, not configured)");
+        
         InstallFullPath = Path.GetFullPath("./install");
 
         Environment.CurrentDirectory = $"{Environment.CurrentDirectory.Split("src")[0]}src";
@@ -60,7 +63,9 @@ public sealed class FreshInstallSetupFixture : IDisposable
             }
         };
 
-        var (process, standardOutput, errorOutput, output) = psi.Run(timeout, outputWriter: outputToConsole? Console.Out : null);
+        // var outputWriter = outputToConsole? Console.Out : null;
+        var outputWriter = Console.Out;
+        var (process, standardOutput, errorOutput, output) = psi.Run(timeout, outputWriter: outputWriter);
         
         if (checkExitCode && process.ExitCode != 0)
         {

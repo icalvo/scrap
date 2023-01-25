@@ -27,7 +27,7 @@ public class FreshInstallSetupFixture : IDisposable
         DirectoryEx.DeleteIfExists(InstallFullPath, recursive: true);
         Directory.CreateDirectory(InstallFullPath);
 
-        Run("ls", "\"{InstallFullPath}\"");
+        Run("ls", $"\"{InstallFullPath}\"");
         RunAndCheck("dotnet",
             $"build ./CommandLine/CommandLine.csproj /p:Version=\"{version}\" /p:AssemblyVersion=\"{mainVersion}\" /p:FileVersion=\"{mainVersion}\" /p:InformationalVersion=\"{version}\"");
         RunAndCheck("dotnet", $"pack /p:PackageVersion=\"{version}\" --no-build");

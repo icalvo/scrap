@@ -18,7 +18,7 @@ public static class ProcessRunner
         var fileName = psi.FileName;
         var arguments = psi.Arguments;
 
-        Console.WriteLine($"Running {fileName} {arguments}...");
+        (outputWriter ?? Console.Out).WriteLine($"Running {fileName} {arguments}...");
         var process = Process.Start(psi) ?? throw new Exception("Could not start process");
 
         var standardOutput = new List<string>();

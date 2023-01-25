@@ -20,7 +20,7 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture, IDisposable
         
         var psi = new ProcessStartInfo
         {
-            FileName = $"{InstallFullPath}/dotnet-serve.exe",
+            FileName = $"{InstallFullPath}/dotnet-serve",
             Arguments = $"--directory {wwwPath} --port 8080",
             WorkingDirectory = "."
         };

@@ -46,17 +46,18 @@ public class ScrapCommandLine
         var globalUserConfigFolder = GetGlobalUserConfigFolder();
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
 
-        if (!File.Exists(globalUserConfigPath))
-        {
-            Console.WriteLine("The tool is not configured, please run 'scrap configure'.");
-            context.Cancel = true;
-            return;
-        }
 
         var configBuilder = new ConfigurationBuilder()
             .AddJsonFile("scrap.json", optional: false, reloadOnChange: false);
         if (!context.Method.Names.Contains("configure"))
         {
+            if (!File.Exists(globalUserConfigPath))
+            {
+                Console.WriteLine("The tool is not configured, please run 'scrap configure'.");
+                context.Cancel = true;
+                return;
+            }
+
             _ = configBuilder.AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false);
         }
  
@@ -162,7 +163,7 @@ public class ScrapCommandLine
         await service.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
     }
 
-    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [Verb(Description = "Lists all the resources available in pages provided by console input")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Resources(
         [Description("Job definition name")]string? name = null,
@@ -199,7 +200,7 @@ public class ScrapCommandLine
         }
     }
 
-    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [Verb(Description = "Downloads resources as given by the console input")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Download(
         [Description("Job definition name")]string? name = null,
@@ -231,7 +232,7 @@ public class ScrapCommandLine
             var resourceIndex = int.Parse(split[2]);
             var resourceUrl = new Uri(split[3]);
             await scrapAppService.DownloadAsync(newJob, pageUrl, pageIndex, resourceUrl, resourceIndex);
-            Console.WriteLine("Downloaded " + resourceUrl);
+            Console.WriteLine($"Downloaded {resourceUrl}");
         }
     }
 
@@ -262,7 +263,30 @@ public class ScrapCommandLine
         {
             var pageUrl = new Uri(line);
             await scrapAppService.MarkVisitedPageAsync(newJob, pageUrl);
-            Console.WriteLine("Visited " + pageUrl);
+            Console.WriteLine($"Visited {pageUrl}");
+        }
+    }
+
+    [Verb(Description = "Lists all the pages reachable with the adjacency path", Aliases = "db")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public async Task DatabaseSearch(
+        [Description("Search with Regular Expression")]string? search = null,
+        [Description("Delete results")]bool delete = false)
+    {
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
+
+        var dbAppService = serviceResolver.Get<IDatabaseApplicationService>();
+        search ??= ConsoleInput().First();
+        if (delete)
+        {
+            await dbAppService.DeleteAsync(search);
+            return;
+        }
+
+        var result = await dbAppService.SearchAsync(search);
+        foreach (var line in result)
+        {
+            Console.WriteLine(line.Uri);
         }
     }
 
@@ -291,8 +315,7 @@ public class ScrapCommandLine
             if (isInteractive)
             {
                 Console.WriteLine(
-                    "Global config file not found. We are going to create a global config file and ask some values. " +
-                    $"This file is located at: {globalUserConfigPath}");
+                    $"Global config file not found. We are going to create a global config file and ask some values. This file is located at: {globalUserConfigPath}");
                 Console.WriteLine(
                     "The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
             }
@@ -318,11 +341,11 @@ public class ScrapCommandLine
             return;
         }
 
-        System.Diagnostics.Debug.Assert(key != null, nameof(key) + " != null");
+        System.Diagnostics.Debug.Assert(key != null, $"{nameof(key)} != null");
         SetUpGlobalConfigValue(globalUserConfigFolder, globalUserConfigPath, key, value);
     }
 
-    [Verb(Description = "Show version")]
+    [Verb(Description = "Show version", Aliases = "v")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public static void Version()
     {
@@ -425,12 +448,11 @@ public class ScrapCommandLine
         if (!File.Exists(globalUserConfigPath))
         {
             Console.WriteLine(
-                $"Global config file not found. We are going to create a global config file and ask some values. " +
-                "This file is located at: {globalUserConfigPath}");
+                "Global config file not found. We are going to create a global config file and ask some values. This file is located at: {globalUserConfigPath}");
             Console.WriteLine(
                 $"The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
             File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
-            Console.WriteLine("Created global config at: " + globalUserConfigPath);
+            Console.WriteLine($"Created global config at: {globalUserConfigPath}");
         }
     }
 
@@ -478,7 +500,7 @@ public class ScrapCommandLine
         var version = GetVersion();
         var currentColor = Console.ForegroundColor;
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine(FiggleFonts.Doom.Render("scrap " + version));
+        Console.WriteLine(FiggleFonts.Doom.Render($"scrap {version}"));
         Console.WriteLine("Command line tool for generic web scrapping");
         Console.WriteLine();
         Console.ForegroundColor = currentColor;

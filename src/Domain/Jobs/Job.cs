@@ -4,7 +4,7 @@ using Scrap.Domain.Resources;
 
 namespace Scrap.Domain.Jobs;
 
-public class Job
+public class Job : IResourceRepoArgs
 {
     public const int DefaultHttpRequestRetries = 5;
     public static readonly TimeSpan DefaultHttpRequestDelayBetweenRetries = TimeSpan.FromSeconds(1);

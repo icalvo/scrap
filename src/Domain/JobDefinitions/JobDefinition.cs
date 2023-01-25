@@ -1,9 +1,10 @@
 using Microsoft.Extensions.Logging;
+using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 
 namespace Scrap.Domain.JobDefinitions;
 
-public class JobDefinition
+public class JobDefinition : IResourceRepoArgs
 {
     public JobDefinition(NewJobDefinitionDto dto)
     {

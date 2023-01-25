@@ -132,10 +132,11 @@ public class Page: IPage
         if (result.Length > maxElementsToDisplay)
         {
             elementsToDisplay = result[..maxElementsToDisplay];
-            suffix = ",... (" + (result.Length - maxElementsToDisplay) + " more)";
+            suffix = $",... ({(result.Length - maxElementsToDisplay)} more)";
         }
 
-        string output = string.Join(",", elementsToDisplay.Select(x => x == null ? "" : x.Length <= maxCharsPerElement ? x : x[..(maxCharsPerElement - 3)] + "...")) + suffix;
+        string output = string.Join(",", elementsToDisplay.Select(x => x == null ? "" : x.Length <= maxCharsPerElement ? x :
+            $"{x[..(maxCharsPerElement - 3)]}...")) + suffix;
         _logger.LogTrace("Eval XPath {XPath} => [{Result}]", xPath, output);
     }
 }

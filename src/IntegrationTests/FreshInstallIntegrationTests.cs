@@ -5,7 +5,7 @@ using Xunit.Abstractions;
 
 namespace Scrap.Tests;
 
-[Collection("Fresh install collection")]
+[Collection(nameof(FreshInstallCollection))]
 public class FreshInstallIntegrationTests
 {
     private readonly FreshInstallSetupFixture _fixture;
@@ -27,7 +27,7 @@ public class FreshInstallIntegrationTests
                 ["Scrap_GlobalConfigurationFolder"] = "C:\\NotExisting"
             }
         };
-        var (_, standardOutput, standardError) = psi.Run();
+        var (_, standardOutput, standardError, _) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
 
         standardError.Should().BeEmpty();
         standardOutput.Should().BeEquivalentTo("The tool is not configured, please run 'scrap configure'.");

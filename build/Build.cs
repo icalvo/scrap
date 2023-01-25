@@ -110,11 +110,11 @@ class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         {
-            // DotNetTest(o => o
-            //     .SetProjectFile(SourceDirectory / "IntegrationTests")
-            //     .SetConfiguration(Configuration)
-            //     .EnableNoBuild()
-            //     .SetLoggers("console;verbosity=normal"));
+            DotNetTest(o => o
+                .SetProjectFile(SourceDirectory / "IntegrationTests")
+                .SetConfiguration(Configuration)
+                .EnableNoBuild()
+                .SetLoggers("console;verbosity=normal"));
         });
 
     Target Pack => _ => _
@@ -139,7 +139,7 @@ class Build : NukeBuild
         {
             Assert.FileExists(RootDirectory / ChangelogFileName);
             Assert.True(
-                File.ReadLines(RootDirectory / ChangelogFileName).Any(line => line.StartsWith("## [" + MainVersion)),
+                File.ReadLines(RootDirectory / ChangelogFileName).Any(line => line.StartsWith($"## [{MainVersion}")),
                 $"There is no entry for version {Version} in {ChangelogFileName}");
         });
 

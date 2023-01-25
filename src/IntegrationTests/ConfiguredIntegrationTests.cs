@@ -5,42 +5,43 @@ using Xunit.Abstractions;
 
 namespace Scrap.Tests;
 
-[Collection("Tool setup collection")]
-public class IntegrationTests
+[Collection(nameof(ConfiguredCollection))]
+public class ConfiguredIntegrationTests
 {
-    private readonly ToolSetupFixture _fixture;
+    private readonly ConfiguredFixture _fixture;
     private readonly ITestOutputHelper _output;
 
-    public IntegrationTests(ToolSetupFixture fixture, ITestOutputHelper output)
+    public ConfiguredIntegrationTests(ConfiguredFixture fixture, ITestOutputHelper output)
     {
         _fixture = fixture;
         _output = output;
     }
 
     [Fact]
-    public async Task CommandLine_Version()
+    public void CommandLine_Version()
     {
-        var commandLineOutput = await GetCommandLineOutput("v").ToArrayAsync();
+        var commandLineOutput = GetCommandLineOutput("v").ToArray();
         commandLineOutput.Should().BeEquivalentTo("0.1.2-test1");
     }
 
     [Fact]
     public async Task CommandLine_Scrap_Simple()
     {
-        var commandLineOutput = await GetCommandLineOutput("-name=testsite").ToListAsync();
-        _output.WriteLine("-------------------------------------");
-        commandLineOutput.ForEach(_output.WriteLine);
-        _output.WriteLine("-------------------------------------");
+        _ = GetCommandLineOutput("-name=testsite -v").ToList();
         string? downloadedContent = null;
         if (File.Exists("./testsite-result/0.txt"))
         {
             downloadedContent = await File.ReadAllTextAsync("./testsite-result/0.txt");
         }
+        else
+        {
+            Assert.Fail("The expected downloaded result was not found!");
+        }
 
         downloadedContent.Should().Be("My text.");
     }
 
-    private async IAsyncEnumerable<string> GetCommandLineOutput(string args, string? configFolderPath = null)
+    private IEnumerable<string> GetCommandLineOutput(string args, string? configFolderPath = null)
     {
         configFolderPath ??= _fixture.InstallFullPath;
         var psi = new ProcessStartInfo(
@@ -52,13 +53,10 @@ public class IntegrationTests
                 ["Scrap_GlobalConfigurationFolder"] = configFolderPath
             }
         };
-        var p = Process.Start(psi);
-        Debug.Assert(p != null);
-        while (true)
-        {
-            var line = await p.StandardOutput.ReadLineAsync();
-            if (line == null) yield break;
-            yield return line;
-        }
-    }    
+
+        var (_, _, _, output) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
+
+        return output;
+    }
+
 }

@@ -8,14 +8,15 @@ namespace Scrap.Application;
 
 public class ResourcesApplicationService : IResourcesApplicationService
 {
-    private readonly IJobFactory _jobFactory;
-    private readonly IPageRetriever _pageRetriever;
+    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
+    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
 
     public ResourcesApplicationService(
-        IJobFactory jobFactory, IPageRetriever pageRetriever)
+        IAsyncFactory<JobDto, Job> jobFactory,
+        IFactory<Job, IPageRetriever> pageRetrieverFactory)
     {
         _jobFactory = jobFactory;
-        _pageRetriever = pageRetriever;
+        _pageRetrieverFactory = pageRetrieverFactory;
     }
 
     public async IAsyncEnumerable<string> GetResourcesAsync(JobDto jobDto, Uri pageUrl, int pageIndex)
@@ -25,14 +26,15 @@ public class ResourcesApplicationService : IResourcesApplicationService
             throw new Exception();
         }
 
-        var job = await _jobFactory.CreateAsync(jobDto);
+        var job = await _jobFactory.Build(jobDto);
 
         var resourceXPath = job.ResourceXPath;
 
         IEnumerable<ResourceInfo> GetResourceLinks(IPage page, int crawlPageIndex)
             => ResourceLinks(page, crawlPageIndex, resourceXPath);
 
-        var page = await _pageRetriever.GetPageAsync(pageUrl);
+        var pageRetriever = _pageRetrieverFactory.Build(job);
+        var page = await pageRetriever.GetPageAsync(pageUrl);
         var resources = GetResourceLinks(page, pageIndex)
             .Select(x => x.ResourceUrl.AbsoluteUri);
 

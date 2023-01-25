@@ -16,7 +16,7 @@ public class FileSystemResourceRepositoryConfiguration : BaseResourceRepositoryC
 
     public override string ToString()
     {
-        return $"Folder: {RootFolder}\n" +
-               string.Join("\n", PathFragments.Select((exp, i) => $"Path Fragment {i + 1}: {exp}"));
+        return
+            $"Folder: {RootFolder}\n{string.Join("\n", PathFragments.Select((exp, i) => $"Path Fragment {i + 1}: {exp}"))}";
     }
 }

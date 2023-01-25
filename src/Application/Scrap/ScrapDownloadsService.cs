@@ -12,37 +12,38 @@ public class ScrapDownloadsService : IScrapDownloadsService
 {
     private readonly IGraphSearch _graphSearch;
     private readonly ILogger<ScrapDownloadsService> _logger;
-    private readonly IDownloadStreamProvider _downloadStreamProvider;
-    private readonly IEnumerable<IResourceRepository> _resourceRepositories;
-    private readonly IPageRetriever _pageRetriever;
-    private readonly IPageMarkerRepository _pageMarkerRepository;
-    private readonly ILinkCalculator _linkCalculator;
-    private readonly IJobFactory _jobFactory;
+    private readonly IFactory<Job, IDownloadStreamProvider> _downloadStreamProviderFactory;
+    private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
+    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
+    private readonly IFactory<Job, IPageMarkerRepository> _pageMarkerRepositoryFactory;
 
-    public ScrapDownloadsService(
-        IGraphSearch graphSearch,
+    private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
+
+    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
+
+    public ScrapDownloadsService(IGraphSearch graphSearch,
         ILogger<ScrapDownloadsService> logger,
-        IDownloadStreamProvider downloadStreamProvider,
-        IEnumerable<IResourceRepository> resourceRepositories,
-        IPageRetriever pageRetriever,
-        IPageMarkerRepository pageMarkerRepository,
-        ILinkCalculator linkCalculator,
-        IJobFactory jobFactory)
+        IFactory<Job, IDownloadStreamProvider> downloadStreamProviderFactory,
+        IFactory<Job, IResourceRepository> resourceRepositoryFactory,
+        IFactory<Job, IPageRetriever> pageRetrieverFactory,
+        IFactory<Job, IPageMarkerRepository> pageMarkerRepositoryFactory,
+        IFactory<Job, ILinkCalculator> linkCalculatorFactory,
+        IAsyncFactory<JobDto, Job> jobFactory)
     {
         _graphSearch = graphSearch;
         _logger = logger;
-        _downloadStreamProvider = downloadStreamProvider;
-        _resourceRepositories = resourceRepositories;
-        _pageRetriever = pageRetriever;
-        _pageMarkerRepository = pageMarkerRepository;
-        _linkCalculator = linkCalculator;
+        _resourceRepositoryFactory = resourceRepositoryFactory;
+        _pageRetrieverFactory = pageRetrieverFactory;
+        _pageMarkerRepositoryFactory = pageMarkerRepositoryFactory;
+        _linkCalculatorFactory = linkCalculatorFactory;
         _jobFactory = jobFactory;
+        _downloadStreamProviderFactory = downloadStreamProviderFactory;
     }
 
     public async Task DownloadLinksAsync(JobDto jobDto)
     {
-        var job = await _jobFactory.CreateAsync(jobDto);
-        var resourceRepository = _resourceRepositories.Single(x => x.Type == job.ResourceRepoArgs.RepositoryType);
+        var job = await _jobFactory.Build(jobDto);
+        var resourceRepository = _resourceRepositoryFactory.Build(job);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
         var resourceXPath = job.ResourceXPath;
@@ -60,8 +61,12 @@ public class ScrapDownloadsService : IScrapDownloadsService
         ValueTask<bool> IsNotDownloaded(ResourceInfo info)
             => this.IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways);
 
+        var pageRetriever = _pageRetrieverFactory.Build(job);
+        var linkCalculator = _linkCalculatorFactory.Build(job);
+        var pageMarkerRepository = _pageMarkerRepositoryFactory.Build(job);
+        var downloadStreamProvider = _downloadStreamProviderFactory.Build(job);
         var pipeline =
-            Pages(rootUri, _pageRetriever, adjacencyXPath, _linkCalculator)
+            Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
                 .Do(page => _logger.LogDebug("Processing page {PageUrl}", page.Uri))
                 .DoAwait((page, pageIndex) =>
                     GetResourceLinks(page, pageIndex)
@@ -69,9 +74,9 @@ public class ScrapDownloadsService : IScrapDownloadsService
                         .WhereAwait(IsNotDownloaded)
                         .SelectAwait(async resourceLink => (
                             x: resourceLink,
-                            stream: await _downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
+                            stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
                         .DoAwait(Download))
-                .DoAwait(page => _pageMarkerRepository.UpsertAsync(page.Uri));
+                .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();
     }

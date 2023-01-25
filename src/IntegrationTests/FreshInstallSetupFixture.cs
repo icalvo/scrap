@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Scrap.Tests;
 
-public sealed class FreshInstallSetupFixture : IDisposable
+public class FreshInstallSetupFixture : IDisposable
 {
     public string InstallFullPath { get; }
 
@@ -27,25 +27,26 @@ public sealed class FreshInstallSetupFixture : IDisposable
         DirectoryEx.DeleteIfExists(InstallFullPath, recursive: true);
         Directory.CreateDirectory(InstallFullPath);
 
+        Run("ls", "\"{InstallFullPath}\"");
         RunAndCheck("dotnet",
             $"build ./CommandLine/CommandLine.csproj /p:Version=\"{version}\" /p:AssemblyVersion=\"{mainVersion}\" /p:FileVersion=\"{mainVersion}\" /p:InformationalVersion=\"{version}\"");
         RunAndCheck("dotnet", $"pack /p:PackageVersion=\"{version}\" --no-build");
         RunAndCheck("dotnet", $"tool install scrap --tool-path \"{InstallFullPath}\" --add-source ./CommandLine/nupkg/ --version {version}");
     }
 
-    public void Dispose()
+    public virtual void Dispose()
     {
         Run("dotnet", $"tool uninstall scrap --tool-path \"{InstallFullPath}\"");
         DirectoryEx.DeleteIfExists(InstallFullPath, recursive: true);
         DirectoryEx.DeleteIfExists("./testsite-result", recursive: true);
     }
 
-    private void RunAndCheck(string fileName, string arguments, TimeSpan? timeout = null, bool outputToConsole = false)
+    protected void RunAndCheck(string fileName, string arguments, TimeSpan? timeout = null, bool outputToConsole = false)
     {
         Run(fileName, arguments, timeout, checkExitCode: true, outputToConsole);
     }
 
-    private void Run(string fileName, string arguments, TimeSpan? timeout = null, bool outputToConsole = false)
+    protected void Run(string fileName, string arguments = "", TimeSpan? timeout = null, bool outputToConsole = false)
     {
         Run(fileName, arguments, timeout, checkExitCode: false, outputToConsole);
     }

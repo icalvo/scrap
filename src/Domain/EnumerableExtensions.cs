@@ -11,12 +11,12 @@ public static class EnumerableExtensions
         }
     }
 
-    public static async IAsyncEnumerable<T> DoAwait<T, TOut>(this IAsyncEnumerable<T> source, Func<T, int, IAsyncEnumerable<TOut>> action)
+    public static async IAsyncEnumerable<T> DoAwait<T>(this IAsyncEnumerable<T> source, Func<T, int, Task> action)
     {
         var i = 0;
         await foreach (var item in source)
         {
-            await action(item, i).ExecuteAsync();
+            await action(item, i);
             yield return item;
             i++;
         }

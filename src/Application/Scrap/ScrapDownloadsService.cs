@@ -75,7 +75,8 @@ public class ScrapDownloadsService : IScrapDownloadsService
                         .SelectAwait(async resourceLink => (
                             x: resourceLink,
                             stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
-                        .DoAwait(Download))
+                        .DoAwait(Download)
+                        .ExecuteAsync())
                 .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();

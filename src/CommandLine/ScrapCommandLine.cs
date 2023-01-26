@@ -145,7 +145,7 @@ public class ScrapCommandLine
         }
     }
 
-    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [Verb(Description = "Lists all the pages reachable with the adjacency path", Aliases = "t")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Traverse(
         [Description("Job definition name")]string? name = null,
@@ -163,7 +163,7 @@ public class ScrapCommandLine
         await service.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
     }
 
-    [Verb(Description = "Lists all the resources available in pages provided by console input")]
+    [Verb(Description = "Lists all the resources available in pages provided by console input", Aliases = "r")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Resources(
         [Description("Job definition name")]string? name = null,
@@ -200,7 +200,7 @@ public class ScrapCommandLine
         }
     }
 
-    [Verb(Description = "Downloads resources as given by the console input")]
+    [Verb(Description = "Downloads resources as given by the console input", Aliases = "d")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Download(
         [Description("Job definition name")]string? name = null,
@@ -236,7 +236,7 @@ public class ScrapCommandLine
         }
     }
 
-    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [Verb(Description = "Lists all the pages reachable with the adjacency path", Aliases = "m")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task MarkVisited(
         [Description("Job definition name")]string? name = null,
@@ -359,6 +359,11 @@ public class ScrapCommandLine
         if (_debug)
         {
             Console.ReadKey();
+        }
+
+        if (context.Failed)
+        {
+            Console.WriteLine($"ERROR: {context.Exception.Message}");
         }
     }
 

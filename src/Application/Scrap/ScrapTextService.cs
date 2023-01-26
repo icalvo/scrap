@@ -76,7 +76,8 @@ public class ScrapTextService : IScrapTextService
                             _logger.LogInformation(
                                 "Downloaded text from {Url} to {Key}",
                                 x.info.ResourceUrl,
-                                await resourceRepository.GetKeyAsync(x.info))))
+                                await resourceRepository.GetKeyAsync(x.info)))
+                        .ExecuteAsync())
                 .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();

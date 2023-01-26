@@ -10,7 +10,9 @@ public class FileLogger : ILogger
     {
         _fullFilePath = Path.Combine(
             configuration.FolderPath,
-            configuration.FilePath.Replace("{date}", DateTimeOffset.UtcNow.ToString("yyyyMMdd")));
+            configuration.FilePath
+                .Replace("{date}", DateTimeOffset.UtcNow.ToString("yyyyMMdd"))
+                .Replace("{guid}", Guid.NewGuid().ToString("D")));
     }
  
     public IDisposable BeginScope<TState>(TState state) where TState : notnull

@@ -47,7 +47,6 @@ class Build : NukeBuild
     const string ChangelogFileName = "CHANGELOG.md";
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
-    AbsolutePath OutputDirectory => RootDirectory / "output";
     AbsolutePath TargetProjectDirectory => SourceDirectory / "CommandLine";
     AbsolutePath PackageDirectory => TargetProjectDirectory / "nupkg";
 
@@ -66,12 +65,11 @@ class Build : NukeBuild
         .Executes(() =>
         {
             SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
-            EnsureCleanDirectory(PackageDirectory);
-            EnsureCleanDirectory(OutputDirectory);
         });
 
     Target Restore => _ => _
         .Description("🧱 Restore")
+        .DependsOn(Clean)
         .Executes(() =>
         {
             DotNetRestore(s => s
@@ -125,6 +123,7 @@ class Build : NukeBuild
         .Produces(PackageDirectory / "*.nupkg")
         .Executes(() =>
         {
+            EnsureCleanDirectory(PackageDirectory);
             DotNetPack(s => s
                 .SetProject(TargetProjectDirectory)
                 .SetConfiguration(Configuration)

@@ -14,7 +14,7 @@ public class FileLoggerProvider : ILoggerProvider
  
         if (!Directory.Exists(_configuration.FolderPath))
         {
-            Directory.CreateDirectory(_configuration.FolderPath);
+            throw new ArgumentException($"The logging folder {_configuration.FolderPath} does not exist");
         }
     }
  

@@ -24,12 +24,12 @@ public class FreshInstallIntegrationTests
         {
             Environment =
             {
-                ["Scrap_GlobalConfigurationFolder"] = "C:\\NotExisting"
+                ["Scrap_GlobalConfigurationFolder"] = "NotExisting"
             }
         };
         var (_, standardOutput, standardError, _) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
 
         standardError.Should().BeEmpty();
-        standardOutput.Should().BeEquivalentTo("The tool is not configured, please run 'scrap configure'.");
+        standardOutput.Last().Should().Be("The tool is not properly configured; call 'scrap config'");
     }
 }

@@ -279,16 +279,18 @@ public class ScrapCommandLine
 
         var dbAppService = serviceResolver.Get<IDatabaseApplicationService>();
         search ??= ConsoleInput().First();
-        if (delete)
-        {
-            await dbAppService.DeleteAsync(search);
-            return;
-        }
-
         var result = await dbAppService.SearchAsync(search);
         foreach (var line in result)
         {
             Console.WriteLine(line.Uri);
+        }
+
+        if (delete)
+        {
+            Console.WriteLine();
+            Console.WriteLine("Deleting...");
+            await dbAppService.DeleteAsync(search);
+            Console.WriteLine("Finished!");
         }
     }
 

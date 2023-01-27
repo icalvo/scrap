@@ -640,7 +640,6 @@ public class ScrapCommandLine
 
     private void ErrorHandler(ExceptionContext c, IEnumerable<string> args)
     {
-        _verbose = true;
         var ex = c.Exception;
         if (c.Exception is TargetInvocationException && c.Exception.InnerException != null)
         {

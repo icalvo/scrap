@@ -40,6 +40,7 @@ public class CompiledDestinationProviderTests
             new Uri("https://example.com/resource.gif"),
             resourceIndex: 3);
 
-        result.Should().Be("destinationRootFolder\\3.gif");
+        var expected = Path.Combine("destinationRootFolder", "3.gif");
+        result.Should().Be(expected);
     }
 }

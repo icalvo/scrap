@@ -8,27 +8,30 @@ namespace Scrap.Application;
 public class TraversalApplicationService : ITraversalApplicationService
 {
     private readonly IGraphSearch _graphSearch;
-    private readonly IPageRetriever _pageRetriever;
-    private readonly ILinkCalculator _linkCalculator;
-    private readonly IJobFactory _jobFactory;
+    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
+    private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
+    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
 
     public TraversalApplicationService(
         IGraphSearch graphSearch,
-        IPageRetriever pageRetriever,
-        ILinkCalculator linkCalculator, IJobFactory jobFactory)
+        IFactory<Job, IPageRetriever> pageRetrieverFactory,
+        IFactory<Job, ILinkCalculator> linkCalculatorFactory,
+        IAsyncFactory<JobDto, Job> jobFactory)
     {
         _graphSearch = graphSearch;
-        _pageRetriever = pageRetriever;
-        _linkCalculator = linkCalculator;
+        _pageRetrieverFactory = pageRetrieverFactory;
+        _linkCalculatorFactory = linkCalculatorFactory;
         _jobFactory = jobFactory;
     }
 
     public async IAsyncEnumerable<string> TraverseAsync(JobDto jobDto)
     {
-        var job = await _jobFactory.CreateAsync(jobDto);
+        var job = await _jobFactory.Build(jobDto);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
-        await foreach (var uri in Pages(rootUri, _pageRetriever, adjacencyXPath, _linkCalculator)
+        var pageRetriever = _pageRetrieverFactory.Build(job);
+        var linkCalculator = _linkCalculatorFactory.Build(job);
+        await foreach (var uri in Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
                            .Select(x => x.Uri.AbsoluteUri))
         {
             yield return uri;

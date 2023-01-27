@@ -4,7 +4,7 @@ using Moq;
 using Scrap.Domain.Pages;
 using Xunit;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Unit;
 
 public class FullScanLinkCalculatorTests
 {

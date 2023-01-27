@@ -1,6 +1,6 @@
+using System.Text.RegularExpressions;
 using LiteDB;
 using Microsoft.Extensions.Logging;
-using Scrap.Domain.Jobs;
 
 namespace Scrap.Domain.Pages.LiteDb;
 
@@ -13,10 +13,10 @@ public class LiteDbPageMarkerRepository : IPageMarkerRepository
     public LiteDbPageMarkerRepository(
         ILiteDatabase db,
         ILogger<LiteDbPageMarkerRepository> logger,
-        Job job)
+        bool disableWrites)
     {
         _logger = logger;
-        _disableWrites = job.DisableMarkingVisited;
+        _disableWrites = disableWrites;
         _collection = db.GetCollection<PageMarker>();
     }
         
@@ -31,13 +31,23 @@ public class LiteDbPageMarkerRepository : IPageMarkerRepository
         if (!_disableWrites)
         {
             _collection.Upsert(link.AbsoluteUri, new PageMarker(link.AbsoluteUri));
-            _logger.LogTrace("Inserted {Page}", link.AbsoluteUri);
+            _logger.LogTrace("Inserted marker {Page}", link.AbsoluteUri);
         }
         else
         {
-            _logger.LogTrace("FAKE. Inserted {Page}", link.AbsoluteUri);
+            _logger.LogTrace("FAKE. Inserted marker {Page}", link.AbsoluteUri);
         }
 
         return Task.CompletedTask;
     }
+
+    public Task<IEnumerable<PageMarker>> SearchAsync(string search)
+    {
+        return Task.FromResult(_collection.Find(x => Regex.IsMatch(x.Uri, search)));
+    }
+
+    public Task DeleteAsync(string search)
+    {
+        return Task.FromResult(_collection.DeleteMany(x => Regex.IsMatch(x.Uri, search)));
+    }    
 }

@@ -5,10 +5,6 @@
       "System": "Warning",
       "Microsoft": "Warning"
     },
-    "File": {
-      "FolderPath": ".\\",
-      "FilePath": "log_{date}.log"
-    },
     "Console": {
       "FormatterName": "CustomConsoleFormatter",
       "FormatterOptions": {

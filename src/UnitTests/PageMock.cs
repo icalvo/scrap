@@ -3,7 +3,7 @@ using Moq;
 using Scrap.Domain;
 using Scrap.Domain.Pages;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Unit;
 
 public class PageMock : IPage
 {

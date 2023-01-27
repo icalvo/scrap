@@ -13,28 +13,28 @@ public class ScrapTextService : IScrapTextService
 {
     private readonly IGraphSearch _graphSearch;
     private readonly ILogger<ScrapTextService> _logger;
-    private readonly IJobFactory _jobFactory;
-    private readonly IEnumerable<IResourceRepository> _resourceRepositories;
-    private readonly IPageRetriever _pageRetriever;
-    private readonly IPageMarkerRepository _pageMarkerRepository;
-    private readonly ILinkCalculator _linkCalculator;
+    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
+    private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
+    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
+    private readonly IFactory<Job, IPageMarkerRepository> _pageMarkerRepositoryFactory;
+    private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
 
     public ScrapTextService(
         IGraphSearch graphSearch,
-        IJobFactory jobFactory,
-        IEnumerable<IResourceRepository> resourceRepositories,
-        IPageRetriever pageRetriever,
-        IPageMarkerRepository pageMarkerRepository,
-        ILinkCalculator linkCalculator,
+        IAsyncFactory<JobDto, Job> jobFactory,
+        IFactory<Job, IResourceRepository> resourceRepositoryFactory,
+        IFactory<Job, IPageRetriever> pageRetrieverFactory,
+        IFactory<Job, IPageMarkerRepository> pageMarkerRepositoryFactory,
+        IFactory<Job, ILinkCalculator> linkCalculatorFactory,
         ILogger<ScrapTextService> logger)
     {
         _graphSearch = graphSearch;
         _logger = logger;
         _jobFactory = jobFactory;
-        _resourceRepositories = resourceRepositories;
-        _pageRetriever = pageRetriever;
-        _pageMarkerRepository = pageMarkerRepository;
-        _linkCalculator = linkCalculator;
+        _resourceRepositoryFactory = resourceRepositoryFactory;
+        _pageRetrieverFactory = pageRetrieverFactory;
+        _pageMarkerRepositoryFactory = pageMarkerRepositoryFactory;
+        _linkCalculatorFactory = linkCalculatorFactory;
     }
 
     public async Task ScrapTextAsync(JobDto jobDto)
@@ -44,9 +44,9 @@ public class ScrapTextService : IScrapTextService
             throw new InvalidOperationException($"Invalid resource type (should be {nameof(ResourceType.Text)})");
         }
 
-        var job = await _jobFactory.CreateAsync(jobDto);
+        var job = await _jobFactory.Build(jobDto);
 
-        var resourceRepository = _resourceRepositories.Single(x => x.Type == job.ResourceRepoArgs.RepositoryType);
+        var resourceRepository = _resourceRepositoryFactory.Build(job);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
         var resourceXPath = job.ResourceXPath;
@@ -60,8 +60,11 @@ public class ScrapTextService : IScrapTextService
                 .ToAsyncEnumerable();
 
         _logger.LogDebug("Defining pipeline...");
+        var pageRetriever = _pageRetrieverFactory.Build(job);
+        var linkCalculator = _linkCalculatorFactory.Build(job);
+        var pageMarkerRepository = _pageMarkerRepositoryFactory.Build(job);
         var pipeline =
-            Pages(rootUri, _pageRetriever, adjacencyXPath, _linkCalculator)
+            Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
                 .DoAwait((page, pageIndex) =>
                     PageTexts(page, pageIndex)
                         .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository, job.DownloadAlways))
@@ -73,8 +76,9 @@ public class ScrapTextService : IScrapTextService
                             _logger.LogInformation(
                                 "Downloaded text from {Url} to {Key}",
                                 x.info.ResourceUrl,
-                                await resourceRepository.GetKeyAsync(x.info))))
-                .DoAwait(page => _pageMarkerRepository.UpsertAsync(page.Uri));
+                                await resourceRepository.GetKeyAsync(x.info)))
+                        .ExecuteAsync())
+                .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();
         _logger.LogInformation("Finished!");

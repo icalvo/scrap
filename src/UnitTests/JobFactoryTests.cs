@@ -6,22 +6,21 @@ using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 using Xunit;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Unit;
 
 public class JobFactoryTests
 {
     [Fact]
-    public async Task CreateAsync()
+    public async Task Build()
     {
         var jobFactory =
-            new JobFactory(Mock.Of<IEntityRegistry<Job>>(), new []
-            {
-                Mock.Of<IResourceRepositoryConfigurationValidator>(x => x.RepositoryType == "repoType")
-            });
-        IResourceRepositoryConfiguration resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>(x =>
-            x.RepositoryType == "repoType");
+            new JobFactory(
+                Mock.Of<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>>(f =>
+                    f.Build(It.IsAny<IResourceRepositoryConfiguration>()) == 
+                        Mock.Of<IResourceRepositoryConfigurationValidator>()));
+        IResourceRepositoryConfiguration resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
        
-        var actual = await jobFactory.CreateAsync(new JobDto(
+        var actual = await jobFactory.Build(new JobDto(
             null,
             "//a/@href",
             resourceRepoConfig,
@@ -36,19 +35,20 @@ public class JobFactoryTests
 
         actual.HttpRequestRetries.Should().Be(5);
     }
-    
+
     [Fact]
-    public async Task CreateAsync_NoMatchingValidator_Throws()
+    public void Build_ValidationFails_Throws()
     {
+        var failingValidator = new Mock<IResourceRepositoryConfigurationValidator>();
+        failingValidator.Setup(x => x.ValidateAsync(It.IsAny<IResourceRepositoryConfiguration>())).ThrowsAsync(new Exception());
         var jobFactory =
-            new JobFactory(Mock.Of<IEntityRegistry<Job>>(), new []
-            {
-                Mock.Of<IResourceRepositoryConfigurationValidator>(x => x.RepositoryType == "repoType")
-            });
-        IResourceRepositoryConfiguration resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>(x =>
-            x.RepositoryType == "repoTypeNotMatching");
+            new JobFactory(
+                Mock.Of<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>>(f =>
+                    f.Build(It.IsAny<IResourceRepositoryConfiguration>()) == failingValidator));
+ 
+        IResourceRepositoryConfiguration resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
        
-        var action = () => jobFactory.CreateAsync(new JobDto(
+        var action = () => jobFactory.Build(new JobDto(
             null,
             "//a/@href",
             resourceRepoConfig,
@@ -61,6 +61,6 @@ public class JobFactoryTests
             null,
             null));
 
-        await action.Should().ThrowAsync<Exception>();
+        action.Should().ThrowAsync<Exception>();
     }    
 }

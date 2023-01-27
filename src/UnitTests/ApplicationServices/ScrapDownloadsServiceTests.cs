@@ -4,7 +4,7 @@ using Scrap.Domain.Resources;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Scrap.Tests.ApplicationServices;
+namespace Scrap.Tests.Unit.ApplicationServices;
 
 public class ScrapDownloadsServiceTests
 {

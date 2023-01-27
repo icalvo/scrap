@@ -1,4 +1,4 @@
-﻿namespace Scrap.Tests;
+﻿namespace Scrap.Tests.Integration;
 
 public static class DirectoryEx
 {

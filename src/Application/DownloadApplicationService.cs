@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Scrap.Domain;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
@@ -9,23 +10,23 @@ namespace Scrap.Application;
 
 public class DownloadApplicationService : IDownloadApplicationService
 {
-    private readonly IJobFactory _jobFactory;
-    private readonly IPageRetriever _pageRetriever;
-    private readonly IEnumerable<IResourceRepository> _resourceRepositories;
-    private readonly IDownloadStreamProvider _downloadStreamProvider;
+    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
+    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
+    private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
+    private readonly IFactory<Job, IDownloadStreamProvider> _downloadStreamProviderFactory;
     private readonly ILogger<DownloadApplicationService> _logger;
 
     public DownloadApplicationService(
-        IJobFactory jobFactory,
-        IPageRetriever pageRetriever,
-        IEnumerable<IResourceRepository> resourceRepositories,
-        IDownloadStreamProvider downloadStreamProvider,
+        IAsyncFactory<JobDto, Job> jobFactory,
+        IFactory<Job, IPageRetriever> pageRetrieverFactory,
+        IFactory<Job, IResourceRepository> resourceRepositoryFactory,
+        IFactory<Job, IDownloadStreamProvider> downloadStreamProviderFactory,
         ILogger<DownloadApplicationService> logger)
     {
         _jobFactory = jobFactory;
-        _pageRetriever = pageRetriever;
-        _resourceRepositories = resourceRepositories;
-        _downloadStreamProvider = downloadStreamProvider;
+        _pageRetrieverFactory = pageRetrieverFactory;
+        _resourceRepositoryFactory = resourceRepositoryFactory;
+        _downloadStreamProviderFactory = downloadStreamProviderFactory;
         _logger = logger;
     }
 
@@ -36,14 +37,16 @@ public class DownloadApplicationService : IDownloadApplicationService
             throw new Exception();
         }
 
-        var job = await _jobFactory.CreateAsync(jobDto);
-        var resourceRepository = _resourceRepositories.Single(x => x.Type == job.ResourceRepoArgs.RepositoryType);
-        var page = await _pageRetriever.GetPageAsync(pageUrl);
+        var job = await _jobFactory.Build(jobDto);
+        var resourceRepository = _resourceRepositoryFactory.Build(job);
+        var pageRetriever = _pageRetrieverFactory.Build(job);
+        var page = await pageRetriever.GetPageAsync(pageUrl);
 
         var info = new ResourceInfo(page, pageIndex, resourceUrl, resourceIndex);
         if (await this.IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways))
         {
-            var stream = await _downloadStreamProvider.GetStreamAsync(resourceUrl);
+            var downloadStreamProvider = _downloadStreamProviderFactory.Build(job);
+            var stream = await downloadStreamProvider.GetStreamAsync(resourceUrl);
             await resourceRepository.UpsertAsync(info, stream);
             _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl, await resourceRepository.GetKeyAsync(info));
         }

@@ -3,9 +3,9 @@ using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Scrap.Tests;
+namespace Scrap.Tests.Integration;
 
-[Collection("Fresh install collection")]
+[Collection(nameof(FreshInstallCollection))]
 public class FreshInstallIntegrationTests
 {
     private readonly FreshInstallSetupFixture _fixture;
@@ -20,16 +20,16 @@ public class FreshInstallIntegrationTests
     [Fact]
     public void CommandLine_NotConfigured()
     {
-        var psi = new ProcessStartInfo(Path.Combine(_fixture.InstallFullPath, "scrap.exe"))
+        var psi = new ProcessStartInfo(Path.Combine(_fixture.InstallFullPath, "scrap"))
         {
             Environment =
             {
-                ["Scrap_GlobalConfigurationFolder"] = "C:\\NotExisting"
+                ["Scrap_GlobalConfigurationFolder"] = "NotExisting"
             }
         };
-        var (_, standardOutput, standardError) = psi.Run();
+        var (_, standardOutput, standardError, _) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
 
         standardError.Should().BeEmpty();
-        standardOutput.Should().BeEquivalentTo("The tool is not configured, please run 'scrap configure'.");
+        standardOutput.Last().Should().Be("The tool is not properly configured; call 'scrap config'");
     }
 }

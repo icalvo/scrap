@@ -23,19 +23,15 @@ public class ScrapCommandLine
     private const string ConfigFolderEnvironment = "GlobalConfigurationFolder";
     private bool _verbose;
     private bool _debug;
-    private IConfiguration _configuration = null!;
+    private readonly IConfiguration _configuration;
+    private readonly string _globalUserConfigFolder;
+    private static readonly string DefaultGlobalUserConfigFolder =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
 
     public ScrapCommandLine(Parser<ScrapCommandLine> parser, string[] args)
     {
-        parser.Register.HelpHandler("help,h,?", Help);
-        parser.Register.ErrorHandler((Action<ExceptionContext>) (c => Exception(c, args)));
-    }
-
-    [PreVerbExecution]
-    [SuppressMessage("ReSharper", "UnusedMember.Local")]
-    [SuppressMessage("ReSharper", "UnusedParameter.Local")]
-    void Before(PreVerbExecutionContext context)
-    {
+        parser.Register.HelpHandler("help,h,?", HelpHandler);
+        parser.Register.ErrorHandler((Action<ExceptionContext>) (c => ErrorHandler(c, args)));
         if (_debug)
         {
             Debugger.Launch();
@@ -43,28 +39,35 @@ public class ScrapCommandLine
 
         const string environmentVarPrefix = "Scrap_";
         _configuration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
-        var globalUserConfigFolder = GetGlobalUserConfigFolder();
-        var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
-
-        if (!File.Exists(globalUserConfigPath))
+        _globalUserConfigFolder = GetGlobalUserConfigFolder();
+        if (_globalUserConfigFolder == DefaultGlobalUserConfigFolder)
         {
-            Console.WriteLine("The tool is not configured, please run 'scrap configure'.");
-            context.Cancel = true;
-            return;
+            if (!Directory.Exists(DefaultGlobalUserConfigFolder))
+            {
+                Directory.CreateDirectory(DefaultGlobalUserConfigFolder);
+            }
         }
 
+        var globalUserConfigPath = Path.Combine(_globalUserConfigFolder, "scrap-user.json");
         var configBuilder = new ConfigurationBuilder()
             .AddJsonFile("scrap.json", optional: false, reloadOnChange: false);
-        if (!context.Method.Names.Contains("configure"))
+        if (File.Exists(globalUserConfigPath))
         {
             _ = configBuilder.AddJsonFile(globalUserConfigPath, optional: false, reloadOnChange: false);
         }
  
         _configuration = configBuilder.AddEnvironmentVariables(prefix: environmentVarPrefix).Build();
+    }
+
+    [PreVerbExecution]
+    [SuppressMessage("ReSharper", "UnusedMember.Local")]
+    [SuppressMessage("ReSharper", "UnusedParameter.Local")]
+    void Before(PreVerbExecutionContext context)
+    {
 
         if (!context.Method.Names.Contains("configure"))
         {
-            EnsureGlobalConfiguration(globalUserConfigFolder, globalUserConfigPath);
+            EnsureGlobalConfiguration(_globalUserConfigFolder);
         }
     }
 
@@ -117,7 +120,7 @@ public class ScrapCommandLine
         else
         {
             var envName = _configuration[JobDefNameEnvironment];
-            var jobDef = await GetJobDefinition(name, rootUrl, definitionsApplicationService, envName, envRootUrl, logger);
+            var jobDef = await GetJobDefinitionAsync(name, rootUrl, definitionsApplicationService, envName, envRootUrl, logger);
 
             if (jobDef == null)
             {
@@ -144,7 +147,7 @@ public class ScrapCommandLine
         }
     }
 
-    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [Verb(Description = "Lists all the pages reachable with the adjacency path", Aliases = "t")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Traverse(
         [Description("Job definition name")]string? name = null,
@@ -152,7 +155,7 @@ public class ScrapCommandLine
         [Description("Navigate through already visited pages")]bool fullScan = false)
     {
         var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
-        var newJob = await BuildJobDto(serviceResolver, name, rootUrl,  fullScan, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
+        var newJob = await BuildJobDtoAsync(serviceResolver, name, rootUrl,  fullScan, downloadAlways: false, disableMarkingVisited: true, disableResourceWrites: true);
         if (newJob == null)
         {
             return;
@@ -162,7 +165,7 @@ public class ScrapCommandLine
         await service.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
     }
 
-    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [Verb(Description = "Lists all the resources available in pages provided by console input", Aliases = "r")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Resources(
         [Description("Job definition name")]string? name = null,
@@ -171,7 +174,7 @@ public class ScrapCommandLine
         [Description("Output only the resource link instead of the format expected by 'scrap download'")]bool onlyResourceLink = false)
     {
         var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
-        var newJob = await BuildJobDto(
+        var newJob = await BuildJobDtoAsync(
             serviceResolver,
             name,
             rootUrl,
@@ -199,7 +202,7 @@ public class ScrapCommandLine
         }
     }
 
-    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [Verb(Description = "Downloads resources as given by the console input", Aliases = "d")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Download(
         [Description("Job definition name")]string? name = null,
@@ -208,7 +211,7 @@ public class ScrapCommandLine
         [Description("Pipeline")]string[]? pipeline = null)
     {
         var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
-        var newJob = await BuildJobDto(
+        var newJob = await BuildJobDtoAsync(
             serviceResolver,
             name,
             rootUrl,
@@ -231,11 +234,11 @@ public class ScrapCommandLine
             var resourceIndex = int.Parse(split[2]);
             var resourceUrl = new Uri(split[3]);
             await scrapAppService.DownloadAsync(newJob, pageUrl, pageIndex, resourceUrl, resourceIndex);
-            Console.WriteLine("Downloaded " + resourceUrl);
+            Console.WriteLine($"Downloaded {resourceUrl}");
         }
     }
 
-    [Verb(Description = "Lists all the pages reachable with the adjacency path")]
+    [Verb(Description = "Lists all the pages reachable with the adjacency path", Aliases = "m")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task MarkVisited(
         [Description("Job definition name")]string? name = null,
@@ -243,7 +246,7 @@ public class ScrapCommandLine
         [Description("Pipeline")]string[]? pipeline = null)
     {
         var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
-        var newJob = await BuildJobDto(
+        var newJob = await BuildJobDtoAsync(
             serviceResolver,
             name,
             rootUrl,
@@ -262,7 +265,30 @@ public class ScrapCommandLine
         {
             var pageUrl = new Uri(line);
             await scrapAppService.MarkVisitedPageAsync(newJob, pageUrl);
-            Console.WriteLine("Visited " + pageUrl);
+            Console.WriteLine($"Visited {pageUrl}");
+        }
+    }
+
+    [Verb(Description = "Lists all the pages reachable with the adjacency path", Aliases = "db")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public async Task Database(
+        [Description("Search with Regular Expression")]string? search = null,
+        [Description("Delete results with Regular Expression")]bool delete = false)
+    {
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
+
+        var dbAppService = serviceResolver.Get<IDatabaseApplicationService>();
+        search ??= ConsoleInput().First();
+        if (delete)
+        {
+            await dbAppService.DeleteAsync(search);
+            return;
+        }
+
+        var result = await dbAppService.SearchAsync(search);
+        foreach (var line in result)
+        {
+            Console.WriteLine(line.Uri);
         }
     }
 
@@ -291,8 +317,7 @@ public class ScrapCommandLine
             if (isInteractive)
             {
                 Console.WriteLine(
-                    "Global config file not found. We are going to create a global config file and ask some values. " +
-                    $"This file is located at: {globalUserConfigPath}");
+                    $"Global config file not found. We are going to create a global config file and ask some values. This file is located at: {globalUserConfigPath}");
                 Console.WriteLine(
                     "The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
             }
@@ -318,11 +343,11 @@ public class ScrapCommandLine
             return;
         }
 
-        System.Diagnostics.Debug.Assert(key != null, nameof(key) + " != null");
+        System.Diagnostics.Debug.Assert(key != null, $"{nameof(key)} != null");
         SetUpGlobalConfigValue(globalUserConfigFolder, globalUserConfigPath, key, value);
     }
 
-    [Verb(Description = "Show version")]
+    [Verb(Description = "Show version", Aliases = "v")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public static void Version()
     {
@@ -331,7 +356,7 @@ public class ScrapCommandLine
 
     [PostVerbExecution]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public void After(PostVerbExecutionContext context)
+    public void After(PostVerbExecutionContext _)
     {
         if (_debug)
         {
@@ -341,24 +366,32 @@ public class ScrapCommandLine
 
     private string GetGlobalUserConfigFolder()
         => _configuration[ConfigFolderEnvironment]
-           ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap");
+           ?? DefaultGlobalUserConfigFolder;
 
     private record GlobalConfig(
         string Key,
         string DefaultValue,
         string Prompt);
 
-    private void EnsureGlobalConfiguration(string globalUserConfigFolder, string globalUserConfigPath)
+    private void EnsureGlobalConfiguration(string globalUserConfigFolder)
     {
-        if (!File.Exists(globalUserConfigPath))
+        if (!Directory.Exists(globalUserConfigFolder))
         {
-            throw new ScrapException("The tool is not properly configured; call 'scrap config'.");
+            Console.WriteLine($"The global config folder [{globalUserConfigFolder}] does not exist");
+            throw new ScrapException("The tool is not properly configured; call 'scrap config'");
         }
 
-        if (GetGlobalConfigs(globalUserConfigFolder).Any(config => _configuration[config.Key] == null))
+        var unsetKeys =
+            GetGlobalConfigs(globalUserConfigFolder).Where(config => _configuration[config.Key] == null)
+                .ToArray();
+        if (!unsetKeys.Any())
         {
-            throw new ScrapException("The tool is not properly configured; call 'scrap config'.");
+            return;
         }
+
+        var keyList = string.Join(", ", unsetKeys.Select(x => x.Key));
+        Console.WriteLine($"Unset configuration keys: {keyList}");
+        throw new ScrapException("The tool is not properly configured; call 'scrap config'");
     }
 
     private static IEnumerable<GlobalConfig> GetGlobalConfigs(string globalUserConfigFolder) => new []{
@@ -425,12 +458,11 @@ public class ScrapCommandLine
         if (!File.Exists(globalUserConfigPath))
         {
             Console.WriteLine(
-                $"Global config file not found. We are going to create a global config file and ask some values. " +
-                "This file is located at: {globalUserConfigPath}");
+                "Global config file not found. We are going to create a global config file and ask some values. This file is located at: {globalUserConfigPath}");
             Console.WriteLine(
                 $"The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
             File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
-            Console.WriteLine("Created global config at: " + globalUserConfigPath);
+            Console.WriteLine($"Created global config at: {globalUserConfigPath}");
         }
     }
 
@@ -459,7 +491,11 @@ public class ScrapCommandLine
     {
         builder.ClearProviders();
         builder.AddConfiguration(_configuration.GetSection("Logging"));
-        builder.AddFile(_configuration.GetSection("Logging:File"), options => options.FolderPath = GetGlobalUserConfigFolder());
+        var globalUserConfigFolder = GetGlobalUserConfigFolder();
+        if (Directory.Exists(globalUserConfigFolder))
+        {
+            builder.AddFile(_configuration.GetSection("Logging:File"), options => options.FolderPath = globalUserConfigFolder);
+        }
 
         if (!_verbose)
         {
@@ -478,7 +514,7 @@ public class ScrapCommandLine
         var version = GetVersion();
         var currentColor = Console.ForegroundColor;
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine(FiggleFonts.Doom.Render("scrap " + version));
+        Console.WriteLine(FiggleFonts.Doom.Render($"scrap {version}"));
         Console.WriteLine("Command line tool for generic web scrapping");
         Console.WriteLine();
         Console.ForegroundColor = currentColor;
@@ -497,7 +533,7 @@ public class ScrapCommandLine
         }
     }
 
-    private async Task<JobDto?> BuildJobDto(
+    private async Task<JobDto?> BuildJobDtoAsync(
         ServicesLocator serviceLocator,
         string? name,
         string? rootUrl,
@@ -511,7 +547,7 @@ public class ScrapCommandLine
         var envName = _configuration[JobDefNameEnvironment];
         var envRootUrl = _configuration[JobDefRootUrlEnvironment];
         
-        var jobDef = await GetJobDefinition(name, rootUrl, definitionsApplicationService, envName, envRootUrl, logger);
+        var jobDef = await GetJobDefinitionAsync(name, rootUrl, definitionsApplicationService, envName, envRootUrl, logger);
 
         if (jobDef == null)
         {
@@ -523,7 +559,7 @@ public class ScrapCommandLine
         return new JobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);        
     }
 
-    private async Task<JobDefinitionDto?> GetJobDefinition(
+    private static async Task<JobDefinitionDto?> GetJobDefinitionAsync(
         string? name,
         string? rootUrl,
         JobDefinitionsApplicationService definitionsApplicationService,
@@ -596,25 +632,34 @@ public class ScrapCommandLine
         return jobDef;
     }
 
-    private static void Help(string helpText)
+    private static void HelpHandler(string helpText)
     {
         Console.WriteLine("SCRAP is a tool for generic web scrapping. To set it up, head to the project docs: https://github.com/icalvo/scrap");
         Console.WriteLine(helpText);
     }
 
-    private static void Exception(ExceptionContext c, IEnumerable<string> args)
+    private void ErrorHandler(ExceptionContext c, IEnumerable<string> args)
     {
-        if (c.Exception is TargetInvocationException { InnerException: ScrapException s})
+        var ex = c.Exception;
+        if (c.Exception is TargetInvocationException && c.Exception.InnerException != null)
         {
-            Console.Error.WriteLine("{0}", s.Message);
+            ex = c.Exception.InnerException;
+        }
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithConsole);
+        var logger = serviceResolver.Get<ILogger<ScrapCommandLine>>();
+
+        if (ex is ScrapException)
+        {
+            Console.WriteLine(ex.Message);
             return;
         }
-
-        Console.Error.WriteLine("Parsing error: {0}", c.Exception.Demystify());
-        Console.Error.WriteLine("Arguments:");
+        
+        logger.LogError("ERROR: {Message}", ex.Message);
+        logger.LogTrace("{Stacktrace}", ex.Demystify().StackTrace);
+        logger.LogDebug("Arguments:");
         foreach (var (arg, idx) in args.Select((arg, idx) => (arg, idx)))
         {
-            Console.WriteLine("Arg {0}: {1}", idx, arg);
+            logger.LogDebug("Arg {Index}: {Argument}", idx, arg);
         }
     }
 

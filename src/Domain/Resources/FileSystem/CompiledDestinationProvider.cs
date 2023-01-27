@@ -11,10 +11,9 @@ namespace Scrap.Domain.Resources.FileSystem;
 
 public class CompiledDestinationProvider : IDestinationProvider
 {
-    private IDestinationProvider _compiledDestinationProvider = null!;
     private readonly FileSystemResourceRepositoryConfiguration _config;
     private readonly ILogger<CompiledDestinationProvider> _logger;
-
+    private IDestinationProvider? _destinationProvider;
     public CompiledDestinationProvider(
         FileSystemResourceRepositoryConfiguration config,
         ILogger<CompiledDestinationProvider> logger)
@@ -30,8 +29,8 @@ public class CompiledDestinationProvider : IDestinationProvider
         Uri resourceUrl,
         int resourceIndex)
     {
-        await CompileAsync(_config);
-        return await _compiledDestinationProvider.GetDestinationAsync(destinationRootFolder, page, pageIndex, resourceUrl, resourceIndex);
+        var compiledDestinationProvider = await CompileAsync(_config);
+        return await compiledDestinationProvider.GetDestinationAsync(destinationRootFolder, page, pageIndex, resourceUrl, resourceIndex);
     }
 
     public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config)
@@ -39,14 +38,20 @@ public class CompiledDestinationProvider : IDestinationProvider
         return CompileAsync(config);
     }
 
-    private async Task CompileAsync(FileSystemResourceRepositoryConfiguration config)
+    private async Task<IDestinationProvider> CompileAsync(FileSystemResourceRepositoryConfiguration config)
     {
+        if (_destinationProvider != null)
+        {
+            return _destinationProvider;
+        }
+
         var destinationFolderPattern = config.PathFragments;
         string sourceCode = await GenerateSourceCodeAsync(destinationFolderPattern);
         try
         {
             var assembly = CompileSourceCode(sourceCode);
-            _compiledDestinationProvider = CreateDestinationProviderInstance(assembly);
+            _destinationProvider = CreateDestinationProviderInstance(assembly);
+            return _destinationProvider;
         }
         catch (Exception)
         {

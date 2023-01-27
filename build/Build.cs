@@ -190,7 +190,7 @@ class Build : NukeBuild
     Target PullRequest => _ => _
         .Description("🏷 Pull Request")
         .Requires(() => GitHubActions)
-        .Triggers(IntegrationTests)
+        .Triggers(UnitTests, IntegrationTests)
         .Executes(async () =>
         {
             var tokenAuth = new Credentials(GitHubActions.Token);

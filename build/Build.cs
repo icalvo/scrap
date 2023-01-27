@@ -129,8 +129,7 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .EnableNoBuild()
                 .SetProperty("PackageVersion", Version)
-                .SetPackageDirectory(PackageDirectory));
-
+                .SetOutputDirectory(PackageDirectory));
         });
 
     Target ChangelogVerification => _ => _

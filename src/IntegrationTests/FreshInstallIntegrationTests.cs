@@ -30,6 +30,6 @@ public class FreshInstallIntegrationTests
         var (_, standardOutput, standardError, _) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
 
         standardError.Should().BeEmpty();
-        standardOutput.Should().ContainSingle("The tool is not properly configured; call 'scrap config'");
+        standardOutput.Should().Contain("The tool is not properly configured; call 'scrap config'");
     }
 }

@@ -48,7 +48,7 @@ class Build : NukeBuild
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
     AbsolutePath TargetProjectDirectory => SourceDirectory / "CommandLine";
-    AbsolutePath PackageDirectory => TargetProjectDirectory / "nupkg";
+    AbsolutePath PackageDirectory => TargetProjectDirectory / "packages";
 
     string MainVersion
     {
@@ -128,7 +128,8 @@ class Build : NukeBuild
                 .SetProject(TargetProjectDirectory)
                 .SetConfiguration(Configuration)
                 .EnableNoBuild()
-                .SetProperty("PackageVersion", Version));
+                .SetProperty("PackageVersion", Version)
+                .SetPackageDirectory(PackageDirectory));
 
         });
 
@@ -146,6 +147,7 @@ class Build : NukeBuild
     public Target Push => _ => _
         .Description("📢 NuGet Push")
         .DependsOn(Pack, UnitTests, IntegrationTests, ChangelogVerification)
+        .Consumes(Pack)
         .Triggers(TagCommit)
         .Executes(() =>
         {

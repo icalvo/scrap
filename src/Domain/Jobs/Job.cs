@@ -1,10 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Resources;
 
 namespace Scrap.Domain.Jobs;
 
-public class Job : IResourceRepoArgs
+public class Job
 {
     public const int DefaultHttpRequestRetries = 5;
     public static readonly TimeSpan DefaultHttpRequestDelayBetweenRetries = TimeSpan.FromSeconds(1);
@@ -13,7 +14,7 @@ public class Job : IResourceRepoArgs
     {
         Id = new JobId();
         AdjacencyXPath = dto.AdjacencyXPath == null ? null : new XPath(dto.AdjacencyXPath);
-        ResourceXPath = new XPath(dto.ResourceXPath);
+        ResourceXPath = dto.ResourceXPath == null ? null : new XPath(dto.ResourceXPath);
         ResourceRepoArgs = dto.ResourceRepository;
         RootUrl = new Uri(dto.RootUrl ?? throw new ArgumentException("Root URL must not be null", nameof(dto)));
         HttpRequestRetries = dto.HttpRequestRetries ?? DefaultHttpRequestRetries;
@@ -42,8 +43,8 @@ public class Job : IResourceRepoArgs
     public JobId Id { get; }
     public Uri RootUrl { get; }
     public XPath? AdjacencyXPath { get; }
-    public XPath ResourceXPath { get; }
-    public IResourceRepositoryConfiguration ResourceRepoArgs { get; }
+    public XPath? ResourceXPath { get; }
+    public IResourceRepositoryConfiguration? ResourceRepoArgs { get; }
     public int HttpRequestRetries { get; }
     public TimeSpan HttpRequestDelayBetweenRetries { get; }
     public bool DisableMarkingVisited { get; }
@@ -51,4 +52,19 @@ public class Job : IResourceRepoArgs
     public bool FullScan { get; }
     public bool DownloadAlways { get; }
     public ResourceType ResourceType { get; }
+
+    public (XPath ResourceXPath, IResourceRepositoryConfiguration ResourceRepoArgs) GetResourceCapabilitiesOrThrow()
+    {
+        if (ResourceXPath == null)
+        {
+            throw new InvalidOperationException("The job has no Resource XPath");
+        }
+
+        if (ResourceRepoArgs == null)
+        {
+            throw new InvalidOperationException("The job has no Resource Repository Configuration");
+        }
+
+        return (ResourceXPath, ResourceRepoArgs);
+    }
 }

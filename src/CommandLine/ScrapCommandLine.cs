@@ -112,7 +112,7 @@ public class ScrapCommandLine
                 throw new ArgumentException($"'{nameof(all)}' switch is incompatible with '{nameof(name)}' or '{nameof(rootUrl)}' options");
             }
 
-            await foreach (var jobDef in definitionsApplicationService.GetJobsAsync().Where(x => x.RootUrl != null))
+            await foreach (var jobDef in definitionsApplicationService.GetJobsAsync().Where(x => x.RootUrl != null && x.HasResourceCapabilities()))
             {
                 jobDefs.Add(jobDef);
             }

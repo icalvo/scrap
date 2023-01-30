@@ -14,8 +14,12 @@ public class JobFactory : IAsyncFactory<JobDto, Job>
     public async Task<Job> Build(JobDto jobDto)
     {
         var job = new Job(jobDto);
-        var validator = _validatorFactory.Build(job.ResourceRepoArgs);
-        await validator.ValidateAsync(job.ResourceRepoArgs);
+        if (job.ResourceRepoArgs != null)
+        {
+            var validator = _validatorFactory.Build(job.ResourceRepoArgs);
+            await validator.ValidateAsync(job.ResourceRepoArgs);
+        }
+
         return job;
     }
 }

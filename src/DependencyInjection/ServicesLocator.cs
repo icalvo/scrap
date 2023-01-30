@@ -88,8 +88,6 @@ public class ServicesLocator
         container.AddFactory<Job,IDownloadStreamProvider, DownloadStreamProviderFactory>();
         container.AddFactory<Job, IAsyncPolicy, AsyncPolicyFactory>();
         container.AddFactory<Job, IResourceRepository, ResourceRepositoryFactory>();
-        container.AddFactory<IResourceRepoArgs, IResourceRepositoryConfiguration,
-                ResourceRepositoryConfigurationJobFactory>();
         container.AddSingleton<IFactory<Job, ILinkCalculator>, LinkCalculatorFactory>();
         container.AddSingleton<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>, ResourceRepositoryConfigurationValidatorFactory>();
         

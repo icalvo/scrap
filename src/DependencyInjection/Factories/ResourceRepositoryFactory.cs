@@ -27,8 +27,10 @@ public class ResourceRepositoryFactory : IFactory<Job, IResourceRepository>
                     cfg,
                     _loggerFactory.CreateLogger<FileSystemResourceRepository>(),
                     job.DisableResourceWrites),
-            _ => throw new InvalidOperationException(
-                $"Unknown resource processor config type: {job.ResourceRepoArgs.GetType().Name}")
+            null => throw new ArgumentException(
+                $"Resource processor config not provided", nameof(job)), 
+            _ => throw new ArgumentException(
+                $"Unknown resource processor config type: {job.ResourceRepoArgs.GetType().Name}", nameof(job))
         };
 }
 

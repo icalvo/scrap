@@ -112,7 +112,7 @@ public class ScrapCommandLine
                 throw new ArgumentException($"'{nameof(all)}' switch is incompatible with '{nameof(name)}' or '{nameof(rootUrl)}' options");
             }
 
-            await foreach (var jobDef in definitionsApplicationService.GetJobsAsync().Where(x => x.RootUrl != null))
+            await foreach (var jobDef in definitionsApplicationService.GetJobsAsync().Where(x => x.RootUrl != null && x.HasResourceCapabilities()))
             {
                 jobDefs.Add(jobDef);
             }
@@ -170,7 +170,7 @@ public class ScrapCommandLine
     public async Task Resources(
         [Description("Job definition name")]string? name = null,
         [Description("URL where the scrapping starts")]string? rootUrl = null,
-        [Description("Pipeline")]string[]? pipeline = null,
+        [Description("Page URLs [pipeline]")]string[]? pageUrls = null,
         [Description("Output only the resource link instead of the format expected by 'scrap download'")]bool onlyResourceLink = false)
     {
         var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
@@ -189,7 +189,7 @@ public class ScrapCommandLine
 
         var scrapAppService = serviceResolver.Get<IResourcesApplicationService>();
         var pageIndex = 0;
-        IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
+        IEnumerable<string> inputLines = pageUrls ?? ConsoleInput();
         foreach (var line in inputLines)
         {
             var pageUrl = new Uri(line);
@@ -208,7 +208,7 @@ public class ScrapCommandLine
         [Description("Job definition name")]string? name = null,
         [Description("URL where the scrapping starts")]string? rootUrl = null,
         [Description("Download resources even if they are already downloaded")]bool downloadAlways = false,
-        [Description("Pipeline")]string[]? pipeline = null)
+        [Description("Resource URLs to download [pipeline]")]string[]? resourceUrls = null)
     {
         var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
         var newJob = await BuildJobDtoAsync(
@@ -225,7 +225,7 @@ public class ScrapCommandLine
         }
 
         var scrapAppService = serviceResolver.Get<IDownloadApplicationService>();
-        IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
+        IEnumerable<string> inputLines = resourceUrls ?? ConsoleInput();
         foreach (var line in inputLines)
         {
             var split = line.Split(" ");
@@ -238,60 +238,58 @@ public class ScrapCommandLine
         }
     }
 
-    [Verb(Description = "Lists all the pages reachable with the adjacency path", Aliases = "m")]
+    [Verb(Description = "Adds a visited page", Aliases = "m,mv")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task MarkVisited(
-        [Description("Job definition name")]string? name = null,
-        [Description("URL where the scrapping starts")]string? rootUrl = null,
-        [Description("Pipeline")]string[]? pipeline = null)
+        [Description("URL [pipeline]")]string[]? url = null)
     {
         var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
-        var newJob = await BuildJobDtoAsync(
-            serviceResolver,
-            name,
-            rootUrl,
-            fullScan: false,
-            downloadAlways: false,
-            disableMarkingVisited: true,
-            disableResourceWrites: false);
-        if (newJob == null)
-        {
-            return;
-        }
 
-        var scrapAppService = serviceResolver.Get<IMarkVisitedApplicationService>();
-        IEnumerable<string> inputLines = pipeline ?? ConsoleInput();
+        var visitedPagesAppService = serviceResolver.Get<IVisitedPagesApplicationService>();
+        IEnumerable<string> inputLines = url ?? ConsoleInput();
         foreach (var line in inputLines)
         {
             var pageUrl = new Uri(line);
-            await scrapAppService.MarkVisitedPageAsync(newJob, pageUrl);
+            await visitedPagesAppService.MarkVisitedPageAsync(pageUrl);
             Console.WriteLine($"Visited {pageUrl}");
         }
     }
 
-    [Verb(Description = "Lists all the pages reachable with the adjacency path", Aliases = "db")]
+    [Verb(Description = "Searches visited pages", Aliases = "sv")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public async Task Database(
-        [Description("Search with Regular Expression")]string? search = null,
-        [Description("Delete results with Regular Expression")]bool delete = false)
+    public async Task SearchVisited(
+        [Description("Search with Regular Expression [pipeline]")]string? search = null)
     {
         var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
 
-        var dbAppService = serviceResolver.Get<IDatabaseApplicationService>();
+        var visitedPagesAppService = serviceResolver.Get<IVisitedPagesApplicationService>();
         search ??= ConsoleInput().First();
-        var result = await dbAppService.SearchAsync(search);
+        var result = await visitedPagesAppService.SearchAsync(search);
+        foreach (var line in result)
+        {
+            Console.WriteLine(line.Uri);
+        }
+    }
+
+    [Verb(Description = "Searches and removes visited pages", Aliases = "dv")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public async Task DeleteVisited(
+        [Description("Search with Regular Expression [pipeline]")]string? search = null)
+    {
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
+
+        var visitedPagesAppService = serviceResolver.Get<IVisitedPagesApplicationService>();
+        search ??= ConsoleInput().First();
+        var result = await visitedPagesAppService.SearchAsync(search);
         foreach (var line in result)
         {
             Console.WriteLine(line.Uri);
         }
 
-        if (delete)
-        {
-            Console.WriteLine();
-            Console.WriteLine("Deleting...");
-            await dbAppService.DeleteAsync(search);
-            Console.WriteLine("Finished!");
-        }
+        Console.WriteLine();
+        Console.WriteLine("Deleting...");
+        await visitedPagesAppService.DeleteAsync(search);
+        Console.WriteLine("Finished!");
     }
 
     [Verb(Description = "Configures the tool", Aliases = "c,config")]
@@ -347,6 +345,13 @@ public class ScrapCommandLine
 
         System.Diagnostics.Debug.Assert(key != null, $"{nameof(key)} != null");
         SetUpGlobalConfigValue(globalUserConfigFolder, globalUserConfigPath, key, value);
+    }
+    [Verb(Description = "Show configuration", Aliases = "sc")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public void ShowConfig()
+    {
+        var root = (IConfigurationRoot)_configuration;
+        Console.WriteLine(root.GetDebugView());
     }
 
     [Verb(Description = "Show version", Aliases = "v")]

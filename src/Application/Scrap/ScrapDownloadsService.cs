@@ -46,7 +46,7 @@ public class ScrapDownloadsService : IScrapDownloadsService
         var resourceRepository = _resourceRepositoryFactory.Build(job);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
-        var resourceXPath = job.ResourceXPath;
+        var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();
 
         async Task Download((ResourceInfo info, Stream stream) x)
         {

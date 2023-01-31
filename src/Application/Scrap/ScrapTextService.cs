@@ -49,7 +49,7 @@ public class ScrapTextService : IScrapTextService
         var resourceRepository = _resourceRepositoryFactory.Build(job);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
-        var resourceXPath = job.ResourceXPath;
+        var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();
 
         IAsyncEnumerable<(ResourceInfo info, string text)> PageTexts(IPage page, int crawlPageIndex) =>
             page.Contents(resourceXPath)

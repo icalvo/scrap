@@ -2,8 +2,9 @@
 
 namespace Scrap.Application;
 
-public interface IDatabaseApplicationService
+public interface IVisitedPagesApplicationService
 {
     Task<IEnumerable<PageMarker>> SearchAsync(string search);
     Task DeleteAsync(string search);
+    Task MarkVisitedPageAsync(Uri pageUrl);
 }

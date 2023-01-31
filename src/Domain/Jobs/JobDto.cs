@@ -23,7 +23,7 @@ public class JobDto
             jobDefinition.AdjacencyXPath,
             jobDefinition.ResourceXPath,
             configuration ?? jobDefinition.ResourceRepository,
-            rootUrl ?? jobDefinition.RootUrl ?? throw new ArgumentException("No root URL provided"),
+            rootUrl ?? jobDefinition.RootUrl ?? throw new ArgumentException("No root URL provided", nameof(jobDefinition)),
             jobDefinition.HttpRequestRetries,
             jobDefinition.HttpRequestDelayBetweenRetries,
             fullScan,
@@ -33,8 +33,8 @@ public class JobDto
 
     public JobDto(
         string? adjacencyXPath,
-        string resourceXPath,
-        IResourceRepositoryConfiguration resourceRepository,
+        string? resourceXPath,
+        IResourceRepositoryConfiguration? resourceRepository,
         string rootUrl,
         int? httpRequestRetries,
         TimeSpan? httpRequestDelayBetweenRetries,
@@ -56,8 +56,8 @@ public class JobDto
     }
 
     public string? AdjacencyXPath { get; }
-    public string ResourceXPath { get; } = null!;
-    public IResourceRepositoryConfiguration ResourceRepository { get; } = null!;
+    public string? ResourceXPath { get; }
+    public IResourceRepositoryConfiguration? ResourceRepository { get; }
     public string RootUrl { get; } = null!;
     public int? HttpRequestRetries { get; }
     public TimeSpan? HttpRequestDelayBetweenRetries { get; }

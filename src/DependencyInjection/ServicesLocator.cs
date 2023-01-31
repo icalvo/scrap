@@ -81,15 +81,13 @@ public class ServicesLocator
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
         container.AddSingleton<IResourceRepositoryConfigurationValidator, FileSystemResourceRepositoryConfigurationValidator>();
         
-        container.AddSingleton<IDatabaseApplicationService, DatabaseApplicationService>();
+        container.AddSingleton<IVisitedPagesApplicationService, VisitedPagesApplicationService>();
 
         container.AddAsyncFactory<JobDto, Job, JobFactory>();
         container.AddFactory<Job, IPageRetriever, PageRetrieverFactory>();
         container.AddFactory<Job,IDownloadStreamProvider, DownloadStreamProviderFactory>();
         container.AddFactory<Job, IAsyncPolicy, AsyncPolicyFactory>();
         container.AddFactory<Job, IResourceRepository, ResourceRepositoryFactory>();
-        container.AddFactory<IResourceRepoArgs, IResourceRepositoryConfiguration,
-                ResourceRepositoryConfigurationJobFactory>();
         container.AddSingleton<IFactory<Job, ILinkCalculator>, LinkCalculatorFactory>();
         container.AddSingleton<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>, ResourceRepositoryConfigurationValidatorFactory>();
         

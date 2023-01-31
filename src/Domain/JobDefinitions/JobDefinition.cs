@@ -4,7 +4,7 @@ using Scrap.Domain.Resources;
 
 namespace Scrap.Domain.JobDefinitions;
 
-public class JobDefinition : IResourceRepoArgs
+public class JobDefinition
 {
     public JobDefinition(NewJobDefinitionDto dto)
     {
@@ -25,7 +25,7 @@ public class JobDefinition : IResourceRepoArgs
         Id = dto.Id;
         Name = dto.Name;
         AdjacencyXPath = dto.AdjacencyXPath == null ? null : new XPath(dto.AdjacencyXPath);
-        ResourceXPath = dto.ResourceXPath;
+        ResourceXPath = dto.ResourceXPath == null ? null : new XPath(dto.ResourceXPath);
         ResourceRepoArgs = dto.ResourceRepository;
         UrlPattern = dto.UrlPattern;
         RootUrl = dto.RootUrl;
@@ -45,7 +45,7 @@ public class JobDefinition : IResourceRepoArgs
             Id,
             Name,
             AdjacencyXPath?.ToString(),
-            ResourceXPath.ToString(),
+            ResourceXPath?.ToString(),
             ResourceRepoArgs,
             RootUrl,
             HttpRequestRetries,
@@ -69,8 +69,8 @@ public class JobDefinition : IResourceRepoArgs
     public string Name { get; private set; }
     public string? RootUrl { get; private set; }
     public XPath? AdjacencyXPath { get; private set; }
-    public XPath ResourceXPath { get; private set; }
-    public IResourceRepositoryConfiguration ResourceRepoArgs { get; private set; }
+    public XPath? ResourceXPath { get; private set; }
+    public IResourceRepositoryConfiguration? ResourceRepoArgs { get; private set; }
     public int? HttpRequestRetries { get; private set; }
     public TimeSpan? HttpRequestDelayBetweenRetries { get; private set; }
     public string? UrlPattern { get; private set; }

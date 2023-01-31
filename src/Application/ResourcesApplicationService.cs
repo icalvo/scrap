@@ -28,7 +28,7 @@ public class ResourcesApplicationService : IResourcesApplicationService
 
         var job = await _jobFactory.Build(jobDto);
 
-        var resourceXPath = job.ResourceXPath;
+        var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();
 
         IEnumerable<ResourceInfo> GetResourceLinks(IPage page, int crawlPageIndex)
             => ResourceLinks(page, crawlPageIndex, resourceXPath);

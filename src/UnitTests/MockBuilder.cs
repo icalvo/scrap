@@ -106,14 +106,6 @@ public class MockBuilder
             JobFactoryMock.Object);
     }
 
-    public IMarkVisitedApplicationService BuildMarkVisitedApplicationService(JobDto jobDto)
-    {
-        SetupDependencies(jobDto);
-        return new MarkVisitedApplicationService(
-            JobFactoryMock.Object,
-            PageMarkerRepositoryFactoryMock.Object);
-    }
-
     public IResourcesApplicationService BuildResourcesApplicationService(JobDto jobDto)
     {
         SetupDependencies(jobDto);
@@ -133,9 +125,9 @@ public class MockBuilder
             Mock.Of<ILogger<DownloadApplicationService>>());
     }
 
-    public IDatabaseApplicationService BuildDatabaseApplicationService()
+    public IVisitedPagesApplicationService BuildVisitedPagesApplicationService()
     {
-        return new DatabaseApplicationService(PageMarkerRepositoryFactoryMock.Object);
+        return new VisitedPagesApplicationService(PageMarkerRepositoryFactoryMock.Object);
     }
 
     private void SetupDependencies(JobDto jobDto)

@@ -89,8 +89,7 @@ public class ScrapCommandLine
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Scrap(
         [Description("Job definition name"),Aliases("n")]string? name = null,
-        [Description("URL where the scrapping starts"),Aliases("r")]string? rootUrl = null,
-        [Description("Starts all the job definitions with a root URL set"),Aliases("a")]bool all = false,
+        [Description("URLs where the scrapping starts"),Aliases("r")]string?[]? rootUrls = null,
         [Description("Navigate through already visited pages"),Aliases("f")]bool fullScan = false,
         [Description("Download resources even if they are already downloaded"),Aliases("d")]bool downloadAlways = false,
         [Description("Disable mark as visited"),Aliases("dmv")]bool disableMarkingVisited = false,
@@ -103,32 +102,58 @@ public class ScrapCommandLine
         var logger = serviceResolver.Get<ILogger<ScrapCommandLine>>();
         var definitionsApplicationService = serviceResolver.Get<JobDefinitionsApplicationService>();
     
-        var jobDefs = new List<JobDefinitionDto>();
         var envRootUrl = _configuration[JobDefRootUrlEnvironment];
-        if (all)
+        var envName = _configuration[JobDefNameEnvironment];
+
+        if (rootUrls == null || rootUrls.Length == 0)
         {
-            if (name != null || rootUrl != null)
+            rootUrls = new[] { (string?)null };
+        }
+
+        foreach (var rootUrl in rootUrls)
+        {
+            if (rootUrl != null)
             {
-                throw new ArgumentException($"'{nameof(all)}' switch is incompatible with '{nameof(name)}' or '{nameof(rootUrl)}' options");
+                logger.LogInformation("Root URL: {RootUrl}", rootUrl);
             }
 
-            await foreach (var jobDef in definitionsApplicationService.GetJobsAsync().Where(x => x.RootUrl != null && x.HasResourceCapabilities()))
-            {
-                jobDefs.Add(jobDef);
-            }
-        }
-        else
-        {
-            var envName = _configuration[JobDefNameEnvironment];
             var jobDef = await GetJobDefinitionAsync(name, rootUrl, definitionsApplicationService, envName, envRootUrl, logger);
 
             if (jobDef == null)
             {
+                logger.LogWarning("No job definition found, nothing will be done");
                 return;
             }
 
-            jobDefs.Add(jobDef);
+            logger.LogInformation("The following job def will be run: {JobDef}", jobDef.Name);
+            var newJob = new JobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
+            var scrapAppService = serviceResolver.Get<ScrapApplicationService>();
+            logger.LogInformation("Starting {Definition}...", jobDef.Name);
+            await scrapAppService.ScrapAsync(newJob);
+            logger.LogInformation("Finished!");            
         }
+    }
+
+    [Verb(IsDefault = true, Description = "Executes all default job definitions")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public async Task All(
+        [Description("Navigate through already visited pages"),Aliases("f")]bool fullScan = false,
+        [Description("Download resources even if they are already downloaded"),Aliases("d")]bool downloadAlways = false,
+        [Description("Disable mark as visited"),Aliases("dmv")]bool disableMarkingVisited = false,
+        [Description("Disable writing the resource"),Aliases("dwr")]bool disableResourceWrites = false
+        )
+    {
+        PrintHeader();
+
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithConsole);
+        var logger = serviceResolver.Get<ILogger<ScrapCommandLine>>();
+        var definitionsApplicationService = serviceResolver.Get<JobDefinitionsApplicationService>();
+
+        var envRootUrl = _configuration[JobDefRootUrlEnvironment];
+
+        var jobDefs = await definitionsApplicationService.GetJobsAsync()
+            .Where(x => x.RootUrl != null && x.HasResourceCapabilities())
+            .ToListAsync();
 
         if (jobDefs.Count == 0)
         {
@@ -139,7 +164,7 @@ public class ScrapCommandLine
         logger.LogInformation("The following job def(s). will be run: {JobDefs}", string.Join(", ", jobDefs.Select(x => x.Name)));
         foreach (var jobDef in jobDefs)
         {
-            var newJob = new JobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
+            var newJob = new JobDto(jobDef, null, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
             var scrapAppService = serviceResolver.Get<ScrapApplicationService>();
             logger.LogInformation("Starting {Definition}...", jobDef.Name);
             await scrapAppService.ScrapAsync(newJob);

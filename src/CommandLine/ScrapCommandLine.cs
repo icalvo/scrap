@@ -238,7 +238,7 @@ public class ScrapCommandLine
         }
     }
 
-    [Verb(Description = "Adds a visited page", Aliases = "m")]
+    [Verb(Description = "Adds a visited page", Aliases = "m,mv")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task MarkVisited(
         [Description("URL [pipeline]")]string[]? url = null)
@@ -255,11 +255,26 @@ public class ScrapCommandLine
         }
     }
 
-    [Verb(Description = "Searches and removes visited pages", Aliases = "db")]
+    [Verb(Description = "Searches visited pages", Aliases = "sv")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public async Task Database(
-        [Description("Search with Regular Expression [pipeline]")]string? search = null,
-        [Description("Delete results with Regular Expression")]bool delete = false)
+    public async Task SearchVisited(
+        [Description("Search with Regular Expression [pipeline]")]string? search = null)
+    {
+        var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
+
+        var visitedPagesAppService = serviceResolver.Get<IVisitedPagesApplicationService>();
+        search ??= ConsoleInput().First();
+        var result = await visitedPagesAppService.SearchAsync(search);
+        foreach (var line in result)
+        {
+            Console.WriteLine(line.Uri);
+        }
+    }
+
+    [Verb(Description = "Searches and removes visited pages", Aliases = "dv")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public async Task DeleteVisited(
+        [Description("Search with Regular Expression [pipeline]")]string? search = null)
     {
         var serviceResolver = new ServicesLocator(_configuration, ConfigureLoggingWithoutConsole);
 
@@ -271,13 +286,10 @@ public class ScrapCommandLine
             Console.WriteLine(line.Uri);
         }
 
-        if (delete)
-        {
-            Console.WriteLine();
-            Console.WriteLine("Deleting...");
-            await visitedPagesAppService.DeleteAsync(search);
-            Console.WriteLine("Finished!");
-        }
+        Console.WriteLine();
+        Console.WriteLine("Deleting...");
+        await visitedPagesAppService.DeleteAsync(search);
+        Console.WriteLine("Finished!");
     }
 
     [Verb(Description = "Configures the tool", Aliases = "c,config")]
@@ -333,6 +345,13 @@ public class ScrapCommandLine
 
         System.Diagnostics.Debug.Assert(key != null, $"{nameof(key)} != null");
         SetUpGlobalConfigValue(globalUserConfigFolder, globalUserConfigPath, key, value);
+    }
+    [Verb(Description = "Show configuration", Aliases = "sc")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public void ShowConfig()
+    {
+        var root = (IConfigurationRoot)_configuration;
+        Console.WriteLine(root.GetDebugView());
     }
 
     [Verb(Description = "Show version", Aliases = "v")]

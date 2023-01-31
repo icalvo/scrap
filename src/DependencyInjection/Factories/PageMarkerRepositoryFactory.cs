@@ -9,15 +9,14 @@ namespace Scrap.DependencyInjection.Factories;
 
 public class PageMarkerRepositoryFactory : ISingleOptionalParameterFactory<Job, IPageMarkerRepository>
 {
-    private readonly ILiteDatabase _liteDatabase;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly ILiteCollection<PageMarker> _liteCollection;
 
     public PageMarkerRepositoryFactory(ILiteDatabase liteDatabase, ILoggerFactory loggerFactory)
     {
-        _liteDatabase = liteDatabase;
+        _liteCollection = liteDatabase.GetCollection<PageMarker>();
         _loggerFactory = loggerFactory;
     }
-
 
     public IPageMarkerRepository Build(Job job) => Build(job.DisableMarkingVisited);
     public IPageMarkerRepository Build() => Build(false);
@@ -25,7 +24,7 @@ public class PageMarkerRepositoryFactory : ISingleOptionalParameterFactory<Job, 
     private IPageMarkerRepository Build(bool disableMarkingVisited)
     {
         return new LiteDbPageMarkerRepository(
-            _liteDatabase,
+            _liteCollection,
             _loggerFactory.CreateLogger<LiteDbPageMarkerRepository>(),
             disableMarkingVisited);
     }

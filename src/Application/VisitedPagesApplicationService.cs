@@ -3,11 +3,11 @@ using Scrap.Domain.Pages;
 
 namespace Scrap.Application;
 
-public class DatabaseApplicationService : IDatabaseApplicationService
+public class VisitedPagesApplicationService : IVisitedPagesApplicationService
 {
     private readonly IPageMarkerRepository _pageMarkerRepository;
 
-    public DatabaseApplicationService(IFactory<IPageMarkerRepository> pageMarkerRepositoryFactory)
+    public VisitedPagesApplicationService(IFactory<IPageMarkerRepository> pageMarkerRepositoryFactory)
     {
         _pageMarkerRepository = pageMarkerRepositoryFactory.Build();
     }
@@ -20,5 +20,10 @@ public class DatabaseApplicationService : IDatabaseApplicationService
     public Task DeleteAsync(string search)
     {
         return _pageMarkerRepository.DeleteAsync(search);
+    }
+
+    public async Task MarkVisitedPageAsync(Uri pageUrl)
+    {
+        await _pageMarkerRepository.UpsertAsync(pageUrl);
     }
 }

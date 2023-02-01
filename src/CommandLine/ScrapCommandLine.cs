@@ -85,11 +85,11 @@ public class ScrapCommandLine
         _verbose = true;
     }
 
-    [Verb(IsDefault = true, Description = "Executes a job definition from the database")]
+    [Verb(Description = "Executes a job definition")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task Scrap(
         [Description("Job definition name"),Aliases("n")]string? name = null,
-        [Description("URLs where the scrapping starts"),Aliases("r")]string?[]? rootUrls = null,
+        [Description("URLs where the scrapping starts"),Aliases("r")]string[]? rootUrls = null,
         [Description("Navigate through already visited pages"),Aliases("f")]bool fullScan = false,
         [Description("Download resources even if they are already downloaded"),Aliases("d")]bool downloadAlways = false,
         [Description("Disable mark as visited"),Aliases("dmv")]bool disableMarkingVisited = false,
@@ -107,32 +107,27 @@ public class ScrapCommandLine
 
         if (rootUrls == null || rootUrls.Length == 0)
         {
-            rootUrls = new[] { (string?)null };
+            await ScrapAuxAsync(null);
+        }
+        else
+        {
+            foreach (var rootUrl in rootUrls)
+            {
+                await ScrapAuxAsync(rootUrl);
+            }            
         }
 
-        foreach (var rootUrl in rootUrls)
+        async Task ScrapAuxAsync(string? rootUrl)
         {
-            if (rootUrl != null)
-            {
-                logger.LogInformation("Root URL: {RootUrl}", rootUrl);
-            }
-
             var jobDef = await GetJobDefinitionAsync(name, rootUrl, definitionsApplicationService, envName, envRootUrl, logger);
 
-            if (jobDef == null)
-            {
-                logger.LogWarning("No job definition found, nothing will be done");
-                return;
-            }
+            var jobDefs = jobDef == null ? Array.Empty<JobDefinitionDto>() : new[] { jobDef };
 
-            logger.LogInformation("The following job def will be run: {JobDef}", jobDef.Name);
-            var newJob = new JobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
-            var scrapAppService = serviceResolver.Get<ScrapApplicationService>();
-            logger.LogInformation("Starting {Definition}...", jobDef.Name);
-            await scrapAppService.ScrapAsync(newJob);
-            logger.LogInformation("Finished!");            
+            await ScrapMultipleJobDefsAsync(fullScan, downloadAlways, disableMarkingVisited, disableResourceWrites,
+                logger, name != null, jobDefs, rootUrl, envRootUrl, serviceResolver);
         }
     }
+
 
     [Verb(IsDefault = true, Description = "Executes all default job definitions")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -149,22 +144,43 @@ public class ScrapCommandLine
         var logger = serviceResolver.Get<ILogger<ScrapCommandLine>>();
         var definitionsApplicationService = serviceResolver.Get<JobDefinitionsApplicationService>();
 
-        var envRootUrl = _configuration[JobDefRootUrlEnvironment];
-
         var jobDefs = await definitionsApplicationService.GetJobsAsync()
             .Where(x => x.RootUrl != null && x.HasResourceCapabilities())
             .ToListAsync();
 
-        if (jobDefs.Count == 0)
+        await ScrapMultipleJobDefsAsync(fullScan, downloadAlways, disableMarkingVisited, disableResourceWrites, logger, true, jobDefs, null, null, serviceResolver);
+    }
+
+    private static async Task ScrapMultipleJobDefsAsync(
+        bool fullScan,
+        bool downloadAlways,
+        bool disableMarkingVisited,
+        bool disableResourceWrites,
+        ILogger logger,
+        bool showJobDefs,
+        IEnumerable<JobDefinitionDto> jobDefs,
+        string? rootUrl,
+        string? envRootUrl,
+        ServicesLocator serviceResolver)
+    {
+        
+        var jobDefinitionDtos = jobDefs as JobDefinitionDto[] ?? jobDefs.ToArray();
+        if (!jobDefinitionDtos.Any())
         {
             logger.LogWarning("No job definition found, nothing will be done");
             return;
         }
 
-        logger.LogInformation("The following job def(s). will be run: {JobDefs}", string.Join(", ", jobDefs.Select(x => x.Name)));
-        foreach (var jobDef in jobDefs)
+        if (showJobDefs)
         {
-            var newJob = new JobDto(jobDef, null, fullScan, null, downloadAlways, disableMarkingVisited, disableResourceWrites);
+            logger.LogInformation("The following job def(s). will be run: {JobDefs}",
+                string.Join(", ", jobDefinitionDtos.Select(x => x.Name)));
+        }
+
+        foreach (var jobDef in jobDefinitionDtos)
+        {
+            var newJob = new JobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways, disableMarkingVisited,
+                disableResourceWrites);
             var scrapAppService = serviceResolver.Get<ScrapApplicationService>();
             logger.LogInformation("Starting {Definition}...", jobDef.Name);
             await scrapAppService.ScrapAsync(newJob);

@@ -7,9 +7,9 @@ namespace Scrap.Domain.Pages.LiteDb;
 
 public class LiteDbPageMarkerRepository : IPageMarkerRepository
 {
-    private readonly ILogger<LiteDbPageMarkerRepository> _logger;
-    private readonly bool _disableWrites;
     private readonly ILiteCollection<PageMarker> _collection;
+    private readonly bool _disableWrites;
+    private readonly ILogger<LiteDbPageMarkerRepository> _logger;
 
     public LiteDbPageMarkerRepository(
         ILiteCollection<PageMarker> collection,
@@ -20,7 +20,7 @@ public class LiteDbPageMarkerRepository : IPageMarkerRepository
         _disableWrites = disableWrites;
         _collection = collection;
     }
-        
+
     public Task<bool> ExistsAsync(Uri uri)
     {
         var findById = _collection.FindById(uri.AbsoluteUri);
@@ -33,7 +33,9 @@ public class LiteDbPageMarkerRepository : IPageMarkerRepository
         {
             Policy
                 .Handle<IOException>()
-                .Retry(5, (_, retryNumber) => _logger.LogWarning("IOException while upserting; retry {RetryNumber}", retryNumber))
+                .Retry(5,
+                    (_, retryNumber) =>
+                        _logger.LogWarning("IOException while upserting; retry {RetryNumber}", retryNumber))
                 .Execute(() => _collection.Upsert(link.AbsoluteUri, new PageMarker(link.AbsoluteUri)));
             _logger.LogTrace("Inserted marker {Page}", link.AbsoluteUri);
         }
@@ -45,13 +47,9 @@ public class LiteDbPageMarkerRepository : IPageMarkerRepository
         return Task.CompletedTask;
     }
 
-    public Task<IEnumerable<PageMarker>> SearchAsync(string search)
-    {
-        return Task.FromResult(_collection.Find(x => Regex.IsMatch(x.Uri, search)));
-    }
+    public Task<IEnumerable<PageMarker>> SearchAsync(string search) =>
+        Task.FromResult(_collection.Find(x => Regex.IsMatch(x.Uri, search)));
 
-    public Task DeleteAsync(string search)
-    {
-        return Task.FromResult(_collection.DeleteMany(x => Regex.IsMatch(x.Uri, search)));
-    }    
+    public Task DeleteAsync(string search) =>
+        Task.FromResult(_collection.DeleteMany(x => Regex.IsMatch(x.Uri, search)));
 }

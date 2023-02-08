@@ -4,9 +4,11 @@ namespace Scrap.Domain.Jobs;
 
 public class JobFactory : IAsyncFactory<JobDto, Job>
 {
-    private readonly IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator> _validatorFactory;
+    private readonly IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>
+        _validatorFactory;
 
-    public JobFactory(IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator> validatorFactory)
+    public JobFactory(
+        IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator> validatorFactory)
     {
         _validatorFactory = validatorFactory;
     }

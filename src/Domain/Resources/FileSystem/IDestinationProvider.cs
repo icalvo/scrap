@@ -5,6 +5,7 @@ namespace Scrap.Domain.Resources.FileSystem;
 public interface IDestinationProvider
 {
     Task ValidateAsync(FileSystemResourceRepositoryConfiguration config);
+
     Task<string> GetDestinationAsync(
         string rootFolder,
         IPage page,

@@ -16,20 +16,22 @@ public class JobDto
         string? rootUrl,
         bool? fullScan,
         IResourceRepositoryConfiguration? configuration,
-        bool? downloadAlways, 
+        bool? downloadAlways,
         bool? disableMarkingVisited,
         bool? disableResourceWrites)
         : this(
             jobDefinition.AdjacencyXPath,
             jobDefinition.ResourceXPath,
             configuration ?? jobDefinition.ResourceRepository,
-            rootUrl ?? jobDefinition.RootUrl ?? throw new ArgumentException("No root URL provided", nameof(jobDefinition)),
+            rootUrl ?? jobDefinition.RootUrl ??
+            throw new ArgumentException("No root URL provided", nameof(jobDefinition)),
             jobDefinition.HttpRequestRetries,
             jobDefinition.HttpRequestDelayBetweenRetries,
             fullScan,
             downloadAlways,
             jobDefinition.ResourceType ?? default(ResourceType), disableMarkingVisited, disableResourceWrites)
-    {}
+    {
+    }
 
     public JobDto(
         string? adjacencyXPath,
@@ -40,7 +42,9 @@ public class JobDto
         TimeSpan? httpRequestDelayBetweenRetries,
         bool? fullScan,
         bool? downloadAlways,
-        ResourceType resourceType, bool? disableMarkingVisited, bool? disableResourceWrites)
+        ResourceType resourceType,
+        bool? disableMarkingVisited,
+        bool? disableResourceWrites)
     {
         AdjacencyXPath = adjacencyXPath;
         ResourceType = resourceType;

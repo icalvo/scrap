@@ -47,16 +47,11 @@ public class ConfiguredIntegrationTests
         var psi = new ProcessStartInfo(
             Path.Combine(_fixture.InstallFullPath, "scrap"), args)
         {
-            RedirectStandardOutput = true,
-            Environment =
-            {
-                ["Scrap_GlobalConfigurationFolder"] = configFolderPath
-            }
+            RedirectStandardOutput = true, Environment = { ["Scrap_GlobalConfigurationFolder"] = configFolderPath }
         };
 
         var (_, _, _, output) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
 
         return output;
     }
-
 }

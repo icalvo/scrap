@@ -2,8 +2,10 @@ namespace Scrap.Domain.Resources;
 
 public interface IResourceRepository
 {
+    string Type { get; }
+
     /// <summary>
-    /// Does the resource exist in the repository?
+    ///     Does the resource exist in the repository?
     /// </summary>
     /// <param name="resourceInfo"></param>
     /// <returns></returns>
@@ -12,14 +14,13 @@ public interface IResourceRepository
     Task UpsertAsync(ResourceInfo resourceInfo, Stream resourceStream);
 
     Task<string> GetKeyAsync(ResourceInfo resourceInfo);
-    string Type { get; }
-}    
+}
 
-public interface IResourceRepository<TResourceId>: IResourceRepository
-    where TResourceId: IResourceId
+public interface IResourceRepository<TResourceId> : IResourceRepository
+    where TResourceId : IResourceId
 {
     Task<TResourceId> GetIdAsync(ResourceInfo resourceInfo);
-        
+
     Task<bool> ExistsAsync(TResourceId id);
 
     Task UpsertAsync(TResourceId id, Stream resourceStream);

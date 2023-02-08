@@ -20,7 +20,7 @@ public class ResourceRepositoryFactory : IFactory<Job, IResourceRepository>
         {
             FileSystemResourceRepositoryConfiguration cfg =>
                 (IResourceRepository)new FileSystemResourceRepository(
-                    Singleton<CompiledDestinationProvider>.Get(() => 
+                    Singleton<CompiledDestinationProvider>.Get(() =>
                         new CompiledDestinationProvider(
                             cfg,
                             _loggerFactory.CreateLogger<CompiledDestinationProvider>())),
@@ -28,7 +28,7 @@ public class ResourceRepositoryFactory : IFactory<Job, IResourceRepository>
                     _loggerFactory.CreateLogger<FileSystemResourceRepository>(),
                     job.DisableResourceWrites),
             null => throw new ArgumentException(
-                $"Resource processor config not provided", nameof(job)), 
+                "Resource processor config not provided", nameof(job)),
             _ => throw new ArgumentException(
                 $"Unknown resource processor config type: {job.ResourceRepoArgs.GetType().Name}", nameof(job))
         };
@@ -37,8 +37,8 @@ public class ResourceRepositoryFactory : IFactory<Job, IResourceRepository>
 public class Singleton<T>
 {
     private static T? _item;
-    private static readonly object Lock = new(); 
-    
+    private static readonly object Lock = new();
+
     public static T Get(Func<T> constructor)
     {
         lock (Lock)

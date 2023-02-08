@@ -10,7 +10,7 @@ namespace Scrap.DependencyInjection.Factories;
 public class AsyncPolicyFactory : IFactory<Job, IAsyncPolicy>
 {
     private static readonly TimeSpan DefaultCacheTtl = TimeSpan.FromMinutes(5);
-    
+
     private readonly IAsyncCacheProvider _cacheProvider;
     private readonly ILoggerFactory _loggerFactory;
 
@@ -22,11 +22,14 @@ public class AsyncPolicyFactory : IFactory<Job, IAsyncPolicy>
 
     public IAsyncPolicy Build(Job job)
     {
-        static bool IsClientError(Exception ex)
-            => ex is HttpRequestException { StatusCode: >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError };
+        static bool IsClientError(Exception ex) =>
+            ex is HttpRequestException
+            {
+                StatusCode: >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError
+            };
 
-        int httpRequestRetries = job.HttpRequestRetries;
-        TimeSpan httpDelay = job.HttpRequestDelayBetweenRetries;
+        var httpRequestRetries = job.HttpRequestRetries;
+        var httpDelay = job.HttpRequestDelayBetweenRetries;
         var cacheLogger = _loggerFactory.CreateLogger("Cache");
         var cachePolicy = Policy.CacheAsync(
             _cacheProvider,
@@ -44,5 +47,4 @@ public class AsyncPolicyFactory : IFactory<Job, IAsyncPolicy>
 
         return Policy.WrapAsync(cachePolicy, retryPolicy, AsyncDelayPolicy.Create(httpDelay));
     }
-    
 }

@@ -24,7 +24,7 @@ public class ScrapTextsServiceTests
             new PageMock("https://example.com/a")
                 .Contents(MockBuilder.ResourceXPath, "qwer", "asdf"),
             new PageMock(
-                "https://example.com/b")
+                    "https://example.com/b")
                 .Contents(MockBuilder.ResourceXPath, "zxcv", "yuio"));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
         var jobDto = builder.BuildJobDto(ResourceType.Text);
@@ -46,7 +46,7 @@ public class ScrapTextsServiceTests
             x => x.UpsertAsync(new Uri("https://example.com/b")),
             Times.Once);
     }
-    
+
 
     [Fact]
     public async Task? ScrapTextAsync_DownloadJob_Throws()

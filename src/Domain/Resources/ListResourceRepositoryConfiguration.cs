@@ -15,12 +15,9 @@ public class ListResourceRepositoryConfiguration : IResourceRepositoryConfigurat
         ListPath = listPath;
     }
 
-    public string ListPath { get; private set; } = null!;
-
-    public Task ValidateAsync(ILoggerFactory loggerFactory)
-    {
-        return Task.CompletedTask;
-    }
+    public string ListPath { get; } = null!;
 
     public string RepositoryType => "list";
+
+    public Task ValidateAsync(ILoggerFactory loggerFactory) => Task.CompletedTask;
 }

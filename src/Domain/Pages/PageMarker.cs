@@ -7,5 +7,5 @@ public class PageMarker
         Uri = uri;
     }
 
-    public string Uri { get; }    
+    public string Uri { get; }
 }

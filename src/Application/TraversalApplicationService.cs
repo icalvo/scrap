@@ -8,9 +8,9 @@ namespace Scrap.Application;
 public class TraversalApplicationService : ITraversalApplicationService
 {
     private readonly IGraphSearch _graphSearch;
-    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
-    private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
     private readonly IAsyncFactory<JobDto, Job> _jobFactory;
+    private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
+    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
 
     public TraversalApplicationService(
         IGraphSearch graphSearch,
@@ -42,11 +42,9 @@ public class TraversalApplicationService : ITraversalApplicationService
         Uri rootUri,
         IPageRetriever pageRetriever,
         XPath? adjacencyXPath,
-        ILinkCalculator linkCalculator)
-    {
-        return _graphSearch.SearchAsync(
+        ILinkCalculator linkCalculator) =>
+        _graphSearch.SearchAsync(
             rootUri,
             pageRetriever.GetPageAsync,
             page => linkCalculator.CalculateLinks(page, adjacencyXPath));
-    }
 }

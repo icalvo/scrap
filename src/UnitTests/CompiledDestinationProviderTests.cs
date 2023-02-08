@@ -15,7 +15,10 @@ public class CompiledDestinationProviderTests
     {
         var p = new CompiledDestinationProvider(
             new FileSystemResourceRepositoryConfiguration(
-                new[] { "resourceIndex + (String.IsNullOrEmpty(resourceUrl.Extension()) ? \".unknown\" : resourceUrl.Extension())" },
+                new[]
+                {
+                    "resourceIndex + (String.IsNullOrEmpty(resourceUrl.Extension()) ? \".unknown\" : resourceUrl.Extension())"
+                },
                 "rootFolder"),
             Mock.Of<ILogger<CompiledDestinationProvider>>());
         var doc = new HtmlDocument();
@@ -36,9 +39,9 @@ public class CompiledDestinationProviderTests
         var result = await p.GetDestinationAsync(
             "destinationRootFolder",
             page,
-            pageIndex: 2,
+            2,
             new Uri("https://example.com/resource.gif"),
-            resourceIndex: 3);
+            3);
 
         var expected = Path.Combine("destinationRootFolder", "3.gif");
         result.Should().Be(expected);

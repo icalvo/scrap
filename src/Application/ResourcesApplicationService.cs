@@ -30,8 +30,8 @@ public class ResourcesApplicationService : IResourcesApplicationService
 
         var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();
 
-        IEnumerable<ResourceInfo> GetResourceLinks(IPage page, int crawlPageIndex)
-            => ResourceLinks(page, crawlPageIndex, resourceXPath);
+        IEnumerable<ResourceInfo> GetResourceLinks(IPage page, int crawlPageIndex) =>
+            ResourceLinks(page, crawlPageIndex, resourceXPath);
 
         var pageRetriever = _pageRetrieverFactory.Build(job);
         var page = await pageRetriever.GetPageAsync(pageUrl);
@@ -45,9 +45,12 @@ public class ResourcesApplicationService : IResourcesApplicationService
     }
 
     private static IEnumerable<ResourceInfo> ResourceLinks(
-        IPage page, int crawlPageIndex, XPath resourceXPathExpression)
+        IPage page,
+        int crawlPageIndex,
+        XPath resourceXPathExpression)
     {
         var links = page.Links(resourceXPathExpression).ToArray();
-        return links.Select((resourceUrl, resourceIndex) => new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex));
+        return links.Select((resourceUrl, resourceIndex) =>
+            new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex));
     }
 }

@@ -5,7 +5,9 @@ using Scrap.Domain.Resources.FileSystem;
 
 namespace Scrap.DependencyInjection.Factories;
 
-public class ResourceRepositoryConfigurationValidatorFactory : IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>
+public class
+    ResourceRepositoryConfigurationValidatorFactory : IFactory<IResourceRepositoryConfiguration,
+        IResourceRepositoryConfigurationValidator>
 {
     private readonly ILoggerFactory _loggerFactory;
 

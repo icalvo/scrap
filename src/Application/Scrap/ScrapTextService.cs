@@ -12,12 +12,12 @@ namespace Scrap.Application.Scrap;
 public class ScrapTextService : IScrapTextService
 {
     private readonly IGraphSearch _graphSearch;
-    private readonly ILogger<ScrapTextService> _logger;
     private readonly IAsyncFactory<JobDto, Job> _jobFactory;
-    private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
-    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
-    private readonly IFactory<Job, IPageMarkerRepository> _pageMarkerRepositoryFactory;
     private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
+    private readonly ILogger<ScrapTextService> _logger;
+    private readonly IFactory<Job, IPageMarkerRepository> _pageMarkerRepositoryFactory;
+    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
+    private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
 
     public ScrapTextService(
         IGraphSearch graphSearch,
@@ -88,15 +88,16 @@ public class ScrapTextService : IScrapTextService
         Uri rootUri,
         IPageRetriever pageRetriever,
         XPath? adjacencyXPath,
-        ILinkCalculator linkCalculator)
-    {
-        return _graphSearch.SearchAsync(
+        ILinkCalculator linkCalculator) =>
+        _graphSearch.SearchAsync(
             rootUri,
             pageRetriever.GetPageAsync,
             page => linkCalculator.CalculateLinks(page, adjacencyXPath));
-    }
 
-    private async ValueTask<bool> IsNotDownloadedAsync(ResourceInfo info, IResourceRepository resourceRepository, bool downloadAlways)
+    private async ValueTask<bool> IsNotDownloadedAsync(
+        ResourceInfo info,
+        IResourceRepository resourceRepository,
+        bool downloadAlways)
     {
         if (downloadAlways)
         {

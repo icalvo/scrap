@@ -8,18 +8,17 @@ public abstract class BaseResourceRepository<TResourceId> : IResourceRepository<
         var id = await GetIdAsync(resourceInfo);
         return await ExistsAsync(id);
     }
+
     public async Task UpsertAsync(ResourceInfo resourceInfo, Stream resourceStream)
     {
         var id = await GetIdAsync(resourceInfo);
         await UpsertAsync(id, resourceStream);
     }
 
-    public virtual async Task<string> GetKeyAsync(ResourceInfo resourceInfo)
-    {
-        return (await GetIdAsync(resourceInfo)).ToText();
-    }
+    public virtual async Task<string> GetKeyAsync(ResourceInfo resourceInfo) =>
+        (await GetIdAsync(resourceInfo)).ToText();
 
-    public string Type => this.GetType().Name;
+    public string Type => GetType().Name;
 
     public abstract Task<TResourceId> GetIdAsync(ResourceInfo resourceInfo);
     public abstract Task<bool> ExistsAsync(TResourceId id);

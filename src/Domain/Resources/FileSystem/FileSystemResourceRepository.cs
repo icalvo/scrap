@@ -6,8 +6,8 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
 {
     private readonly IDestinationProvider _destinationProvider;
     private readonly string _destinationRootFolder;
-    private readonly ILogger<FileSystemResourceRepository> _logger;
     private readonly bool _disableWrites;
+    private readonly ILogger<FileSystemResourceRepository> _logger;
 
     public FileSystemResourceRepository(
         IDestinationProvider destinationProvider,
@@ -43,7 +43,8 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
     {
         var destinationPath = id.FullPath;
         var directoryName = Path.GetDirectoryName(destinationPath)
-                            ?? throw new InvalidOperationException($"Could not get directory name from destination path {destinationPath}");
+                            ?? throw new InvalidOperationException(
+                                $"Could not get directory name from destination path {destinationPath}");
 
         if (!_disableWrites)
         {
@@ -54,7 +55,8 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
         }
         else
         {
-            _logger.LogTrace("FAKE. WRITE {RelativePath}", Path.GetRelativePath(_destinationRootFolder, destinationPath));
+            _logger.LogTrace("FAKE. WRITE {RelativePath}",
+                Path.GetRelativePath(_destinationRootFolder, destinationPath));
         }
     }
 }

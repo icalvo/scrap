@@ -20,31 +20,31 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnWorkflowDispatchRequiredInputs = new[] { nameof(Version) },
-    InvokedTargets = new []{ nameof(PublishNuGet) },
+    InvokedTargets = new[] { nameof(PublishNuGet) },
     ImportSecrets = new[] { "NUGET_TOKEN", "GITHUB_TOKEN" })]
 [GitHubActions(
     nameof(PullRequest),
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPullRequestBranches = new[] { "main" },
-    InvokedTargets = new []{ nameof(PullRequest) },
+    InvokedTargets = new[] { nameof(PullRequest) },
     EnableGitHubToken = true,
     ImportSecrets = new[] { nameof(NugetToken) })]
 class Build : NukeBuild
 {
-    public static int Main () => Execute<Build>(x => x.Compile);
+    const string ChangelogFileName = "CHANGELOG.md";
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
-    [Parameter("Version to be deployed")] public readonly string Version = "0.1.2-test1";
-
-    [Solution(SuppressBuildProjectCheck = true)] readonly Solution Solution;
-    [GitRepository] readonly GitRepository GitRepository;
     [CI] readonly GitHubActions GitHubActions;
+    [GitRepository] readonly GitRepository GitRepository;
 
     [Parameter] [Secret] readonly string NugetToken;
-    const string ChangelogFileName = "CHANGELOG.md";
+
+    [Solution(SuppressBuildProjectCheck = true)] readonly Solution Solution;
+
+    [Parameter("Version to be deployed")] public readonly string Version = "0.1.2-test1";
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
     AbsolutePath TargetProjectDirectory => SourceDirectory / "CommandLine";
@@ -178,7 +178,8 @@ class Build : NukeBuild
                     Tag = $"v{Version}",
                     Object = GitHubActions.Sha,
                     Type = TaggedType.Commit,
-                    Tagger = new Committer(GitHubActions.Actor, $"{GitHubActions.Actor}@users.noreply.github.com", DateTimeOffset.UtcNow),
+                    Tagger = new Committer(GitHubActions.Actor, $"{GitHubActions.Actor}@users.noreply.github.com",
+                        DateTimeOffset.UtcNow),
                     Message = "Package published in NuGet.org"
                 });
 
@@ -204,17 +205,16 @@ class Build : NukeBuild
             var name = split[1];
             if (GitHubActions.PullRequestNumber != null)
             {
-                var pullRequestFiles = await github.PullRequest.Files(owner, name, GitHubActions.PullRequestNumber.Value);
+                var pullRequestFiles =
+                    await github.PullRequest.Files(owner, name, GitHubActions.PullRequestNumber.Value);
                 try
                 {
                     Assert.True(pullRequestFiles.Any(x => x.FileName == ChangelogFileName));
                 }
                 catch
                 {
-                    foreach (string fileName in pullRequestFiles.Select(x => x.FileName))
-                    {
+                    foreach (var fileName in pullRequestFiles.Select(x => x.FileName))
                         Log.Information("PR File: {FileName}", fileName);
-                    }
 
                     throw;
                 }
@@ -224,4 +224,6 @@ class Build : NukeBuild
     Target PublishNuGet => _ => _
         .Description("Publish NuGet")
         .Triggers(Push);
+
+    public static int Main() => Execute<Build>(x => x.Compile);
 }

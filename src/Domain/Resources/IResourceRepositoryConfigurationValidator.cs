@@ -2,6 +2,6 @@
 
 public interface IResourceRepositoryConfigurationValidator
 {
-    Task ValidateAsync(IResourceRepositoryConfiguration config);
     string RepositoryType { get; }
+    Task ValidateAsync(IResourceRepositoryConfiguration config);
 }

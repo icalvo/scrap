@@ -29,5 +29,5 @@ public class DepthFirstGraphSearch : IGraphSearch
                 unvisitedRefStack.Push(adjacentRef);
             }
         }
-    }        
+    }
 }

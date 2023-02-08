@@ -7,8 +7,8 @@ namespace Scrap.Domain.Pages;
 
 public class PageRetrieverFactory : IFactory<Job, IPageRetriever>
 {
-    private readonly IFactory<Job, IDownloadStreamProvider> _downloadStreamProviderFactory;
     private readonly IFactory<Job, IAsyncPolicy> _asyncPolicyFactory;
+    private readonly IFactory<Job, IDownloadStreamProvider> _downloadStreamProviderFactory;
     private readonly ILoggerFactory _loggerFactory;
 
     public PageRetrieverFactory(
@@ -21,11 +21,9 @@ public class PageRetrieverFactory : IFactory<Job, IPageRetriever>
         _loggerFactory = loggerFactory;
     }
 
-    public IPageRetriever Build(Job job)
-    {
-        return new HttpPageRetriever(_downloadStreamProviderFactory.Build(job),
+    public IPageRetriever Build(Job job) =>
+        new HttpPageRetriever(_downloadStreamProviderFactory.Build(job),
             _asyncPolicyFactory.Build(job),
             _loggerFactory.CreateLogger<HttpPageRetriever>(),
             _loggerFactory);
-    }
 }

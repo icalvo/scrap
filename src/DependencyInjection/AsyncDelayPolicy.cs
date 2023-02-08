@@ -11,13 +11,12 @@ public class AsyncDelayPolicy : AsyncPolicy
         _delay = delay;
     }
 
-    public static AsyncDelayPolicy Create(TimeSpan delay)
-    {
-        return new AsyncDelayPolicy(delay);
-    }
+    public static AsyncDelayPolicy Create(TimeSpan delay) => new AsyncDelayPolicy(delay);
 
     protected override async Task<TResult> ImplementationAsync<TResult>(
-        Func<Context, CancellationToken, Task<TResult>> action, Context context, CancellationToken cancellationToken,
+        Func<Context, CancellationToken, Task<TResult>> action,
+        Context context,
+        CancellationToken cancellationToken,
         bool continueOnCapturedContext)
     {
         await Task.Delay(_delay, cancellationToken);

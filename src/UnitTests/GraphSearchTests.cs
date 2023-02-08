@@ -11,9 +11,7 @@ public class GraphSearchTests
     {
         var adj = new Dictionary<string, string[]>
         {
-            { "a", new[] { "b", "c" } },
-            { "b", new[] { "a" } },
-            { "c", Array.Empty<string>() }
+            { "a", new[] { "b", "c" } }, { "b", new[] { "a" } }, { "c", Array.Empty<string>() }
         };
         var dfs = new DepthFirstGraphSearch();
         var result = dfs.SearchAsync("a", Task.FromResult, s => adj[s].ToAsyncEnumerable()).ToEnumerable();

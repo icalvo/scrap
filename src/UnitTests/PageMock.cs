@@ -8,8 +8,7 @@ namespace Scrap.Tests.Unit;
 public class PageMock : IPage
 {
     private readonly Mock<IPage> _pageMock;
-    private IPage Page => _pageMock.Object;
-    
+
     public PageMock(string uri)
     {
         _pageMock = new Mock<IPage>();
@@ -18,6 +17,30 @@ public class PageMock : IPage
         _pageMock.Setup(x => x.Uri)
             .Returns(new Uri(uri));
     }
+
+    private IPage Page => _pageMock.Object;
+
+    bool IEquatable<IPage>.Equals(IPage? other) => Page.Equals(other);
+
+    Uri IPage.Uri => Page.Uri;
+
+    IXPathNavigable IPage.Document => Page.Document;
+
+    IEnumerable<Uri> IPage.Links(XPath xPath) => Page.Links(xPath);
+
+    Uri? IPage.Link(XPath xPath) => Page.Link(xPath);
+
+    string IPage.Concat(XPath xPath) => Page.Concat(xPath);
+
+    IEnumerable<string?> IPage.Contents(XPath xPath) => Page.Contents(xPath);
+
+    string IPage.Content(XPath xPath) => Page.Content(xPath);
+
+    Task<IPage?> IPage.LinkedDoc(string xPath) => Page.LinkedDoc(xPath);
+
+    string? IPage.ContentOrNull(XPath xPath) => Page.ContentOrNull(xPath);
+
+    public Task<IPage> RecreateAsync() => Task.FromResult((IPage)this);
 
     public PageMock PageLinks(XPath linkXPath, params string[] linkResults)
     {
@@ -41,49 +64,5 @@ public class PageMock : IPage
             .Returns(contentsResults);
 
         return this;
-    }
-
-    bool IEquatable<IPage>.Equals(IPage? other)
-    {
-        return Page.Equals(other);
-    }
-
-    Uri IPage.Uri => Page.Uri;
-
-    IXPathNavigable IPage.Document => Page.Document;
-
-    IEnumerable<Uri> IPage.Links(XPath xPath)
-    {
-        return Page.Links(xPath);
-    }
-
-    Uri? IPage.Link(XPath xPath)
-    {
-        return Page.Link(xPath);
-    }
-
-    string IPage.Concat(XPath xPath)
-    {
-        return Page.Concat(xPath);
-    }
-
-    IEnumerable<string?> IPage.Contents(XPath xPath)
-    {
-        return Page.Contents(xPath);
-    }
-
-    string IPage.Content(XPath xPath)
-    {
-        return Page.Content(xPath);
-    }
-
-    Task<IPage?> IPage.LinkedDoc(string xPath)
-    {
-        return Page.LinkedDoc(xPath);
-    }
-
-    string? IPage.ContentOrNull(XPath xPath)
-    {
-        return Page.ContentOrNull(xPath);
     }
 }

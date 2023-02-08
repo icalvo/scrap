@@ -8,14 +8,17 @@ namespace Scrap.CommandLine.Logging;
 
 public sealed class CustomConsoleFormatter : ConsoleFormatter, IDisposable
 {
-    private CustomConsoleFormatterOptions _formatterOptions;
     private readonly IDisposable? _optionsReloadToken;
+    private CustomConsoleFormatterOptions _formatterOptions;
 
-    public CustomConsoleFormatter(IOptionsMonitor<CustomConsoleFormatterOptions> options) : base(nameof(CustomConsoleFormatter))
+    public CustomConsoleFormatter(IOptionsMonitor<CustomConsoleFormatterOptions> options) : base(
+        nameof(CustomConsoleFormatter))
     {
         _optionsReloadToken = options.OnChange(o => _formatterOptions = o);
         _formatterOptions = options.CurrentValue;
     }
+
+    public void Dispose() => _optionsReloadToken?.Dispose();
 
     public override void Write<TState>(
         in LogEntry<TState> logEntry,
@@ -52,6 +55,4 @@ public sealed class CustomConsoleFormatter : ConsoleFormatter, IDisposable
         textWriter.WriteLine(logRecord);
         textWriter.ResetForegroundColor(foregroundColor);
     }
-
-    public void Dispose() => _optionsReloadToken?.Dispose();
 }

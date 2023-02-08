@@ -1,6 +1,6 @@
 namespace Scrap.Domain.Resources.FileSystem;
 
-public class FileSystemResourceId: IResourceId
+public class FileSystemResourceId : IResourceId
 {
     public FileSystemResourceId(string fullPath, string relativePath)
     {
@@ -10,7 +10,8 @@ public class FileSystemResourceId: IResourceId
 
     public string FullPath { get; }
     public string RelativePath { get; }
-        
+
     public string ToText() => RelativePath;
+
     public override string ToString() => ToText();
 }

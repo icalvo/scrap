@@ -16,16 +16,13 @@ public class FreshInstallIntegrationTests
         _fixture = fixture;
         _output = output;
     }
-    
+
     [Fact]
     public void CommandLine_NotConfigured()
     {
         var psi = new ProcessStartInfo(Path.Combine(_fixture.InstallFullPath, "scrap"))
         {
-            Environment =
-            {
-                ["Scrap_GlobalConfigurationFolder"] = "NotExisting"
-            }
+            Environment = { ["Scrap_GlobalConfigurationFolder"] = "NotExisting" }
         };
         var (_, standardOutput, standardError, _) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
 

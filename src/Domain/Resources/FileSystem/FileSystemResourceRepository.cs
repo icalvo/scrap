@@ -7,18 +7,24 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
     private readonly IDestinationProvider _destinationProvider;
     private readonly string _destinationRootFolder;
     private readonly bool _disableWrites;
+    private readonly string? _baseRootFolder;
     private readonly ILogger<FileSystemResourceRepository> _logger;
 
     public FileSystemResourceRepository(
         IDestinationProvider destinationProvider,
         FileSystemResourceRepositoryConfiguration config,
         ILogger<FileSystemResourceRepository> logger,
-        bool disableWrites)
+        bool disableWrites,
+        string? baseRootFolder)
     {
         _destinationProvider = destinationProvider;
-        _destinationRootFolder = config.RootFolder;
+        _destinationRootFolder =
+            baseRootFolder != null
+            ? Path.Combine(baseRootFolder, config.RootFolder)
+            : config.RootFolder;
         _logger = logger;
         _disableWrites = disableWrites;
+        _baseRootFolder = baseRootFolder;
     }
 
     public override async Task<FileSystemResourceId> GetIdAsync(ResourceInfo resourceInfo)

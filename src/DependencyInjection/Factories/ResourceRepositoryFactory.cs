@@ -8,10 +8,14 @@ namespace Scrap.DependencyInjection.Factories;
 
 public class ResourceRepositoryFactory : IFactory<Job, IResourceRepository>
 {
+    private readonly string? _baseRootFolder;
     private readonly ILoggerFactory _loggerFactory;
 
-    public ResourceRepositoryFactory(ILoggerFactory loggerFactory)
+    public ResourceRepositoryFactory(
+        string? baseRootFolder,
+        ILoggerFactory loggerFactory)
     {
+        _baseRootFolder = baseRootFolder;
         _loggerFactory = loggerFactory;
     }
 
@@ -26,7 +30,8 @@ public class ResourceRepositoryFactory : IFactory<Job, IResourceRepository>
                             _loggerFactory.CreateLogger<CompiledDestinationProvider>())),
                     cfg,
                     _loggerFactory.CreateLogger<FileSystemResourceRepository>(),
-                    job.DisableResourceWrites),
+                    job.DisableResourceWrites,
+                    _baseRootFolder),
             null => throw new ArgumentException(
                 "Resource processor config not provided", nameof(job)),
             _ => throw new ArgumentException(

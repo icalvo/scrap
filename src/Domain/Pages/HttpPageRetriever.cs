@@ -8,11 +8,15 @@ namespace Scrap.Domain.Pages;
 public class HttpPageRetriever : IPageRetriever
 {
     private readonly IDownloadStreamProvider _client;
-    private readonly IAsyncPolicy _policy;
     private readonly ILogger<HttpPageRetriever> _logger;
     private readonly ILogger<Page> _pageLogger;
+    private readonly IAsyncPolicy _policy;
 
-    public HttpPageRetriever(IDownloadStreamProvider client, IAsyncPolicy policy, ILogger<HttpPageRetriever> logger, ILoggerFactory loggerFactory)
+    public HttpPageRetriever(
+        IDownloadStreamProvider client,
+        IAsyncPolicy policy,
+        ILogger<HttpPageRetriever> logger,
+        ILoggerFactory loggerFactory)
     {
         _client = client;
         _policy = policy;

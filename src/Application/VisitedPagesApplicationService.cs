@@ -12,18 +12,9 @@ public class VisitedPagesApplicationService : IVisitedPagesApplicationService
         _pageMarkerRepository = pageMarkerRepositoryFactory.Build();
     }
 
-    public Task<IEnumerable<PageMarker>> SearchAsync(string search)
-    {
-        return _pageMarkerRepository.SearchAsync(search);
-    }
+    public Task<IEnumerable<PageMarker>> SearchAsync(string search) => _pageMarkerRepository.SearchAsync(search);
 
-    public Task DeleteAsync(string search)
-    {
-        return _pageMarkerRepository.DeleteAsync(search);
-    }
+    public Task DeleteAsync(string search) => _pageMarkerRepository.DeleteAsync(search);
 
-    public async Task MarkVisitedPageAsync(Uri pageUrl)
-    {
-        await _pageMarkerRepository.UpsertAsync(pageUrl);
-    }
+    public async Task MarkVisitedPageAsync(Uri pageUrl) => await _pageMarkerRepository.UpsertAsync(pageUrl);
 }

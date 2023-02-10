@@ -31,10 +31,7 @@ public static class EnumerableExtensions
         }
     }
 
-    public static Task ExecuteAsync<T>(this IAsyncEnumerable<T> source)
-    {
-        return source.ForEachAsync((_ => { }));
-    }
+    public static Task ExecuteAsync<T>(this IAsyncEnumerable<T> source) => source.ForEachAsync(_ => { });
 
     public static void ForEach<T>(this IEnumerable<T> source, Action<T> itemAction, Action noElementsAction)
     {
@@ -51,13 +48,9 @@ public static class EnumerableExtensions
         }
     }
 
-    public static IEnumerable<T> RemoveNulls<T>(this IEnumerable<T?> source) where T: struct
-    {
-        return from item in source where item != null select item.Value;
-    }
- 
-    public static IEnumerable<T> RemoveNulls<T>(this IEnumerable<T?> source) where T: class
-    {
-        return from item in source where item != null select item;
-    }       
+    public static IEnumerable<T> RemoveNulls<T>(this IEnumerable<T?> source) where T : struct =>
+        from item in source where item != null select item.Value;
+
+    public static IEnumerable<T> RemoveNulls<T>(this IEnumerable<T?> source) where T : class =>
+        from item in source where item != null select item;
 }

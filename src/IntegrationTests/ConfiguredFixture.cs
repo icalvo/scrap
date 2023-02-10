@@ -2,22 +2,26 @@
 
 namespace Scrap.Tests.Integration;
 
-public sealed class ConfiguredFixture : FreshInstallSetupFixture, IDisposable
+public sealed class ConfiguredFixture : FreshInstallSetupFixture
 {
-    private readonly Process _serverProcess;
     private readonly string _dbFullPath;
+    private readonly Process _serverProcess;
 
     public ConfiguredFixture()
     {
         Console.WriteLine($"Setting up {nameof(ConfiguredFixture)} (configured tool)");
         var jobDefsFullPath = Path.GetFullPath("./IntegrationTests/jobDefinitions.json");
         _dbFullPath = Path.GetFullPath("./scrap.db");
-        RunAndCheck($"{InstallFullPath}/scrap", $"config /key=Scrap:Definitions /value={jobDefsFullPath}", outputToConsole: true);
-        RunAndCheck($"{InstallFullPath}/scrap", $"config /key=Scrap:Database /value=\"Filename={_dbFullPath};Connection=shared\"");
+        RunAndCheck(
+            $"{InstallFullPath}/scrap",
+            $"config /key=Scrap:Definitions /value={jobDefsFullPath}",
+            outputToConsole: true);
+        RunAndCheck($"{InstallFullPath}/scrap",
+            $"config /key=Scrap:Database /value=\"Filename={_dbFullPath};Connection=shared\"");
         RunAndCheck("dotnet", $"tool install dotnet-serve --tool-path \"{InstallFullPath}\"");
         var wwwPath = Path.GetFullPath("./IntegrationTests/www/");
-        
-        
+
+
         var psi = new ProcessStartInfo
         {
             FileName = $"{InstallFullPath}/dotnet-serve",
@@ -32,9 +36,8 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture, IDisposable
         _serverProcess.Kill();
         Run("dotnet", $"tool uninstall dotnet-serve --tool-path \"{InstallFullPath}\"");
         Run("dotnet", $"tool uninstall scrap --tool-path \"{InstallFullPath}\"");
-        DirectoryEx.DeleteIfExists(InstallFullPath, recursive: true);
-        DirectoryEx.DeleteIfExists("./testsite-result", recursive: true);
+        DirectoryEx.DeleteIfExists(InstallFullPath, true);
+        DirectoryEx.DeleteIfExists("./testsite-result", true);
         File.Delete(_dbFullPath);
     }
 }
-

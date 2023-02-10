@@ -17,7 +17,7 @@ public class JsonUpdater
         try
         {
             var filePath = Path.Combine(AppContext.BaseDirectory, _jsonFilePath);
-            string json = File.ReadAllText(filePath);
+            var json = File.ReadAllText(filePath);
             var jsonObj = JObject.Parse(json);
             var rootProp = new JProperty("root", jsonObj);
             foreach (var (sectionPathKey, value) in updates)
@@ -25,10 +25,9 @@ public class JsonUpdater
                 SetValue(sectionPathKey, rootProp, value);
             }
 
-            string output =
+            var output =
                 JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
             File.WriteAllText(filePath, output);
-
         }
         catch (Exception ex)
         {
@@ -50,12 +49,10 @@ public class JsonUpdater
         targetProp.Value = new JValue(value);
     }
 
-    private static JProperty AccumulateProperty(JProperty jsonProp, string propertyName)
-    {
-        return jsonProp.Value is JObject obj
+    private static JProperty AccumulateProperty(JProperty jsonProp, string propertyName) =>
+        jsonProp.Value is JObject obj
             ? EnsureObjectProperty(obj, propertyName)
             : throw new Exception("One of the sections is not a JSON object.");
-    }
 
     private static JProperty EnsureObjectProperty(JObject jsonObj, string propertyName)
     {

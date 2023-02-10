@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 
 namespace Scrap.Domain.JobDefinitions;
@@ -39,9 +38,19 @@ public class JobDefinition
     {
     }
 
-    public JobDefinitionDto ToDto()
-    {
-        return new JobDefinitionDto(
+    public JobDefinitionId Id { get; }
+    public string Name { get; private set; }
+    public string? RootUrl { get; private set; }
+    public XPath? AdjacencyXPath { get; private set; }
+    public XPath? ResourceXPath { get; private set; }
+    public IResourceRepositoryConfiguration? ResourceRepoArgs { get; private set; }
+    public int? HttpRequestRetries { get; private set; }
+    public TimeSpan? HttpRequestDelayBetweenRetries { get; private set; }
+    public string? UrlPattern { get; private set; }
+    public ResourceType ResourceType { get; }
+
+    public JobDefinitionDto ToDto() =>
+        new JobDefinitionDto(
             Id,
             Name,
             AdjacencyXPath?.ToString(),
@@ -51,8 +60,7 @@ public class JobDefinition
             HttpRequestRetries,
             HttpRequestDelayBetweenRetries,
             UrlPattern,
-            ResourceType);            
-    }
+            ResourceType);
 
     public void Log(ILogger logger, LogLevel logLevel)
     {
@@ -65,16 +73,6 @@ public class JobDefinition
         logger.Log(logLevel, "Resource Type: {ResourceType}", ResourceType);
     }
 
-    public JobDefinitionId Id { get; }
-    public string Name { get; private set; }
-    public string? RootUrl { get; private set; }
-    public XPath? AdjacencyXPath { get; private set; }
-    public XPath? ResourceXPath { get; private set; }
-    public IResourceRepositoryConfiguration? ResourceRepoArgs { get; private set; }
-    public int? HttpRequestRetries { get; private set; }
-    public TimeSpan? HttpRequestDelayBetweenRetries { get; private set; }
-    public string? UrlPattern { get; private set; }
-    public ResourceType ResourceType { get; private set; }
     public void SetValues(NewJobDefinitionDto dto)
     {
         Name = dto.Name;

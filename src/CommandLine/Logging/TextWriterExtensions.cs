@@ -2,6 +2,9 @@ namespace Scrap.CommandLine.Logging;
 
 internal static class TextWriterExtensions
 {
+    private const string DefaultForegroundColor = "\u001B[39m\u001B[22m";
+    private const string DefaultBackgroundColor = "\u001B[49m";
+
     public static void SetForegroundColor(this TextWriter textWriter, ConsoleColor? foreground)
     {
         if (foreground.HasValue)
@@ -18,30 +21,34 @@ internal static class TextWriterExtensions
         }
     }
 
-    public static void WriteColoredMessage(this TextWriter textWriter, string message, ConsoleColor? background, ConsoleColor? foreground)
+    public static void WriteColoredMessage(
+        this TextWriter textWriter,
+        string message,
+        ConsoleColor? background,
+        ConsoleColor? foreground)
     {
         // Order: background color, foreground color, Message, reset foreground color, reset background color
         if (background.HasValue)
         {
             textWriter.Write(background.Value.GetBackgroundColorEscapeCode());
         }
+
         if (foreground.HasValue)
         {
             textWriter.Write(foreground.Value.GetForegroundColorEscapeCode());
         }
+
         textWriter.Write(message);
         if (foreground.HasValue)
         {
             textWriter.Write(DefaultForegroundColor); // reset to default foreground color
         }
+
         if (background.HasValue)
         {
             textWriter.Write(DefaultBackgroundColor); // reset to the background color
         }
     }
-
-    private const string DefaultForegroundColor = "\u001B[39m\u001B[22m";
-    private const string DefaultBackgroundColor = "\u001B[49m";
 
     private static string GetForegroundColorEscapeCode(this ConsoleColor color) =>
         color switch

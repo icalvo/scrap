@@ -10,11 +10,11 @@ namespace Scrap.Application;
 
 public class DownloadApplicationService : IDownloadApplicationService
 {
+    private readonly IFactory<Job, IDownloadStreamProvider> _downloadStreamProviderFactory;
     private readonly IAsyncFactory<JobDto, Job> _jobFactory;
+    private readonly ILogger<DownloadApplicationService> _logger;
     private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
     private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
-    private readonly IFactory<Job, IDownloadStreamProvider> _downloadStreamProviderFactory;
-    private readonly ILogger<DownloadApplicationService> _logger;
 
     public DownloadApplicationService(
         IAsyncFactory<JobDto, Job> jobFactory,
@@ -43,16 +43,20 @@ public class DownloadApplicationService : IDownloadApplicationService
         var page = await pageRetriever.GetPageAsync(pageUrl);
 
         var info = new ResourceInfo(page, pageIndex, resourceUrl, resourceIndex);
-        if (await this.IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways))
+        if (await IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways))
         {
             var downloadStreamProvider = _downloadStreamProviderFactory.Build(job);
             var stream = await downloadStreamProvider.GetStreamAsync(resourceUrl);
             await resourceRepository.UpsertAsync(info, stream);
-            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl, await resourceRepository.GetKeyAsync(info));
+            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl,
+                await resourceRepository.GetKeyAsync(info));
         }
     }
-  
-    private async ValueTask<bool> IsNotDownloadedAsync(ResourceInfo info, IResourceRepository resourceRepository, bool downloadAlways)
+
+    private async ValueTask<bool> IsNotDownloadedAsync(
+        ResourceInfo info,
+        IResourceRepository resourceRepository,
+        bool downloadAlways)
     {
         if (downloadAlways)
         {
@@ -70,5 +74,4 @@ public class DownloadApplicationService : IDownloadApplicationService
 
         return false;
     }
-  
 }

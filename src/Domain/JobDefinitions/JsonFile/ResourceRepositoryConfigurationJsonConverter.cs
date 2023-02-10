@@ -7,12 +7,13 @@ namespace Scrap.Domain.JobDefinitions.JsonFile;
 
 public class ResourceRepositoryConfigurationJsonConverter : JsonConverter<IResourceRepositoryConfiguration>
 {
-    public override bool CanConvert(Type typeToConvert)
-    {
-        return typeof(IResourceRepositoryConfiguration).IsAssignableFrom(typeToConvert);
-    }
+    public override bool CanConvert(Type typeToConvert) =>
+        typeof(IResourceRepositoryConfiguration).IsAssignableFrom(typeToConvert);
 
-    public override IResourceRepositoryConfiguration Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override IResourceRepositoryConfiguration Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options)
     {
         var cfg = JsonSerializer.Deserialize<JsonElement>(
             ref reader,
@@ -24,21 +25,28 @@ public class ResourceRepositoryConfigurationJsonConverter : JsonConverter<IResou
                                 json,
                                 new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
                             ?? throw new InvalidOperationException("Couldn't deserialize resource repo config"),
-            _ => throw new InvalidOperationException("Couldn't deserialize resource repo config"),
+            _ => throw new InvalidOperationException("Couldn't deserialize resource repo config")
         };
     }
 
-    public override void Write(Utf8JsonWriter writer, IResourceRepositoryConfiguration value, JsonSerializerOptions options)
+    public override void Write(
+        Utf8JsonWriter writer,
+        IResourceRepositoryConfiguration value,
+        JsonSerializerOptions options)
     {
         writer.WriteStartObject();
         foreach (var property in value.GetType().GetProperties())
         {
             if (!property.CanRead)
+            {
                 continue;
+            }
+
             var propertyValue = property.GetValue(value);
             writer.WritePropertyName(property.Name);
             JsonSerializer.Serialize(writer, propertyValue, options);
         }
+
         writer.WriteEndObject();
     }
 }

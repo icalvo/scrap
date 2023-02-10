@@ -5,6 +5,7 @@ namespace Scrap.Domain.JobDefinitions.JsonFile;
 public static class AsyncLazy
 {
     public static AsyncLazy<T> Create<T>(Func<Task<T>> func) => new(func);
+
     public static AsyncLazy<T> Create<T>(T instance) => new(instance);
 }
 

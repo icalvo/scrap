@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Scrap.Domain.JobDefinitions.JsonFile;
 
-public class MemoryJobDefinitionRepository: IJobDefinitionRepository
+public class MemoryJobDefinitionRepository : IJobDefinitionRepository
 {
     private readonly AsyncLazy<ImmutableDictionary<string, JobDefinition>> _store;
 
@@ -41,10 +41,7 @@ public class MemoryJobDefinitionRepository: IJobDefinitionRepository
         });
     }
 
-    public Task<JobDefinition?> GetByIdAsync(JobDefinitionId id)
-    {
-        return Task.FromResult((JobDefinition?)null);
-    }
+    public Task<JobDefinition?> GetByIdAsync(JobDefinitionId id) => Task.FromResult((JobDefinition?)null);
 
     public async Task<JobDefinition?> GetByNameAsync(string jobName)
     {
@@ -63,15 +60,9 @@ public class MemoryJobDefinitionRepository: IJobDefinitionRepository
         }
     }
 
-    public Task UpsertAsync(JobDefinition jobDefinition)
-    {
-        return Task.CompletedTask;
-    }
+    public Task UpsertAsync(JobDefinition jobDefinition) => Task.CompletedTask;
 
-    public Task DeleteJobAsync(JobDefinitionId id)
-    {
-        return Task.CompletedTask;
-    }
+    public Task DeleteJobAsync(JobDefinitionId id) => Task.CompletedTask;
 
     public async IAsyncEnumerable<JobDefinition> ListAsync()
     {

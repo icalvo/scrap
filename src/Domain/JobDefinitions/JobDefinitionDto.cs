@@ -14,8 +14,5 @@ public record JobDefinitionDto(
     string? UrlPattern,
     ResourceType? ResourceType)
 {
-    public bool HasResourceCapabilities()
-    {
-        return ResourceXPath != null && ResourceRepository != null;
-    }
+    public bool HasResourceCapabilities() => ResourceXPath != null && ResourceRepository != null;
 }

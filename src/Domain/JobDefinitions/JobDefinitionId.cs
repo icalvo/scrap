@@ -15,10 +15,8 @@ public class JobDefinitionId
     }
 
     public static implicit operator Guid(JobDefinitionId d) => d._name;
-    public static implicit operator JobDefinitionId(Guid b) => new(b);
-        
-    public override string ToString()
-    {
-        return _name.ToString();
-    }
+
+    public static implicit operator JobDefinitionId(Guid b) => new JobDefinitionId(b);
+
+    public override string ToString() => _name.ToString();
 }

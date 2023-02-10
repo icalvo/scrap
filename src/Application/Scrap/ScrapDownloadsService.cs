@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Polly;
 using Scrap.Domain;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;
@@ -10,18 +11,20 @@ namespace Scrap.Application.Scrap;
 
 public class ScrapDownloadsService : IScrapDownloadsService
 {
-    private readonly IGraphSearch _graphSearch;
-    private readonly ILogger<ScrapDownloadsService> _logger;
+    private const int RetryCount = 5;
     private readonly IFactory<Job, IDownloadStreamProvider> _downloadStreamProviderFactory;
-    private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
-    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
-    private readonly IFactory<Job, IPageMarkerRepository> _pageMarkerRepositoryFactory;
-
-    private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
+    private readonly IGraphSearch _graphSearch;
 
     private readonly IAsyncFactory<JobDto, Job> _jobFactory;
 
-    public ScrapDownloadsService(IGraphSearch graphSearch,
+    private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
+    private readonly ILogger<ScrapDownloadsService> _logger;
+    private readonly IFactory<Job, IPageMarkerRepository> _pageMarkerRepositoryFactory;
+    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
+    private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
+
+    public ScrapDownloadsService(
+        IGraphSearch graphSearch,
         ILogger<ScrapDownloadsService> logger,
         IFactory<Job, IDownloadStreamProvider> downloadStreamProviderFactory,
         IFactory<Job, IResourceRepository> resourceRepositoryFactory,
@@ -52,14 +55,15 @@ public class ScrapDownloadsService : IScrapDownloadsService
         {
             var (info, stream) = x;
             await resourceRepository.UpsertAsync(info, stream);
-            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl, await resourceRepository.GetKeyAsync(info));
+            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl,
+                await resourceRepository.GetKeyAsync(info));
         }
 
-        IEnumerable<ResourceInfo> GetResourceLinks(IPage page, int crawlPageIndex)
-            => ResourceLinks(page, crawlPageIndex, resourceXPath);
+        IEnumerable<ResourceInfo> GetResourceLinks(IPage page, int crawlPageIndex) =>
+            ResourceLinks(page, crawlPageIndex, resourceXPath);
 
-        ValueTask<bool> IsNotDownloaded(ResourceInfo info)
-            => this.IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways);
+        ValueTask<bool> IsNotDownloaded(ResourceInfo info) =>
+            IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways);
 
         var pageRetriever = _pageRetrieverFactory.Build(job);
         var linkCalculator = _linkCalculatorFactory.Build(job);
@@ -69,39 +73,56 @@ public class ScrapDownloadsService : IScrapDownloadsService
             Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
                 .Do(page => _logger.LogDebug("Processing page {PageUrl}", page.Uri))
                 .DoAwait((page, pageIndex) =>
-                    GetResourceLinks(page, pageIndex)
-                        .ToAsyncEnumerable()
-                        .WhereAwait(IsNotDownloaded)
-                        .SelectAwait(async resourceLink => (
-                            x: resourceLink,
-                            stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
-                        .DoAwait(Download)
-                        .ExecuteAsync())
+                {
+                    var privatePage = page;
+                    return Policy.Handle<Exception>()
+                        .RetryAsync(
+                            RetryCount,
+                            async (ex, retryCount) =>
+                            {
+                                _logger.LogWarning(
+                                    "Error #{RetryCount} processing page resources: {Message}. Reloading page and trying again...",
+                                    retryCount, ex.Message);
+                                privatePage = await privatePage.RecreateAsync();
+                            })
+                        .ExecuteAsync(() => GetResourceLinks(privatePage, pageIndex)
+                            .ToAsyncEnumerable()
+                            .WhereAwait(IsNotDownloaded)
+                            .SelectAwait(async resourceLink => (
+                                x: resourceLink,
+                                stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
+                            .DoAwait(Download)
+                            .ExecuteAsync());
+                })
                 .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();
     }
 
     private static IEnumerable<ResourceInfo> ResourceLinks(
-        IPage page, int crawlPageIndex, XPath resourceXPathExpression)
+        IPage page,
+        int crawlPageIndex,
+        XPath resourceXPathExpression)
     {
         var links = page.Links(resourceXPathExpression).ToArray();
-        return links.Select((resourceUrl, resourceIndex) => new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex));
+        return links.Select((resourceUrl, resourceIndex) =>
+            new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex));
     }
 
     private IAsyncEnumerable<IPage> Pages(
         Uri rootUri,
         IPageRetriever pageRetriever,
         XPath? adjacencyXPath,
-        ILinkCalculator linkCalculator)
-    {
-        return _graphSearch.SearchAsync(
+        ILinkCalculator linkCalculator) =>
+        _graphSearch.SearchAsync(
             rootUri,
             pageRetriever.GetPageAsync,
             page => linkCalculator.CalculateLinks(page, adjacencyXPath));
-    }
 
-    private async ValueTask<bool> IsNotDownloadedAsync(ResourceInfo info, IResourceRepository resourceRepository, bool downloadAlways)
+    private async ValueTask<bool> IsNotDownloadedAsync(
+        ResourceInfo info,
+        IResourceRepository resourceRepository,
+        bool downloadAlways)
     {
         if (downloadAlways)
         {

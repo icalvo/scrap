@@ -12,12 +12,13 @@ public static class LoggingBuilderExtensions
         Action<FileLoggingConfiguration>? configure = null)
     {
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>();
-        
+
         if (configurationSection != null)
         {
             builder.Services.Configure<FileLoggingConfiguration>(configurationSection);
         }
-        builder.Services.Configure<FileLoggingConfiguration>((configuration => configure?.Invoke(configuration)));
+
+        builder.Services.Configure<FileLoggingConfiguration>(configuration => configure?.Invoke(configuration));
         return builder;
     }
 }

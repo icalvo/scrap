@@ -1,7 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Scrap.Domain;
 using Scrap.Domain.JobDefinitions;
-using Scrap.Domain.Resources;
 
 namespace Scrap.Application;
 
@@ -30,10 +28,8 @@ public class JobDefinitionsApplicationService
         return _definitionRepository.ListAsync().Select(x => x.ToDto());
     }
 
-    public IAsyncEnumerable<JobDefinitionDto> FindJobsByRootUrlAsync(string rootUrl)
-    {
-        return _definitionRepository.FindByRootUrlAsync(rootUrl).Select(x => x.ToDto());
-    }
+    public IAsyncEnumerable<JobDefinitionDto> FindJobsByRootUrlAsync(string rootUrl) =>
+        _definitionRepository.FindByRootUrlAsync(rootUrl).Select(x => x.ToDto());
 
     public Task DeleteJobAsync(JobDefinitionId id)
     {

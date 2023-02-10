@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.0] - 2023-01-31
 ### Changed
 - `database` verb split into `searchvisited` and `deletevisited`.
+- `scrap /all` replaced by `all` verb.
 
 ### Added
 - Job definitions without resource configurations for `traverse`, `markvisited` and `visited`.

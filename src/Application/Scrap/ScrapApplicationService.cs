@@ -27,7 +27,7 @@ public class ScrapApplicationService : IScrapApplicationService
         {
             ResourceType.DownloadLink => _scrapDownloadsService.DownloadLinksAsync(jobDto),
             ResourceType.Text => _scrapTextService.ScrapTextAsync(jobDto),
-            _ => throw new Exception($"Invalid resource type")
+            _ => throw new Exception("Invalid resource type")
         });
     }
 }

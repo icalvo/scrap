@@ -21,8 +21,7 @@ public class FullScanLinkCalculatorTests
 
         (await lc.CalculateLinks(pageMock, linkXPath).ToArrayAsync()).Should().BeEquivalentTo(new[]
         {
-            new Uri("https://example.com/1.txt"),
-            new Uri("https://example.com/2.txt")
+            new Uri("https://example.com/1.txt"), new Uri("https://example.com/2.txt")
         });
     }
 }

@@ -1,11 +1,11 @@
 ﻿using LiteDB;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Polly;
 using Polly.Caching;
 using Polly.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
-using Polly;
 using Scrap.Application;
 using Scrap.Application.Scrap;
 using Scrap.DependencyInjection.Factories;
@@ -33,10 +33,7 @@ public class ServicesLocator
         _serviceProvider = container.BuildServiceProvider();
     }
 
-    public T Get<T>() where T : notnull
-    {
-        return _serviceProvider.GetRequiredService<T>();
-    }
+    public T Get<T>() where T : notnull => _serviceProvider.GetRequiredService<T>();
 
     private static void ConfigureServices(
         IConfiguration cfg,
@@ -79,18 +76,22 @@ public class ServicesLocator
             return new MemoryJobDefinitionRepository(definitions);
         });
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
-        container.AddSingleton<IResourceRepositoryConfigurationValidator, FileSystemResourceRepositoryConfigurationValidator>();
-        
+        container
+            .AddSingleton<IResourceRepositoryConfigurationValidator,
+                FileSystemResourceRepositoryConfigurationValidator>();
+
         container.AddSingleton<IVisitedPagesApplicationService, VisitedPagesApplicationService>();
 
         container.AddAsyncFactory<JobDto, Job, JobFactory>();
         container.AddFactory<Job, IPageRetriever, PageRetrieverFactory>();
-        container.AddFactory<Job,IDownloadStreamProvider, DownloadStreamProviderFactory>();
+        container.AddFactory<Job, IDownloadStreamProvider, DownloadStreamProviderFactory>();
         container.AddFactory<Job, IAsyncPolicy, AsyncPolicyFactory>();
         container.AddFactory<Job, IResourceRepository, ResourceRepositoryFactory>();
         container.AddSingleton<IFactory<Job, ILinkCalculator>, LinkCalculatorFactory>();
-        container.AddSingleton<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>, ResourceRepositoryConfigurationValidatorFactory>();
-        
+        container
+            .AddSingleton<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>,
+                ResourceRepositoryConfigurationValidatorFactory>();
+
         container.AddOptionalFactory<Job, IPageMarkerRepository, PageMarkerRepositoryFactory>();
     }
 }

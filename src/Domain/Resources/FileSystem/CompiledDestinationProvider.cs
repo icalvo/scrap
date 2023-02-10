@@ -3,7 +3,6 @@ using Basic.Reference.Assemblies;
 using HtmlAgilityPack;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Emit;
 using Microsoft.Extensions.Logging;
 using Scrap.Domain.Pages;
 
@@ -14,6 +13,7 @@ public class CompiledDestinationProvider : IDestinationProvider
     private readonly FileSystemResourceRepositoryConfiguration _config;
     private readonly ILogger<CompiledDestinationProvider> _logger;
     private IDestinationProvider? _destinationProvider;
+
     public CompiledDestinationProvider(
         FileSystemResourceRepositoryConfiguration config,
         ILogger<CompiledDestinationProvider> logger)
@@ -30,13 +30,11 @@ public class CompiledDestinationProvider : IDestinationProvider
         int resourceIndex)
     {
         var compiledDestinationProvider = await CompileAsync(_config);
-        return await compiledDestinationProvider.GetDestinationAsync(destinationRootFolder, page, pageIndex, resourceUrl, resourceIndex);
+        return await compiledDestinationProvider.GetDestinationAsync(destinationRootFolder, page, pageIndex,
+            resourceUrl, resourceIndex);
     }
 
-    public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config)
-    {
-        return CompileAsync(config);
-    }
+    public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config) => CompileAsync(config);
 
     private async Task<IDestinationProvider> CompileAsync(FileSystemResourceRepositoryConfiguration config)
     {
@@ -46,7 +44,7 @@ public class CompiledDestinationProvider : IDestinationProvider
         }
 
         var destinationFolderPattern = config.PathFragments;
-        string sourceCode = await GenerateSourceCodeAsync(destinationFolderPattern);
+        var sourceCode = await GenerateSourceCodeAsync(destinationFolderPattern);
         try
         {
             var assembly = CompileSourceCode(sourceCode);
@@ -67,8 +65,8 @@ public class CompiledDestinationProvider : IDestinationProvider
                 .GetManifestResourceStream("Scrap.Domain.Resources.FileSystem.TemplateDestinationProvider.cs")
             ?? throw new Exception("TemplateDestinationProvider resource not found");
         using var reader = new StreamReader(stream);
-        
-        string sourceCode = await reader.ReadToEndAsync();
+
+        var sourceCode = await reader.ReadToEndAsync();
         var callChain = string.Join("", destinationFolderPattern.Select(p => $"ToArray({p}),\n"));
         sourceCode = sourceCode.Replace("/* DestinationPattern */", callChain);
         return sourceCode;
@@ -77,36 +75,36 @@ public class CompiledDestinationProvider : IDestinationProvider
     private Assembly CompileSourceCode(string sourceCode)
     {
         _logger.LogTrace("Compiling destination expression...");
-        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
+        var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
 
         // define other necessary objects for compilation
-        string assemblyName = Path.GetRandomFileName();
+        var assemblyName = Path.GetRandomFileName();
 
         var references = ReferenceAssemblies.Net60.Concat(new[]
         {
             MetadataReference.CreateFromFile(typeof(IDestinationProvider).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(HtmlDocument).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(HtmlDocument).Assembly.Location)
         }).ToArray();
 
         // analyse and generate IL code from syntax tree
-        CSharpCompilation compilation = CSharpCompilation.Create(
+        var compilation = CSharpCompilation.Create(
             assemblyName,
-            syntaxTrees: new[] { syntaxTree },
-            references: references,
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new[] { syntaxTree },
+            references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         using var ms = new MemoryStream();
         // write IL code into memory
-        EmitResult result = compilation.Emit(ms);
+        var result = compilation.Emit(ms);
 
         if (!result.Success)
         {
             // handle exceptions
-            IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
+            var failures = result.Diagnostics.Where(diagnostic =>
                 diagnostic.IsWarningAsError ||
                 diagnostic.Severity == DiagnosticSeverity.Error);
 
-            foreach (Diagnostic diagnostic in failures)
+            foreach (var diagnostic in failures)
             {
                 _logger.LogError("{Id}: {Message} at {Location}", diagnostic.Id, diagnostic.GetMessage(),
                     diagnostic.Location);
@@ -118,15 +116,15 @@ public class CompiledDestinationProvider : IDestinationProvider
 
         // load this 'virtual' DLL so that we can use
         ms.Seek(0, SeekOrigin.Begin);
-        Assembly assembly = Assembly.Load(ms.ToArray());
+        var assembly = Assembly.Load(ms.ToArray());
         return assembly;
     }
 
     private static IDestinationProvider CreateDestinationProviderInstance(Assembly assembly)
     {
         var typeName = "Scrap.Resources.FileSystem.TemplateDestinationProvider";
-        Type type = assembly.GetType(typeName) ?? throw new Exception($"Type {typeName} not found");
-        object obj = Activator.CreateInstance(type) ?? throw new Exception("Could not activate instance");
+        var type = assembly.GetType(typeName) ?? throw new Exception($"Type {typeName} not found");
+        var obj = Activator.CreateInstance(type) ?? throw new Exception("Could not activate instance");
 
         return (IDestinationProvider)obj;
     }

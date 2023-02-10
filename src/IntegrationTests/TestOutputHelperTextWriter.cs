@@ -12,10 +12,13 @@ public class TestOutputHelperTextWriter : TextWriter
         _testOutputHelper = testOutputHelper;
     }
 
-    public override Encoding Encoding { get; } = Encoding.Default; 
+    public override Encoding Encoding { get; } = Encoding.Default;
 
     public override void WriteLine(string? value)
     {
-        if (value != null) _testOutputHelper.WriteLine(value);
+        if (value != null)
+        {
+            _testOutputHelper.WriteLine(value);
+        }
     }
 }

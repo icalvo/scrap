@@ -26,9 +26,9 @@ public static class ProcessRunner
         var cancellationTokenSource = new CancellationTokenSource();
         var timer = new Timer(
             _ => cancellationTokenSource.Cancel(),
-            state: null,
-            dueTime: timeout.Value,
-            period: Timeout.InfiniteTimeSpan);
+            null,
+            timeout.Value,
+            Timeout.InfiniteTimeSpan);
         var output = new ConcurrentQueue<string>();
         process.OutputDataReceived += (_, args) =>
         {
@@ -62,7 +62,8 @@ public static class ProcessRunner
             Thread.Sleep(TimeSpan.FromMilliseconds(500));
             if (cancellationTokenSource.Token.IsCancellationRequested)
             {
-                throw new TimeoutException($"Could not run process in less than {timeout.Value}: {fileName} {arguments}");
+                throw new TimeoutException(
+                    $"Could not run process in less than {timeout.Value}: {fileName} {arguments}");
             }
         }
 

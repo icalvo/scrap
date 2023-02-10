@@ -18,12 +18,10 @@ public class LinkCalculatorFactory : IFactory<Job, ILinkCalculator>
         _pageMarkerRepositoryFactory = pageMarkerRepositoryFactory;
     }
 
-    public ILinkCalculator Build(Job job)
-    {
-        return job.FullScan
+    public ILinkCalculator Build(Job job) =>
+        job.FullScan
             ? new FullScanLinkCalculator(_loggerFactory.CreateLogger<FullScanLinkCalculator>())
             : new LinkCalculator(
                 _loggerFactory.CreateLogger<LinkCalculator>(),
                 _pageMarkerRepositoryFactory.Build(job));
-    }
 }

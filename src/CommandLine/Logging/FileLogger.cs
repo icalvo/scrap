@@ -16,18 +16,17 @@ public class FileLogger : ILogger
                     .Replace("{date}", DateTimeOffset.UtcNow.ToString("yyyyMMdd"))
                     .Replace("{guid}", Guid.NewGuid().ToString("D")));
     }
- 
-    public IDisposable BeginScope<TState>(TState state) where TState : notnull
-    {
-        return new NullDisposable();
-    }
- 
-    public bool IsEnabled(LogLevel logLevel)
-    {
-        return logLevel != LogLevel.None;
-    }
- 
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+
+    public IDisposable BeginScope<TState>(TState state) where TState : notnull => new NullDisposable();
+
+    public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
+
+    public void Log<TState>(
+        LogLevel logLevel,
+        EventId eventId,
+        TState state,
+        Exception? exception,
+        Func<TState, Exception?, string> formatter)
     {
         if (!IsEnabled(logLevel))
         {
@@ -53,7 +52,7 @@ public class FileLogger : ILogger
         using var streamWriter = new StreamWriter(_fullFilePath, true);
         streamWriter.WriteLine(logRecord);
     }
-    
+
     private class NullDisposable : IDisposable
     {
         public void Dispose()

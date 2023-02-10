@@ -16,10 +16,10 @@ public class JobFactoryTests
         var jobFactory =
             new JobFactory(
                 Mock.Of<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>>(f =>
-                    f.Build(It.IsAny<IResourceRepositoryConfiguration>()) == 
-                        Mock.Of<IResourceRepositoryConfigurationValidator>()));
-        IResourceRepositoryConfiguration resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
-       
+                    f.Build(It.IsAny<IResourceRepositoryConfiguration>()) ==
+                    Mock.Of<IResourceRepositoryConfigurationValidator>()));
+        var resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
+
         var actual = await jobFactory.Build(new JobDto(
             null,
             "//a/@href",
@@ -40,14 +40,15 @@ public class JobFactoryTests
     public void Build_ValidationFails_Throws()
     {
         var failingValidator = new Mock<IResourceRepositoryConfigurationValidator>();
-        failingValidator.Setup(x => x.ValidateAsync(It.IsAny<IResourceRepositoryConfiguration>())).ThrowsAsync(new Exception());
+        failingValidator.Setup(x => x.ValidateAsync(It.IsAny<IResourceRepositoryConfiguration>()))
+            .ThrowsAsync(new Exception());
         var jobFactory =
             new JobFactory(
                 Mock.Of<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>>(f =>
                     f.Build(It.IsAny<IResourceRepositoryConfiguration>()) == failingValidator));
- 
-        IResourceRepositoryConfiguration resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
-       
+
+        var resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
+
         var action = () => jobFactory.Build(new JobDto(
             null,
             "//a/@href",
@@ -62,5 +63,5 @@ public class JobFactoryTests
             null));
 
         action.Should().ThrowAsync<Exception>();
-    }    
+    }
 }

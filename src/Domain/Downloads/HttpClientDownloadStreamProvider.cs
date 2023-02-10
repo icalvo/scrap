@@ -11,7 +11,7 @@ public class HttpClientDownloadStreamProvider : IDownloadStreamProvider
 
     public async Task<Stream> GetStreamAsync(Uri url)
     {
-        HttpResponseMessage response = await _httpClient.GetAsync(url);
+        var response = await _httpClient.GetAsync(url);
         if (response.IsSuccessStatusCode)
         {
             return await response.Content.ReadAsStreamAsync();

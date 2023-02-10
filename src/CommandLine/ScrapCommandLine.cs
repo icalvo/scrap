@@ -155,8 +155,8 @@ public class ScrapCommandLine
         string? envRootUrl,
         ServicesLocator serviceResolver)
     {
-        var jobDefinitionDtos = jobDefs as JobDefinitionDto[] ?? jobDefs.ToArray();
-        if (!jobDefinitionDtos.Any())
+        var jobDefsArray = jobDefs as JobDefinitionDto[] ?? jobDefs.ToArray();
+        if (!jobDefsArray.Any())
         {
             logger.LogWarning("No job definition found, nothing will be done");
             return;
@@ -165,10 +165,10 @@ public class ScrapCommandLine
         if (showJobDefs)
         {
             logger.LogInformation("The following job def(s). will be run: {JobDefs}",
-                string.Join(", ", jobDefinitionDtos.Select(x => x.Name)));
+                string.Join(", ", jobDefsArray.Select(x => x.Name)));
         }
 
-        foreach (var jobDef in jobDefinitionDtos)
+        foreach (var jobDef in jobDefsArray)
         {
             var newJob = new JobDto(jobDef, rootUrl ?? envRootUrl, fullScan, null, downloadAlways,
                 disableMarkingVisited,
@@ -425,7 +425,8 @@ public class ScrapCommandLine
         }
 
         var unsetKeys =
-            GetGlobalConfigs(globalUserConfigFolder).Where(config => _configuration[config.Key] == null)
+            GetGlobalConfigs(globalUserConfigFolder)
+                .Where(config => !config.Optional && _configuration[config.Key] == null)
                 .ToArray();
         if (!unsetKeys.Any())
         {
@@ -447,7 +448,11 @@ public class ScrapCommandLine
             new GlobalConfig(
                 "Scrap:Database",
                 $"Filename={Path.Combine(globalUserConfigFolder, "scrap.db")};Connection=shared",
-                "Connection string for page markings LiteDB database")
+                "Connection string for page markings LiteDB database"),
+            new GlobalConfig(
+                "Scrap:BaseRootFolder",
+                null,
+                "Base download path for your file-based resource repository"),
         };
 
     private static void SetUpGlobalConfigValuesInteractively(
@@ -459,7 +464,7 @@ public class ScrapCommandLine
 
         var updates =
             GetGlobalConfigs(globalUserConfigFolder)
-                .Select(EnsureGlobalConfigValue)
+                .Select(AskGlobalConfigValue)
                 .RemoveNulls()
                 .ToArray();
         if (updates.Length == 0)
@@ -473,19 +478,16 @@ public class ScrapCommandLine
             updater.AddOrUpdate(updates);
         }
 
-        KeyValuePair<string, object?>? EnsureGlobalConfigValue(GlobalConfig globalConfig)
+        KeyValuePair<string, object?>? AskGlobalConfigValue(GlobalConfig globalConfig)
         {
-            var (key, defaultValue, prompt) = globalConfig;
-            if (cfg[key] != null)
-            {
-                defaultValue = cfg[key];
-            }
+            var (key, defaultValue, prompt, _) = globalConfig;
+            string? promptDefaultValue = cfg[key] ?? defaultValue;
 
-            Console.Write($"{prompt} [{defaultValue}]: ");
-            var value = Console.ReadLine();
+            Console.Write($"{prompt} [{promptDefaultValue}]: ");
+            string? value = Console.ReadLine();
             if (string.IsNullOrWhiteSpace(value))
             {
-                value = defaultValue;
+                value = promptDefaultValue;
             }
 
             if (value == cfg[key])
@@ -719,8 +721,9 @@ public class ScrapCommandLine
 
     private record GlobalConfig(
         string Key,
-        string DefaultValue,
-        string Prompt);
+        string? DefaultValue,
+        string Prompt,
+        bool Optional = false);
 
     private class ScrapException : Exception
     {

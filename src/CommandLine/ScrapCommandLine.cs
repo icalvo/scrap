@@ -86,7 +86,7 @@ public class ScrapCommandLine
         [Description("Job definition name")] [Aliases("n")]
         string? name = null,
         [Description("URLs where the scrapping starts")] [Aliases("r")]
-        string[]? rootUrls = null,
+        string? rootUrl = null,
         [Description("Navigate through already visited pages")] [Aliases("f")]
         bool fullScan = false,
         [Description("Download resources even if they are already downloaded")] [Aliases("d")]
@@ -106,28 +106,13 @@ public class ScrapCommandLine
         var envRootUrl = _configuration[JobDefRootUrlEnvironment];
         var envName = _configuration[JobDefNameEnvironment];
 
-        if (rootUrls == null || rootUrls.Length == 0)
-        {
-            await ScrapAuxAsync(null);
-        }
-        else
-        {
-            foreach (var rootUrl in rootUrls)
-            {
-                await ScrapAuxAsync(rootUrl);
-            }
-        }
+        var jobDef = await GetJobDefinitionAsync(name, rootUrl, definitionsApplicationService, envName, envRootUrl,
+            logger);
 
-        async Task ScrapAuxAsync(string? rootUrl)
-        {
-            var jobDef = await GetJobDefinitionAsync(name, rootUrl, definitionsApplicationService, envName, envRootUrl,
-                logger);
+        var jobDefs = jobDef == null ? Array.Empty<JobDefinitionDto>() : new[] { jobDef };
 
-            var jobDefs = jobDef == null ? Array.Empty<JobDefinitionDto>() : new[] { jobDef };
-
-            await ScrapMultipleJobDefsAsync(fullScan, downloadAlways, disableMarkingVisited, disableResourceWrites,
-                logger, name != null, jobDefs, rootUrl, envRootUrl, serviceResolver);
-        }
+        await ScrapMultipleJobDefsAsync(fullScan, downloadAlways, disableMarkingVisited, disableResourceWrites,
+            logger, name != null, jobDefs, rootUrl, envRootUrl, serviceResolver);
     }
 
 
@@ -701,6 +686,8 @@ public class ScrapCommandLine
     {
         Console.WriteLine(
             "SCRAP is a tool for generic web scrapping. To set it up, head to the project docs: https://github.com/icalvo/scrap");
+        Console.WriteLine(
+            "[pipeline] in the description of a parameter means that if that parameter is not provided, it will be taken from the shell pipeline or the standard input.");
         Console.WriteLine(helpText);
     }
 

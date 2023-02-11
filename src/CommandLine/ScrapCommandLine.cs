@@ -452,7 +452,8 @@ public class ScrapCommandLine
             new GlobalConfig(
                 "Scrap:BaseRootFolder",
                 null,
-                "Base download path for your file-based resource repository"),
+                "Base download path for your file-based resource repository",
+                Optional: true),
         };
 
     private static void SetUpGlobalConfigValuesInteractively(

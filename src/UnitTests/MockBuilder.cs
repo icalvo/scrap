@@ -132,7 +132,7 @@ public class MockBuilder
     {
         foreach (var pageMock in Traversal)
         {
-            PageRetrieverMock.Setup(x => x.GetPageAsync(pageMock.Uri))
+            PageRetrieverMock.Setup(x => x.GetPageAsync(pageMock.Uri, false))
                 .ReturnsAsync(pageMock);
         }
 

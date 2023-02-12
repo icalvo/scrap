@@ -11,23 +11,27 @@ public class HttpPageRetriever : IPageRetriever
     private readonly ILogger<HttpPageRetriever> _logger;
     private readonly ILogger<Page> _pageLogger;
     private readonly IAsyncPolicy _policy;
+    private readonly IAsyncPolicy _noCachePolicy;
 
     public HttpPageRetriever(
         IDownloadStreamProvider client,
         IAsyncPolicy policy,
+        IAsyncPolicy noCachePolicy,
         ILogger<HttpPageRetriever> logger,
         ILoggerFactory loggerFactory)
     {
         _client = client;
         _policy = policy;
+        _noCachePolicy = noCachePolicy;
         _logger = logger;
         _pageLogger = new Logger<Page>(loggerFactory);
     }
 
-    public Task<IPage> GetPageAsync(Uri uri)
+    public Task<IPage> GetPageAsync(Uri uri, bool noCache)
     {
         _logger.LogTrace("GET {Uri}", uri);
-        return _policy.ExecuteAsync<IPage>(async _ =>
+        var policy = noCache ? _noCachePolicy : _policy;
+        return policy.ExecuteAsync<IPage>(async _ =>
         {
             var stream = await _client.GetStreamAsync(uri);
             HtmlDocument document = new();

@@ -66,14 +66,16 @@ public class ServicesLocator
         {
             var logger = sp.GetRequiredService<ILogger<ServicesLocator>>();
             var config = sp.GetRequiredService<IConfiguration>();
-            var definitions = config["Scrap:Definitions"];
-            if (definitions == null)
+            var definitionsFilePath = config["Scrap:Definitions"];
+            if (definitionsFilePath == null)
             {
                 throw new Exception("No definitions file in the configuration!");
             }
 
-            logger.LogDebug("Definitions file: {DefinitionsPath}", definitions);
-            return new MemoryJobDefinitionRepository(definitions);
+            logger.LogDebug("Definitions file: {DefinitionsPath}", definitionsFilePath);
+            return new MemoryJobDefinitionRepository(
+                definitionsFilePath,
+                sp.GetRequiredService<ILogger<MemoryJobDefinitionRepository>>());
         });
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
         container
@@ -85,11 +87,12 @@ public class ServicesLocator
         container.AddAsyncFactory<JobDto, Job, JobFactory>();
         container.AddFactory<Job, IPageRetriever, PageRetrieverFactory>();
         container.AddFactory<Job, IDownloadStreamProvider, DownloadStreamProviderFactory>();
-        container.AddFactory<Job, IAsyncPolicy, AsyncPolicyFactory>();
+        container.AddFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy, AsyncPolicyFactory>();
         container.AddFactory<Job, IResourceRepository, ResourceRepositoryFactory>(sp =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
-            return new ResourceRepositoryFactory(config["Scrap:BaseRootFolder"], sp.GetRequiredService<ILoggerFactory>());
+            return new ResourceRepositoryFactory(config["Scrap:BaseRootFolder"],
+                sp.GetRequiredService<ILoggerFactory>());
         });
         container.AddSingleton<IFactory<Job, ILinkCalculator>, LinkCalculatorFactory>();
         container

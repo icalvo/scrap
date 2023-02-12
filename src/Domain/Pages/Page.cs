@@ -28,7 +28,7 @@ public class Page : IPage
     public Uri Uri { get; }
     public IXPathNavigable Document { get; }
 
-    public Task<IPage> RecreateAsync() => _pageRetriever.GetPageAsync(Uri);
+    public Task<IPage> RecreateAsync() => _pageRetriever.GetPageAsync(Uri, true);
 
     public bool Equals(IPage? other) => other != null && Uri.AbsoluteUri.Equals(other.Uri.AbsoluteUri);
 

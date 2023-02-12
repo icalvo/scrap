@@ -3,16 +3,17 @@ using Polly;
 using Scrap.Domain;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;
+using Scrap.Domain.Pages;
 
 namespace Scrap.DependencyInjection.Factories;
 
 public class DownloadStreamProviderFactory : IFactory<Job, IDownloadStreamProvider>
 {
-    private readonly IFactory<Job, IAsyncPolicy> _asyncPolicyFactory;
+    private readonly IFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy> _asyncPolicyFactory;
     private readonly ILoggerFactory _loggerFactory;
 
     public DownloadStreamProviderFactory(
-        IFactory<Job, IAsyncPolicy> asyncPolicyFactory,
+        IFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy> asyncPolicyFactory,
         ILoggerFactory loggerFactory)
     {
         _asyncPolicyFactory = asyncPolicyFactory;
@@ -23,20 +24,21 @@ public class DownloadStreamProviderFactory : IFactory<Job, IDownloadStreamProvid
     {
         const string protocol = "http";
         var logger = _loggerFactory.CreateLogger<HttpClientDownloadStreamProvider>();
-        var policy = _asyncPolicyFactory.Build(job);
-        DelegatingHandler[] wrappingHandlers = { new PollyMessageHandler(policy), new LoggingHandler(logger) };
-        HttpMessageHandler primaryHandler = new HttpClientHandler();
-
-        var handler = wrappingHandlers.Reverse().Aggregate(primaryHandler, (accum, item) =>
-        {
-            item.InnerHandler = accum;
-            return item;
-        });
+        var policy = _asyncPolicyFactory.Build(job, AsyncPolicyConfiguration.WithoutCache);
 
         switch (protocol)
         {
             case "http":
             case "https":
+                DelegatingHandler[] wrappingHandlers = { new PollyMessageHandler(policy), new LoggingHandler(logger) };
+                HttpMessageHandler primaryHandler = new HttpClientHandler();
+
+                var handler = wrappingHandlers.Reverse().Aggregate(primaryHandler, (accum, item) =>
+                {
+                    item.InnerHandler = accum;
+                    return item;
+                });
+                
                 var httpClient = new HttpClient(handler);
                 return new HttpClientDownloadStreamProvider(httpClient);
             default:

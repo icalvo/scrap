@@ -4,10 +4,11 @@ using Polly;
 using Polly.Caching;
 using Scrap.Domain;
 using Scrap.Domain.Jobs;
+using Scrap.Domain.Pages;
 
 namespace Scrap.DependencyInjection.Factories;
 
-public class AsyncPolicyFactory : IFactory<Job, IAsyncPolicy>
+public class AsyncPolicyFactory : IFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy>
 {
     private static readonly TimeSpan DefaultCacheTtl = TimeSpan.FromMinutes(5);
 
@@ -20,7 +21,7 @@ public class AsyncPolicyFactory : IFactory<Job, IAsyncPolicy>
         _loggerFactory = loggerFactory;
     }
 
-    public IAsyncPolicy Build(Job job)
+    public IAsyncPolicy Build(Job job, AsyncPolicyConfiguration config)
     {
         static bool IsClientError(Exception ex) =>
             ex is HttpRequestException
@@ -30,6 +31,18 @@ public class AsyncPolicyFactory : IFactory<Job, IAsyncPolicy>
 
         var httpRequestRetries = job.HttpRequestRetries;
         var httpDelay = job.HttpRequestDelayBetweenRetries;
+        var retryPolicy = Policy.Handle<Exception>(ex => !IsClientError(ex))
+            .WaitAndRetryAsync(
+                httpRequestRetries,
+                _ => TimeSpan.Zero,
+                (exception, _) => { Console.WriteLine(exception.Message); });
+
+
+        if (config == AsyncPolicyConfiguration.WithoutCache)
+        {
+            return Policy.WrapAsync(retryPolicy, AsyncDelayPolicy.Create(httpDelay));
+        }
+
         var cacheLogger = _loggerFactory.CreateLogger("Cache");
         var cachePolicy = Policy.CacheAsync(
             _cacheProvider,
@@ -39,12 +52,7 @@ public class AsyncPolicyFactory : IFactory<Job, IAsyncPolicy>
             (_, _) => { },
             (_, _, _) => { },
             (_, _, _) => { });
-        var retryPolicy = Policy.Handle<Exception>(ex => !IsClientError(ex))
-            .WaitAndRetryAsync(
-                httpRequestRetries,
-                _ => TimeSpan.Zero,
-                (exception, _) => { Console.WriteLine(exception.Message); });
-
         return Policy.WrapAsync(cachePolicy, retryPolicy, AsyncDelayPolicy.Create(httpDelay));
+
     }
 }

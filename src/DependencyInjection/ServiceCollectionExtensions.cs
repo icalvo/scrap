@@ -13,6 +13,14 @@ internal static class ServiceCollectionExtensions
         return container;
     }
 
+    public static IServiceCollection AddFactory<TIn1, TIn2, TOut, TFactoryImpl>(this IServiceCollection container)
+        where TFactoryImpl : class, IFactory<TIn1, TIn2, TOut>
+    {
+        container.AddSingleton<IFactory<TIn1, TIn2, TOut>, TFactoryImpl>();
+
+        return container;
+    }
+
     public static IServiceCollection AddFactory<TIn, TOut, TFactoryImpl>(
         this IServiceCollection container,
         Func<IServiceProvider, TFactoryImpl> builder)

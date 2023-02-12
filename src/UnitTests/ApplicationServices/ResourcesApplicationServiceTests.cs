@@ -19,10 +19,14 @@ public class ResourcesApplicationServiceTests
     {
         var builder = new MockBuilder(
             _output,
-            new PageMock("https://example.com/a")
-                .ResourceLinks(MockBuilder.ResourceXPath, "https://example.com/1.txt", "https://example.com/2.txt"),
-            new PageMock("https://example.com/b")
-                .ResourceLinks(MockBuilder.ResourceXPath, "https://example.com/3.txt", "https://example.com/4.txt"));
+            new PageMock("https://example.com/a").ResourceLinks(
+                MockBuilder.ResourceXPath,
+                "https://example.com/1.txt",
+                "https://example.com/2.txt"),
+            new PageMock("https://example.com/b").ResourceLinks(
+                MockBuilder.ResourceXPath,
+                "https://example.com/3.txt",
+                "https://example.com/4.txt"));
         var jobDto = builder.BuildJobDto(ResourceType.DownloadLink);
         var service = builder.BuildResourcesApplicationService(jobDto);
 

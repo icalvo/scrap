@@ -11,7 +11,7 @@ public class AsyncDelayPolicy : AsyncPolicy
         _delay = delay;
     }
 
-    public static AsyncDelayPolicy Create(TimeSpan delay) => new AsyncDelayPolicy(delay);
+    public static AsyncDelayPolicy Create(TimeSpan delay) => new(delay);
 
     protected override async Task<TResult> ImplementationAsync<TResult>(
         Func<Context, CancellationToken, Task<TResult>> action,

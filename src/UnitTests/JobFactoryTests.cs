@@ -13,25 +13,25 @@ public class JobFactoryTests
     [Fact]
     public async Task Build()
     {
-        var jobFactory =
-            new JobFactory(
-                Mock.Of<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>>(f =>
-                    f.Build(It.IsAny<IResourceRepositoryConfiguration>()) ==
-                    Mock.Of<IResourceRepositoryConfigurationValidator>()));
+        var jobFactory = new JobFactory(
+            Mock.Of<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>>(
+                f => f.Build(It.IsAny<IResourceRepositoryConfiguration>()) ==
+                     Mock.Of<IResourceRepositoryConfigurationValidator>()));
         var resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
 
-        var actual = await jobFactory.Build(new JobDto(
-            null,
-            "//a/@href",
-            resourceRepoConfig,
-            "https://example.com",
-            null,
-            null,
-            null,
-            null,
-            ResourceType.DownloadLink,
-            null,
-            null));
+        var actual = await jobFactory.Build(
+            new JobDto(
+                null,
+                "//a/@href",
+                resourceRepoConfig,
+                "https://example.com",
+                null,
+                null,
+                null,
+                null,
+                ResourceType.DownloadLink,
+                null,
+                null));
 
         actual.HttpRequestRetries.Should().Be(5);
     }
@@ -42,25 +42,25 @@ public class JobFactoryTests
         var failingValidator = new Mock<IResourceRepositoryConfigurationValidator>();
         failingValidator.Setup(x => x.ValidateAsync(It.IsAny<IResourceRepositoryConfiguration>()))
             .ThrowsAsync(new Exception());
-        var jobFactory =
-            new JobFactory(
-                Mock.Of<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>>(f =>
-                    f.Build(It.IsAny<IResourceRepositoryConfiguration>()) == failingValidator));
+        var jobFactory = new JobFactory(
+            Mock.Of<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>>(
+                f => f.Build(It.IsAny<IResourceRepositoryConfiguration>()) == failingValidator));
 
         var resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
 
-        var action = () => jobFactory.Build(new JobDto(
-            null,
-            "//a/@href",
-            resourceRepoConfig,
-            "https://example.com",
-            null,
-            null,
-            null,
-            null,
-            ResourceType.DownloadLink,
-            null,
-            null));
+        var action = () => jobFactory.Build(
+            new JobDto(
+                null,
+                "//a/@href",
+                resourceRepoConfig,
+                "https://example.com",
+                null,
+                null,
+                null,
+                null,
+                ResourceType.DownloadLink,
+                null,
+                null));
 
         action.Should().ThrowAsync<Exception>();
     }

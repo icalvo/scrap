@@ -13,7 +13,8 @@ public class PageTests
     public void Links_ResolvesRelativeLinks()
     {
         var doc = new HtmlDocument();
-        doc.LoadHtml(@"<html>
+        doc.LoadHtml(
+            @"<html>
 <body>
     <div id=""downloadCount"" data=""expectedData"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t3</div>
     <a href=""a""></a>
@@ -21,11 +22,7 @@ public class PageTests
 </body>
 </html>");
 
-        var page = new Page(
-            new Uri("https://example.com"),
-            doc,
-            Mock.Of<IPageRetriever>(),
-            Mock.Of<ILogger<Page>>());
+        var page = new Page(new Uri("https://example.com"), doc, Mock.Of<IPageRetriever>(), Mock.Of<ILogger<Page>>());
 
         var links = page.Links("//a/@href");
 
@@ -36,7 +33,8 @@ public class PageTests
     public void Links_AbsoluteLinks()
     {
         var doc = new HtmlDocument();
-        doc.LoadHtml(@"<html>
+        doc.LoadHtml(
+            @"<html>
 <body>
     <div id=""downloadCount"" data=""expectedData"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t3</div>
     <a href=""https://other.com/a""></a>
@@ -44,11 +42,7 @@ public class PageTests
 </body>
 </html>");
 
-        var page = new Page(
-            new Uri("https://example.com"),
-            doc,
-            Mock.Of<IPageRetriever>(),
-            Mock.Of<ILogger<Page>>());
+        var page = new Page(new Uri("https://example.com"), doc, Mock.Of<IPageRetriever>(), Mock.Of<ILogger<Page>>());
 
         var links = page.Links("//a/@href");
 
@@ -59,7 +53,8 @@ public class PageTests
     public void Links_RemovesEmptyLinks()
     {
         var doc = new HtmlDocument();
-        doc.LoadHtml(@"<html>
+        doc.LoadHtml(
+            @"<html>
 <body>
     <div id=""downloadCount"" data=""expectedData"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t3</div>
     <a href=""""></a>
@@ -67,11 +62,7 @@ public class PageTests
 </body>
 </html>");
 
-        var page = new Page(
-            new Uri("https://example.com"),
-            doc,
-            Mock.Of<IPageRetriever>(),
-            Mock.Of<ILogger<Page>>());
+        var page = new Page(new Uri("https://example.com"), doc, Mock.Of<IPageRetriever>(), Mock.Of<ILogger<Page>>());
 
         var links = page.Links("//a/@href");
 
@@ -82,7 +73,8 @@ public class PageTests
     public void Link_AbsoluteLinks()
     {
         var doc = new HtmlDocument();
-        doc.LoadHtml(@"<html>
+        doc.LoadHtml(
+            @"<html>
 <body>
     <div id=""downloadCount"" data=""expectedData"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t3</div>
     <a href=""https://other.com/a""></a>
@@ -90,11 +82,7 @@ public class PageTests
 </body>
 </html>");
 
-        var page = new Page(
-            new Uri("https://example.com"),
-            doc,
-            Mock.Of<IPageRetriever>(),
-            Mock.Of<ILogger<Page>>());
+        var page = new Page(new Uri("https://example.com"), doc, Mock.Of<IPageRetriever>(), Mock.Of<ILogger<Page>>());
 
         var links = page.Link("//a/@href");
 
@@ -105,7 +93,8 @@ public class PageTests
     public async Task LinkedDoc()
     {
         var doc = new HtmlDocument();
-        doc.LoadHtml(@"<html>
+        doc.LoadHtml(
+            @"<html>
 <body>
     <div id=""downloadCount"" data=""expectedData"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t3</div>
     <a href=""""></a>
@@ -118,11 +107,7 @@ public class PageTests
         retrieverMock.Setup(x => x.GetPageAsync(new Uri("https://other.com/a"), false))
             .ReturnsAsync(expectedLinkedPage);
 
-        var page = new Page(
-            new Uri("https://example.com"),
-            doc,
-            retrieverMock.Object,
-            Mock.Of<ILogger<Page>>());
+        var page = new Page(new Uri("https://example.com"), doc, retrieverMock.Object, Mock.Of<ILogger<Page>>());
 
         var linkedPage = await page.LinkedDoc("//a/@href");
 
@@ -143,12 +128,14 @@ public class PageTests
     // node() iterates all direct children nodes (text nodes and tag nodes).
     [InlineData("//*[@id='downloadCount']/node()", new[] { "t1", "t2at2bt2c", "t'3" })]
     [InlineData("//a/@href", new[] { "link1", "link2" })]
-    [InlineData("html://*[@id='downloadCount'] | //a[2]",
+    [InlineData(
+        "html://*[@id='downloadCount'] | //a[2]",
         new[] { "t1<div>t2a<span>t2b</span><span>t2c</span></div>t&amp;#039;3", "<span>t4</span>" })]
     public void Contents_XPathTests(string xPath, string[] expected)
     {
         var doc = new HtmlDocument();
-        doc.LoadHtml(@"<html>
+        doc.LoadHtml(
+            @"<html>
 <body>
     <div id=""downloadCount"" data=""expected&#039;Data"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t&#039;3</div>
     <a href=""link1""></a>
@@ -165,7 +152,8 @@ public class PageTests
     public void Content_NoMatch_Throws()
     {
         var doc = new HtmlDocument();
-        doc.LoadHtml(@"<html>
+        doc.LoadHtml(
+            @"<html>
 <body>
     <div id=""downloadCount"" data=""expectedData"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t3</div>
     <a href=""https://other.com/a""></a>
@@ -173,11 +161,7 @@ public class PageTests
 </body>
 </html>");
 
-        var page = new Page(
-            new Uri("https://example.com"),
-            doc,
-            Mock.Of<IPageRetriever>(),
-            Mock.Of<ILogger<Page>>());
+        var page = new Page(new Uri("https://example.com"), doc, Mock.Of<IPageRetriever>(), Mock.Of<ILogger<Page>>());
 
         var action = () => page.Content("//xxx");
 
@@ -189,7 +173,8 @@ public class PageTests
     public void ContentOrNull_NoMatch_ReturnsNull()
     {
         var doc = new HtmlDocument();
-        doc.LoadHtml(@"<html>
+        doc.LoadHtml(
+            @"<html>
 <body>
     <div id=""downloadCount"" data=""expectedData"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t3</div>
     <a href=""https://other.com/a""></a>
@@ -197,11 +182,7 @@ public class PageTests
 </body>
 </html>");
 
-        var page = new Page(
-            new Uri("https://example.com"),
-            doc,
-            Mock.Of<IPageRetriever>(),
-            Mock.Of<ILogger<Page>>());
+        var page = new Page(new Uri("https://example.com"), doc, Mock.Of<IPageRetriever>(), Mock.Of<ILogger<Page>>());
 
         var actual = page.ContentOrNull("//xxx");
 
@@ -213,17 +194,14 @@ public class PageTests
     public void Links_RemovesHTMLEntities()
     {
         var doc = new HtmlDocument();
-        doc.LoadHtml(@"<html>
+        doc.LoadHtml(
+            @"<html>
 <body>
     <a href=""https://other.com/pete&#039;s%20restaurant"">link</a>
 </body>
 </html>");
 
-        var page = new Page(
-            new Uri("https://example.com"),
-            doc,
-            Mock.Of<IPageRetriever>(),
-            Mock.Of<ILogger<Page>>());
+        var page = new Page(new Uri("https://example.com"), doc, Mock.Of<IPageRetriever>(), Mock.Of<ILogger<Page>>());
 
         var links = page.Links("//a/@href");
 

@@ -22,7 +22,8 @@ public class CompiledDestinationProviderTests
                 "rootFolder"),
             Mock.Of<ILogger<CompiledDestinationProvider>>());
         var doc = new HtmlDocument();
-        doc.LoadHtml(@"<html>
+        doc.LoadHtml(
+            @"<html>
 <body>
     <div id=""downloadCount"" data=""expectedData"">t1<div>t2a<span>t2b</span><span>t2c</span></div>t3</div>
     <a href=""a""></a>
@@ -30,11 +31,7 @@ public class CompiledDestinationProviderTests
 </body>
 </html>");
 
-        var page = new Page(
-            new Uri("https://example.com"),
-            doc,
-            Mock.Of<IPageRetriever>(),
-            Mock.Of<ILogger<Page>>());
+        var page = new Page(new Uri("https://example.com"), doc, Mock.Of<IPageRetriever>(), Mock.Of<ILogger<Page>>());
 
         var result = await p.GetDestinationAsync(
             "destinationRootFolder",

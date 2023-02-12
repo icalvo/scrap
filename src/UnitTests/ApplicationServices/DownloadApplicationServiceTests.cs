@@ -25,12 +25,15 @@ public class DownloadApplicationServiceTests
 
         await service.DownloadAsync(
             jobDto,
-            new Uri("https://example.com/a"), 7,
-            new Uri("http://example.com/1.txt"), 8);
+            new Uri("https://example.com/a"),
+            7,
+            new Uri("http://example.com/1.txt"),
+            8);
 
 
         builder.ResourceRepositoryMock.Verify(
-            x => x.UpsertAsync(It.Is<ResourceInfo>(y => y.ResourceUrl == new Uri("http://example.com/1.txt")),
+            x => x.UpsertAsync(
+                It.Is<ResourceInfo>(y => y.ResourceUrl == new Uri("http://example.com/1.txt")),
                 It.IsAny<Stream>()),
             Times.Once);
     }

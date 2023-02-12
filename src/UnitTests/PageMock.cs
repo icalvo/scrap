@@ -14,8 +14,7 @@ public class PageMock : IPage
         _pageMock = new Mock<IPage>();
         _pageMock.Setup(x => x.Document)
             .Returns(Mock.Of<IXPathNavigable>(x => x.CreateNavigator() == Mock.Of<XPathNavigator>()));
-        _pageMock.Setup(x => x.Uri)
-            .Returns(new Uri(uri));
+        _pageMock.Setup(x => x.Uri).Returns(new Uri(uri));
     }
 
     private IPage Page => _pageMock.Object;
@@ -44,24 +43,21 @@ public class PageMock : IPage
 
     public PageMock PageLinks(XPath linkXPath, params string[] linkResults)
     {
-        _pageMock.Setup(x => x.Links(linkXPath))
-            .Returns(linkResults.Select(x => new Uri(x)));
+        _pageMock.Setup(x => x.Links(linkXPath)).Returns(linkResults.Select(x => new Uri(x)));
 
         return this;
     }
 
     public PageMock ResourceLinks(XPath resourceXPath, params string[] resourceResults)
     {
-        _pageMock.Setup(x => x.Links(resourceXPath))
-            .Returns(resourceResults.Select(x => new Uri(x)));
+        _pageMock.Setup(x => x.Links(resourceXPath)).Returns(resourceResults.Select(x => new Uri(x)));
 
         return this;
     }
 
     public PageMock Contents(XPath contentsXPath, params string[] contentsResults)
     {
-        _pageMock.Setup(x => x.Contents(contentsXPath))
-            .Returns(contentsResults);
+        _pageMock.Setup(x => x.Contents(contentsXPath)).Returns(contentsResults);
 
         return this;
     }

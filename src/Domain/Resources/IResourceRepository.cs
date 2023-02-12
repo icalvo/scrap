@@ -16,8 +16,7 @@ public interface IResourceRepository
     Task<string> GetKeyAsync(ResourceInfo resourceInfo);
 }
 
-public interface IResourceRepository<TResourceId> : IResourceRepository
-    where TResourceId : IResourceId
+public interface IResourceRepository<TResourceId> : IResourceRepository where TResourceId : IResourceId
 {
     Task<TResourceId> GetIdAsync(ResourceInfo resourceInfo);
 

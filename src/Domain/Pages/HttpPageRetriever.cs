@@ -9,9 +9,9 @@ public class HttpPageRetriever : IPageRetriever
 {
     private readonly IDownloadStreamProvider _client;
     private readonly ILogger<HttpPageRetriever> _logger;
+    private readonly IAsyncPolicy _noCachePolicy;
     private readonly ILogger<Page> _pageLogger;
     private readonly IAsyncPolicy _policy;
-    private readonly IAsyncPolicy _noCachePolicy;
 
     public HttpPageRetriever(
         IDownloadStreamProvider client,
@@ -31,12 +31,14 @@ public class HttpPageRetriever : IPageRetriever
     {
         _logger.LogTrace("GET {Uri}", uri);
         var policy = noCache ? _noCachePolicy : _policy;
-        return policy.ExecuteAsync<IPage>(async _ =>
-        {
-            var stream = await _client.GetStreamAsync(uri);
-            HtmlDocument document = new();
-            document.Load(stream);
-            return new Page(uri, document, this, _pageLogger);
-        }, new Context($"Page {uri.AbsoluteUri}"));
+        return policy.ExecuteAsync<IPage>(
+            async _ =>
+            {
+                var stream = await _client.GetStreamAsync(uri);
+                HtmlDocument document = new();
+                document.Load(stream);
+                return new Page(uri, document, this, _pageLogger);
+            },
+            new Context($"Page {uri.AbsoluteUri}"));
     }
 }

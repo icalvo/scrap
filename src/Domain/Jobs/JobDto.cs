@@ -18,18 +18,18 @@ public class JobDto
         IResourceRepositoryConfiguration? configuration,
         bool? downloadAlways,
         bool? disableMarkingVisited,
-        bool? disableResourceWrites)
-        : this(
-            jobDefinition.AdjacencyXPath,
-            jobDefinition.ResourceXPath,
-            configuration ?? jobDefinition.ResourceRepository,
-            rootUrl ?? jobDefinition.RootUrl ??
-            throw new ArgumentException("No root URL provided", nameof(jobDefinition)),
-            jobDefinition.HttpRequestRetries,
-            jobDefinition.HttpRequestDelayBetweenRetries,
-            fullScan,
-            downloadAlways,
-            jobDefinition.ResourceType ?? default(ResourceType), disableMarkingVisited, disableResourceWrites)
+        bool? disableResourceWrites) : this(
+        jobDefinition.AdjacencyXPath,
+        jobDefinition.ResourceXPath,
+        configuration ?? jobDefinition.ResourceRepository,
+        rootUrl ?? jobDefinition.RootUrl ?? throw new ArgumentException("No root URL provided", nameof(jobDefinition)),
+        jobDefinition.HttpRequestRetries,
+        jobDefinition.HttpRequestDelayBetweenRetries,
+        fullScan,
+        downloadAlways,
+        jobDefinition.ResourceType ?? default(ResourceType),
+        disableMarkingVisited,
+        disableResourceWrites)
     {
     }
 

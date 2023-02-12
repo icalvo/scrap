@@ -17,13 +17,13 @@ public class LinkCalculatorTests
 
         var lc = new LinkCalculator(Mock.Of<ILogger<LinkCalculator>>(), mock.Object);
         var linkXPath = "//a/@href";
-        var pageMock = new PageMock("https://example.com/a")
-            .PageLinks(linkXPath, "https://example.com/1.txt", "https://example.com/2.txt");
+        var pageMock = new PageMock("https://example.com/a").PageLinks(
+            linkXPath,
+            "https://example.com/1.txt",
+            "https://example.com/2.txt");
 
-        (await lc.CalculateLinks(pageMock, linkXPath).ToArrayAsync()).Should().BeEquivalentTo(new[]
-        {
-            new Uri("https://example.com/1.txt"), new Uri("https://example.com/2.txt")
-        });
+        (await lc.CalculateLinks(pageMock, linkXPath).ToArrayAsync()).Should().BeEquivalentTo(
+            new[] { new Uri("https://example.com/1.txt"), new Uri("https://example.com/2.txt") });
     }
 
     [Fact]
@@ -35,12 +35,12 @@ public class LinkCalculatorTests
 
         var lc = new LinkCalculator(Mock.Of<ILogger<LinkCalculator>>(), mock.Object);
         var linkXPath = "//a/@href";
-        var pageMock = new PageMock("https://example.com/a")
-            .PageLinks(linkXPath, "https://example.com/1.txt", "https://example.com/2.txt");
+        var pageMock = new PageMock("https://example.com/a").PageLinks(
+            linkXPath,
+            "https://example.com/1.txt",
+            "https://example.com/2.txt");
 
-        (await lc.CalculateLinks(pageMock, linkXPath).ToArrayAsync()).Should().BeEquivalentTo(new[]
-        {
-            new Uri("https://example.com/2.txt")
-        });
+        (await lc.CalculateLinks(pageMock, linkXPath).ToArrayAsync()).Should()
+            .BeEquivalentTo(new[] { new Uri("https://example.com/2.txt") });
     }
 }

@@ -23,8 +23,8 @@ public class ResourceRepositoryConfigurationJsonConverter : JsonConverter<IResou
         {
             "filesystem" => JsonSerializer.Deserialize<FileSystemResourceRepositoryConfiguration>(
                                 json,
-                                new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
-                            ?? throw new InvalidOperationException("Couldn't deserialize resource repo config"),
+                                new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }) ??
+                            throw new InvalidOperationException("Couldn't deserialize resource repo config"),
             _ => throw new InvalidOperationException("Couldn't deserialize resource repo config")
         };
     }

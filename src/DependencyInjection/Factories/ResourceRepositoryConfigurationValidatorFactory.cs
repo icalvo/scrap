@@ -5,9 +5,8 @@ using Scrap.Domain.Resources.FileSystem;
 
 namespace Scrap.DependencyInjection.Factories;
 
-public class
-    ResourceRepositoryConfigurationValidatorFactory : IFactory<IResourceRepositoryConfiguration,
-        IResourceRepositoryConfigurationValidator>
+public class ResourceRepositoryConfigurationValidatorFactory
+    : IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>
 {
     private readonly ILoggerFactory _loggerFactory;
 
@@ -19,9 +18,9 @@ public class
     public IResourceRepositoryConfigurationValidator Build(IResourceRepositoryConfiguration resourceRepoArgs) =>
         resourceRepoArgs switch
         {
-            FileSystemResourceRepositoryConfiguration config =>
-                new FileSystemResourceRepositoryConfigurationValidator(
-                    Singleton<CompiledDestinationProvider>.Get(() => new CompiledDestinationProvider(
+            FileSystemResourceRepositoryConfiguration config => new FileSystemResourceRepositoryConfigurationValidator(
+                Singleton<CompiledDestinationProvider>.Get(
+                    () => new CompiledDestinationProvider(
                         config,
                         _loggerFactory.CreateLogger<CompiledDestinationProvider>()))),
             _ => throw new InvalidOperationException(

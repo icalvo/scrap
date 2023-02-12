@@ -2,7 +2,5 @@
 
 public interface ILinkCalculator
 {
-    IAsyncEnumerable<Uri> CalculateLinks(
-        IPage page,
-        XPath? adjacencyXPath);
+    IAsyncEnumerable<Uri> CalculateLinks(IPage page, XPath? adjacencyXPath);
 }

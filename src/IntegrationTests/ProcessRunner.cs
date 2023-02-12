@@ -24,11 +24,7 @@ public static class ProcessRunner
         var standardOutput = new List<string>();
         var standardError = new List<string>();
         var cancellationTokenSource = new CancellationTokenSource();
-        var timer = new Timer(
-            _ => cancellationTokenSource.Cancel(),
-            null,
-            timeout.Value,
-            Timeout.InfiniteTimeSpan);
+        var timer = new Timer(_ => cancellationTokenSource.Cancel(), null, timeout.Value, Timeout.InfiniteTimeSpan);
         var output = new ConcurrentQueue<string>();
         process.OutputDataReceived += (_, args) =>
         {

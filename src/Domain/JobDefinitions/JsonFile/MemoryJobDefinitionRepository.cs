@@ -8,8 +8,8 @@ namespace Scrap.Domain.JobDefinitions.JsonFile;
 
 public class MemoryJobDefinitionRepository : IJobDefinitionRepository
 {
-    private readonly AsyncLazy<ImmutableDictionary<string, JobDefinition>> _store;
     private readonly ILogger<MemoryJobDefinitionRepository> _logger;
+    private readonly AsyncLazy<ImmutableDictionary<string, JobDefinition>> _store;
 
     public MemoryJobDefinitionRepository(
         IEnumerable<JobDefinition> jobDefinitions,

@@ -11,9 +11,7 @@ public class FullScanLinkCalculator : ILinkCalculator
         _logger = logger;
     }
 
-    public IAsyncEnumerable<Uri> CalculateLinks(
-        IPage page,
-        XPath? adjacencyXPath)
+    public IAsyncEnumerable<Uri> CalculateLinks(IPage page, XPath? adjacencyXPath)
     {
         if (adjacencyXPath == null)
         {

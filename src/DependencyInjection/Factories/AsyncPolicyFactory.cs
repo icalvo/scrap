@@ -31,11 +31,10 @@ public class AsyncPolicyFactory : IFactory<Job, AsyncPolicyConfiguration, IAsync
 
         var httpRequestRetries = job.HttpRequestRetries;
         var httpDelay = job.HttpRequestDelayBetweenRetries;
-        var retryPolicy = Policy.Handle<Exception>(ex => !IsClientError(ex))
-            .WaitAndRetryAsync(
-                httpRequestRetries,
-                _ => TimeSpan.Zero,
-                (exception, _) => { Console.WriteLine(exception.Message); });
+        var retryPolicy = Policy.Handle<Exception>(ex => !IsClientError(ex)).WaitAndRetryAsync(
+            httpRequestRetries,
+            _ => TimeSpan.Zero,
+            (exception, _) => { Console.WriteLine(exception.Message); });
 
 
         if (config == AsyncPolicyConfiguration.WithoutCache)
@@ -53,6 +52,5 @@ public class AsyncPolicyFactory : IFactory<Job, AsyncPolicyConfiguration, IAsync
             (_, _, _) => { },
             (_, _, _) => { });
         return Policy.WrapAsync(cachePolicy, retryPolicy, AsyncDelayPolicy.Create(httpDelay));
-
     }
 }

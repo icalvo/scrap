@@ -11,9 +11,7 @@ public class ResourceRepositoryFactory : IFactory<Job, IResourceRepository>
     private readonly string? _baseRootFolder;
     private readonly ILoggerFactory _loggerFactory;
 
-    public ResourceRepositoryFactory(
-        string? baseRootFolder,
-        ILoggerFactory loggerFactory)
+    public ResourceRepositoryFactory(string? baseRootFolder, ILoggerFactory loggerFactory)
     {
         _baseRootFolder = baseRootFolder;
         _loggerFactory = loggerFactory;
@@ -22,19 +20,19 @@ public class ResourceRepositoryFactory : IFactory<Job, IResourceRepository>
     public IResourceRepository Build(Job job) =>
         job.ResourceRepoArgs switch
         {
-            FileSystemResourceRepositoryConfiguration cfg =>
-                (IResourceRepository)new FileSystemResourceRepository(
-                    Singleton<CompiledDestinationProvider>.Get(() =>
-                        new CompiledDestinationProvider(
-                            cfg,
-                            _loggerFactory.CreateLogger<CompiledDestinationProvider>())),
-                    cfg,
-                    _loggerFactory.CreateLogger<FileSystemResourceRepository>(),
-                    job.DisableResourceWrites,
-                    _baseRootFolder),
+            FileSystemResourceRepositoryConfiguration cfg => (IResourceRepository)new FileSystemResourceRepository(
+                Singleton<CompiledDestinationProvider>.Get(
+                    () => new CompiledDestinationProvider(
+                        cfg,
+                        _loggerFactory.CreateLogger<CompiledDestinationProvider>())),
+                cfg,
+                _loggerFactory.CreateLogger<FileSystemResourceRepository>(),
+                job.DisableResourceWrites,
+                _baseRootFolder),
             null => throw new ArgumentException("No Resource Repository found", nameof(job)),
             _ => throw new ArgumentException(
-                $"Unknown resource processor config type: {job.ResourceRepoArgs.GetType().Name}", nameof(job))
+                $"Unknown resource processor config type: {job.ResourceRepoArgs.GetType().Name}",
+                nameof(job))
         };
 }
 

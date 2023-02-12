@@ -48,7 +48,9 @@ public class DownloadApplicationService : IDownloadApplicationService
             var downloadStreamProvider = _downloadStreamProviderFactory.Build(job);
             var stream = await downloadStreamProvider.GetStreamAsync(resourceUrl);
             await resourceRepository.UpsertAsync(info, stream);
-            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl,
+            _logger.LogInformation(
+                "Downloaded {Url} to {Key}",
+                info.ResourceUrl,
                 await resourceRepository.GetKeyAsync(info));
         }
     }

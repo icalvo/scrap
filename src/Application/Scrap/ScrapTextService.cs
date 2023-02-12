@@ -52,33 +52,24 @@ public class ScrapTextService : IScrapTextService
         var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();
 
         IAsyncEnumerable<(ResourceInfo info, string text)> PageTexts(IPage page, int crawlPageIndex) =>
-            page.Contents(resourceXPath)
-                .Where(text => text != null)
-                .Select((text, textIndex) => (
-                    info: new ResourceInfo(page, crawlPageIndex, page.Uri, textIndex),
-                    text: text ?? ""))
-                .ToAsyncEnumerable();
+            page.Contents(resourceXPath).Where(text => text != null).Select(
+                (text, textIndex) => (info: new ResourceInfo(page, crawlPageIndex, page.Uri, textIndex),
+                    text: text ?? "")).ToAsyncEnumerable();
 
         _logger.LogDebug("Defining pipeline...");
         var pageRetriever = _pageRetrieverFactory.Build(job);
         var linkCalculator = _linkCalculatorFactory.Build(job);
         var pageMarkerRepository = _pageMarkerRepositoryFactory.Build(job);
-        var pipeline =
-            Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
-                .DoAwait((page, pageIndex) =>
-                    PageTexts(page, pageIndex)
-                        .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository, job.DownloadAlways))
-                        .Select(x => (
-                            x.info,
-                            stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
-                        .DoAwait(y => resourceRepository.UpsertAsync(y.info, y.stream))
-                        .DoAwait(async x =>
-                            _logger.LogInformation(
-                                "Downloaded text from {Url} to {Key}",
-                                x.info.ResourceUrl,
-                                await resourceRepository.GetKeyAsync(x.info)))
-                        .ExecuteAsync())
-                .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
+        var pipeline = Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator).DoAwait(
+                (page, pageIndex) => PageTexts(page, pageIndex)
+                    .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository, job.DownloadAlways))
+                    .Select(x => (x.info, stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
+                    .DoAwait(y => resourceRepository.UpsertAsync(y.info, y.stream)).DoAwait(
+                        async x => _logger.LogInformation(
+                            "Downloaded text from {Url} to {Key}",
+                            x.info.ResourceUrl,
+                            await resourceRepository.GetKeyAsync(x.info))).ExecuteAsync())
+            .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();
         _logger.LogInformation("Finished!");

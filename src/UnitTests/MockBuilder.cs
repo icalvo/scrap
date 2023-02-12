@@ -40,8 +40,7 @@ public class MockBuilder
     public Mock<ILinkCalculator> LinkCalculatorMock { get; private set; } = new();
     public Mock<IAsyncFactory<JobDto, Job>> JobFactoryMock { get; private set; } = new();
 
-    public Mock<IOptionalParameterFactory<Job, IPageMarkerRepository>> PageMarkerRepositoryFactoryMock { get; } =
-        new();
+    public Mock<IOptionalParameterFactory<Job, IPageMarkerRepository>> PageMarkerRepositoryFactoryMock { get; } = new();
 
     public Mock<IPageMarkerRepository> PageMarkerRepositoryMock { get; } = new();
     public Mock<IFactory<Job, IResourceRepository>> ResourceRepositoryFactoryMock { get; } = new();
@@ -109,9 +108,7 @@ public class MockBuilder
     public IResourcesApplicationService BuildResourcesApplicationService(JobDto jobDto)
     {
         SetupDependencies(jobDto);
-        return new ResourcesApplicationService(
-            JobFactoryMock.Object,
-            PageRetrieverFactoryMock.Object);
+        return new ResourcesApplicationService(JobFactoryMock.Object, PageRetrieverFactoryMock.Object);
     }
 
     public IDownloadApplicationService BuildDownloadApplicationService(JobDto jobDto)
@@ -132,31 +129,36 @@ public class MockBuilder
     {
         foreach (var pageMock in Traversal)
         {
-            PageRetrieverMock.Setup(x => x.GetPageAsync(pageMock.Uri, false))
-                .ReturnsAsync(pageMock);
+            PageRetrieverMock.Setup(x => x.GetPageAsync(pageMock.Uri, false)).ReturnsAsync(pageMock);
         }
 
         GraphSearchMock = new Mock<IGraphSearch>();
 
-        GraphSearchMock.Setup(x => x.SearchAsync(It.IsAny<Uri>(), It.IsAny<Func<Uri, Task<IPage>>>(),
-                It.IsAny<Func<IPage, IAsyncEnumerable<Uri>>>()))
-            .Returns(Traversal.ToAsyncEnumerable());
+        GraphSearchMock
+            .Setup(
+                x => x.SearchAsync(
+                    It.IsAny<Uri>(),
+                    It.IsAny<Func<Uri, Task<IPage>>>(),
+                    It.IsAny<Func<IPage, IAsyncEnumerable<Uri>>>())).Returns(Traversal.ToAsyncEnumerable());
 
         _streamProviderMock = new Mock<IDownloadStreamProvider>();
         _streamProviderMock.Setup(y => y.GetStreamAsync(It.IsAny<Uri>()))
             .ReturnsAsync(new MemoryStream(Encoding.UTF8.GetBytes("some text goes here!..")));
         JobFactoryMock = new Mock<IAsyncFactory<JobDto, Job>>();
-        JobFactoryMock.Setup(x => x.Build(It.IsAny<JobDto>()))
-            .ReturnsAsync(new Job(jobDto));
+        JobFactoryMock.Setup(x => x.Build(It.IsAny<JobDto>())).ReturnsAsync(new Job(jobDto));
 
         ResourceRepositoryMock.Setup(x => x.ExistsAsync(It.IsAny<ResourceInfo>())).ReturnsAsync(false);
 
         LinkCalculatorMock = new Mock<ILinkCalculator>();
         LoggerMock = new Mock<ILogger>();
-        LoggerMock.Setup(x => x.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
-            .Callback((LogLevel _, EventId _, object state, Exception? _, object _) =>
-                _output.WriteLine(state.ToString()));
+        LoggerMock.Setup(
+            x => x.Log(
+                It.IsAny<LogLevel>(),
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>())).Callback(
+            (LogLevel _, EventId _, object state, Exception? _, object _) => _output.WriteLine(state.ToString()));
     }
 
     private class MockLogger<T> : ILogger<T>

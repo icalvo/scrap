@@ -49,7 +49,9 @@ public class Job
         logger.Log(logLevel, "Full scan flag: {FullScan}", FullScan);
         logger.Log(logLevel, "Download always flag: {DownloadAlways}", DownloadAlways);
         logger.Log(logLevel, "HTTP request retries: {HttpRequestRetries}", HttpRequestRetries);
-        logger.Log(logLevel, "HTTP request delay between retries: {HttpRequestDelayBetweenRetries}",
+        logger.Log(
+            logLevel,
+            "HTTP request delay between retries: {HttpRequestDelayBetweenRetries}",
             HttpRequestDelayBetweenRetries);
     }
 

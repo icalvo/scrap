@@ -24,11 +24,9 @@ public class ScrapApplicationServiceTests
         var jobDto = builder.BuildJobDto(ResourceType.DownloadLink);
 
         var scrapDownloadsServiceMock = new Mock<IScrapDownloadsService>();
-        scrapDownloadsServiceMock.Setup(x => x.DownloadLinksAsync(It.IsAny<JobDto>()))
-            .Returns(Task.CompletedTask);
+        scrapDownloadsServiceMock.Setup(x => x.DownloadLinksAsync(It.IsAny<JobDto>())).Returns(Task.CompletedTask);
         var scrapTextServiceMock = new Mock<IScrapTextService>();
-        scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<JobDto>()))
-            .Returns(Task.CompletedTask);
+        scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<JobDto>())).Returns(Task.CompletedTask);
 
         var service = new ScrapApplicationService(
             Mock.Of<IAsyncFactory<JobDto, Job>>(),
@@ -48,11 +46,9 @@ public class ScrapApplicationServiceTests
         var jobDto = builder.BuildJobDto(ResourceType.Text);
 
         var scrapDownloadsServiceMock = new Mock<IScrapDownloadsService>();
-        scrapDownloadsServiceMock.Setup(x => x.DownloadLinksAsync(It.IsAny<JobDto>()))
-            .Returns(Task.CompletedTask);
+        scrapDownloadsServiceMock.Setup(x => x.DownloadLinksAsync(It.IsAny<JobDto>())).Returns(Task.CompletedTask);
         var scrapTextServiceMock = new Mock<IScrapTextService>();
-        scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<JobDto>()))
-            .Returns(Task.CompletedTask);
+        scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<JobDto>())).Returns(Task.CompletedTask);
 
         var service = new ScrapApplicationService(
             Mock.Of<IAsyncFactory<JobDto, Job>>(),

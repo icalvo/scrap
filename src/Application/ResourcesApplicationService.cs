@@ -35,8 +35,7 @@ public class ResourcesApplicationService : IResourcesApplicationService
 
         var pageRetriever = _pageRetrieverFactory.Build(job);
         var page = await pageRetriever.GetPageAsync(pageUrl);
-        var resources = GetResourceLinks(page, pageIndex)
-            .Select(x => x.ResourceUrl.AbsoluteUri);
+        var resources = GetResourceLinks(page, pageIndex).Select(x => x.ResourceUrl.AbsoluteUri);
 
         foreach (var resource in resources)
         {
@@ -50,7 +49,7 @@ public class ResourcesApplicationService : IResourcesApplicationService
         XPath resourceXPathExpression)
     {
         var links = page.Links(resourceXPathExpression).ToArray();
-        return links.Select((resourceUrl, resourceIndex) =>
-            new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex));
+        return links.Select(
+            (resourceUrl, resourceIndex) => new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex));
     }
 }

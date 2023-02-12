@@ -32,20 +32,19 @@ public sealed class CustomConsoleFormatter : ConsoleFormatter, IDisposable
 
         var formattedMessage = formatter(state, exception);
 
-        ConsoleColor? foregroundColor =
-            _formatterOptions.EnableColors
-                ? logLevel switch
-                {
-                    LogLevel.Trace => ConsoleColor.DarkGray,
-                    LogLevel.Debug => ConsoleColor.Blue,
-                    LogLevel.Information => ConsoleColor.Green,
-                    LogLevel.Warning => ConsoleColor.Yellow,
-                    LogLevel.Error => ConsoleColor.Red,
-                    LogLevel.Critical => ConsoleColor.Magenta,
-                    LogLevel.None => null,
-                    _ => null
-                }
-                : null;
+        ConsoleColor? foregroundColor = _formatterOptions.EnableColors
+            ? logLevel switch
+            {
+                LogLevel.Trace => ConsoleColor.DarkGray,
+                LogLevel.Debug => ConsoleColor.Blue,
+                LogLevel.Information => ConsoleColor.Green,
+                LogLevel.Warning => ConsoleColor.Yellow,
+                LogLevel.Error => ConsoleColor.Red,
+                LogLevel.Critical => ConsoleColor.Magenta,
+                LogLevel.None => null,
+                _ => null
+            }
+            : null;
 
 
         var logRecord = exception == null

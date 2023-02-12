@@ -31,12 +31,13 @@ public class LiteDbPageMarkerRepository : IPageMarkerRepository
     {
         if (!_disableWrites)
         {
-            Policy
-                .Handle<IOException>()
-                .Retry(5,
-                    (_, retryNumber) =>
-                        _logger.LogWarning("IOException while upserting; retry {RetryNumber}", retryNumber))
-                .Execute(() => _collection.Upsert(link.AbsoluteUri, new PageMarker(link.AbsoluteUri)));
+            Policy.Handle<IOException>()
+                .Retry(
+                    5,
+                    (_, retryNumber) => _logger.LogWarning(
+                        "IOException while upserting; retry {RetryNumber}",
+                        retryNumber)).Execute(
+                    () => _collection.Upsert(link.AbsoluteUri, new PageMarker(link.AbsoluteUri)));
             _logger.LogTrace("Inserted marker {Page}", link.AbsoluteUri);
         }
         else

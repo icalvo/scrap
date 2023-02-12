@@ -33,12 +33,14 @@ public class DownloadStreamProviderFactory : IFactory<Job, IDownloadStreamProvid
                 DelegatingHandler[] wrappingHandlers = { new PollyMessageHandler(policy), new LoggingHandler(logger) };
                 HttpMessageHandler primaryHandler = new HttpClientHandler();
 
-                var handler = wrappingHandlers.Reverse().Aggregate(primaryHandler, (accum, item) =>
-                {
-                    item.InnerHandler = accum;
-                    return item;
-                });
-                
+                var handler = wrappingHandlers.Reverse().Aggregate(
+                    primaryHandler,
+                    (accum, item) =>
+                    {
+                        item.InnerHandler = accum;
+                        return item;
+                    });
+
                 var httpClient = new HttpClient(handler);
                 return new HttpClientDownloadStreamProvider(httpClient);
             default:
@@ -61,7 +63,8 @@ public class DownloadStreamProviderFactory : IFactory<Job, IDownloadStreamProvid
             CancellationToken cancellationToken) =>
             _policy.ExecuteAsync(
                 (_, ct) => base.SendAsync(request, ct),
-                new Context(request.RequestUri?.AbsoluteUri), cancellationToken);
+                new Context(request.RequestUri?.AbsoluteUri),
+                cancellationToken);
     }
 
     private class LoggingHandler : DelegatingHandler

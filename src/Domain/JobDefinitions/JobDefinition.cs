@@ -33,8 +33,7 @@ public class JobDefinition
         ResourceType = dto.ResourceType ?? default(ResourceType);
     }
 
-    public JobDefinition(JobDefinitionDto dto, string? rootUrl)
-        : this(dto with { RootUrl = rootUrl ?? dto.RootUrl })
+    public JobDefinition(JobDefinitionDto dto, string? rootUrl) : this(dto with { RootUrl = rootUrl ?? dto.RootUrl })
     {
     }
 
@@ -50,7 +49,7 @@ public class JobDefinition
     public ResourceType ResourceType { get; }
 
     public JobDefinitionDto ToDto() =>
-        new JobDefinitionDto(
+        new(
             Id,
             Name,
             AdjacencyXPath?.ToString(),

@@ -24,10 +24,12 @@ public class FreshInstallSetupFixture : IDisposable
         DirectoryEx.DeleteIfExists(InstallFullPath, true);
         Directory.CreateDirectory(InstallFullPath);
 
-        RunAndCheck("dotnet",
+        RunAndCheck(
+            "dotnet",
             $"build ./CommandLine/CommandLine.csproj /p:Version=\"{version}\" /p:AssemblyVersion=\"{mainVersion}\" /p:FileVersion=\"{mainVersion}\" /p:InformationalVersion=\"{version}\"");
         RunAndCheck("dotnet", $"pack /p:PackageVersion=\"{version}\" --no-build");
-        RunAndCheck("dotnet",
+        RunAndCheck(
+            "dotnet",
             $"tool install scrap --tool-path \"{InstallFullPath}\" --add-source ./CommandLine/nupkg/ --version {version}");
     }
 
@@ -47,8 +49,11 @@ public class FreshInstallSetupFixture : IDisposable
         bool outputToConsole = false) =>
         Run(fileName, arguments, timeout, true, outputToConsole);
 
-    protected void
-        Run(string fileName, string arguments = "", TimeSpan? timeout = null, bool outputToConsole = false) =>
+    protected void Run(
+        string fileName,
+        string arguments = "",
+        TimeSpan? timeout = null,
+        bool outputToConsole = false) =>
         Run(fileName, arguments, timeout, false, outputToConsole);
 
     private void Run(string fileName, string arguments, TimeSpan? timeout, bool checkExitCode, bool outputToConsole)

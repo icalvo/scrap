@@ -44,8 +44,7 @@ public class ConfiguredIntegrationTests
     private IEnumerable<string> GetCommandLineOutput(string args, string? configFolderPath = null)
     {
         configFolderPath ??= _fixture.InstallFullPath;
-        var psi = new ProcessStartInfo(
-            Path.Combine(_fixture.InstallFullPath, "scrap"), args)
+        var psi = new ProcessStartInfo(Path.Combine(_fixture.InstallFullPath, "scrap"), args)
         {
             RedirectStandardOutput = true, Environment = { ["Scrap_GlobalConfigurationFolder"] = configFolderPath }
         };

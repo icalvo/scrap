@@ -30,8 +30,12 @@ public class CompiledDestinationProvider : IDestinationProvider
         int resourceIndex)
     {
         var compiledDestinationProvider = await CompileAsync(_config);
-        return await compiledDestinationProvider.GetDestinationAsync(destinationRootFolder, page, pageIndex,
-            resourceUrl, resourceIndex);
+        return await compiledDestinationProvider.GetDestinationAsync(
+            destinationRootFolder,
+            page,
+            pageIndex,
+            resourceUrl,
+            resourceIndex);
     }
 
     public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config) => CompileAsync(config);
@@ -61,9 +65,9 @@ public class CompiledDestinationProvider : IDestinationProvider
     private static async Task<string> GenerateSourceCodeAsync(string[] destinationFolderPattern)
     {
         await using var stream =
-            typeof(CompiledDestinationProvider).Assembly
-                .GetManifestResourceStream("Scrap.Domain.Resources.FileSystem.TemplateDestinationProvider.cs")
-            ?? throw new Exception("TemplateDestinationProvider resource not found");
+            typeof(CompiledDestinationProvider).Assembly.GetManifestResourceStream(
+                "Scrap.Domain.Resources.FileSystem.TemplateDestinationProvider.cs") ??
+            throw new Exception("TemplateDestinationProvider resource not found");
         using var reader = new StreamReader(stream);
 
         var sourceCode = await reader.ReadToEndAsync();
@@ -80,11 +84,12 @@ public class CompiledDestinationProvider : IDestinationProvider
         // define other necessary objects for compilation
         var assemblyName = Path.GetRandomFileName();
 
-        var references = ReferenceAssemblies.Net60.Concat(new[]
-        {
-            MetadataReference.CreateFromFile(typeof(IDestinationProvider).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(HtmlDocument).Assembly.Location)
-        }).ToArray();
+        var references = ReferenceAssemblies.Net60.Concat(
+            new[]
+            {
+                MetadataReference.CreateFromFile(typeof(IDestinationProvider).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(HtmlDocument).Assembly.Location)
+            }).ToArray();
 
         // analyse and generate IL code from syntax tree
         var compilation = CSharpCompilation.Create(
@@ -100,13 +105,15 @@ public class CompiledDestinationProvider : IDestinationProvider
         if (!result.Success)
         {
             // handle exceptions
-            var failures = result.Diagnostics.Where(diagnostic =>
-                diagnostic.IsWarningAsError ||
-                diagnostic.Severity == DiagnosticSeverity.Error);
+            var failures = result.Diagnostics.Where(
+                diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error);
 
             foreach (var diagnostic in failures)
             {
-                _logger.LogError("{Id}: {Message} at {Location}", diagnostic.Id, diagnostic.GetMessage(),
+                _logger.LogError(
+                    "{Id}: {Message} at {Location}",
+                    diagnostic.Id,
+                    diagnostic.GetMessage(),
                     diagnostic.Location);
                 _logger.LogDebug("{SourceCode}", sourceCode);
             }

@@ -25,8 +25,7 @@ public class JsonUpdater
                 SetValue(sectionPathKey, rootProp, value);
             }
 
-            var output =
-                JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
+            var output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
             File.WriteAllText(filePath, output);
         }
         catch (Exception ex)
@@ -43,8 +42,7 @@ public class JsonUpdater
         }
 
         var split = sectionPathKey.Split(":");
-        var targetProp = split
-            .Aggregate(rootProp, AccumulateProperty);
+        var targetProp = split.Aggregate(rootProp, AccumulateProperty);
 
         targetProp.Value = new JValue(value);
     }

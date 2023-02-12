@@ -17,12 +17,12 @@ public class Page : IPage
         _logger = logger;
         Uri = uri;
         Document = document;
-        _navigator = document.CreateNavigator() ??
-                     throw new ArgumentException("Cannot build an XPathNavigator from this doc", nameof(document));
-        _baseUri =
-            uri.IsDefaultPort
-                ? new Uri($"{uri.Scheme}://{uri.Host}")
-                : new Uri($"{uri.Scheme}://{uri.Host}:{uri.Port}");
+        _navigator = document.CreateNavigator() ?? throw new ArgumentException(
+            "Cannot build an XPathNavigator from this doc",
+            nameof(document));
+        _baseUri = uri.IsDefaultPort
+            ? new Uri($"{uri.Scheme}://{uri.Host}")
+            : new Uri($"{uri.Scheme}://{uri.Host}:{uri.Port}");
     }
 
     public Uri Uri { get; }
@@ -33,9 +33,7 @@ public class Page : IPage
     public bool Equals(IPage? other) => other != null && Uri.AbsoluteUri.Equals(other.Uri.AbsoluteUri);
 
     public IEnumerable<Uri> Links(XPath xPath) =>
-        Contents(xPath)
-            .Where(url => !string.IsNullOrEmpty(url))
-            .Select(url => new Uri(_baseUri, url));
+        Contents(xPath).Where(url => !string.IsNullOrEmpty(url)).Select(url => new Uri(_baseUri, url));
 
     public Uri? Link(XPath xPath) => Links(xPath).FirstOrDefault();
 
@@ -49,10 +47,7 @@ public class Page : IPage
         var results = xPath.IsHtml
             ? nodesEnumerable.Select(x => x.InnerXml)
             : nodesEnumerable.Select(x => WebUtility.HtmlDecode(x.Value));
-        var resultsArray = results
-            .RemoveNulls()
-            .Where(url => !string.IsNullOrEmpty(url))
-            .ToArray();
+        var resultsArray = results.RemoveNulls().Where(url => !string.IsNullOrEmpty(url)).ToArray();
         LogXPathEval(resultsArray, xPath);
         return resultsArray;
     }
@@ -83,9 +78,7 @@ public class Page : IPage
         }
         catch (Exception ex)
         {
-            throw new Exception(
-                $"An error happened when getting a linked doc from XPath {xPath}",
-                ex);
+            throw new Exception($"An error happened when getting a linked doc from XPath {xPath}", ex);
         }
     }
 
@@ -134,9 +127,12 @@ public class Page : IPage
             suffix = $",... ({result.Length - maxElementsToDisplay} more)";
         }
 
-        var output = string.Join(",", elementsToDisplay.Select(x => x == null ? "" :
-            x.Length <= maxCharsPerElement ? x :
-            $"{x[..(maxCharsPerElement - 3)]}...")) + suffix;
+        var output = string.Join(
+                         ",",
+                         elementsToDisplay.Select(
+                             x => x == null ? "" :
+                                 x.Length <= maxCharsPerElement ? x : $"{x[..(maxCharsPerElement - 3)]}...")) +
+                     suffix;
         _logger.LogTrace("Eval XPath {XPath} => [{Result}]", xPath, output);
     }
 }

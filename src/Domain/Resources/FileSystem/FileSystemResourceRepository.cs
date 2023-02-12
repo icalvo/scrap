@@ -4,10 +4,10 @@ namespace Scrap.Domain.Resources.FileSystem;
 
 public class FileSystemResourceRepository : BaseResourceRepository<FileSystemResourceId>
 {
+    private readonly string? _baseRootFolder;
     private readonly IDestinationProvider _destinationProvider;
     private readonly string _destinationRootFolder;
     private readonly bool _disableWrites;
-    private readonly string? _baseRootFolder;
     private readonly ILogger<FileSystemResourceRepository> _logger;
 
     public FileSystemResourceRepository(
@@ -19,9 +19,7 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
     {
         _destinationProvider = destinationProvider;
         _destinationRootFolder =
-            baseRootFolder != null
-            ? Path.Combine(baseRootFolder, config.RootFolder)
-            : config.RootFolder;
+            baseRootFolder != null ? Path.Combine(baseRootFolder, config.RootFolder) : config.RootFolder;
         _logger = logger;
         _disableWrites = disableWrites;
         _baseRootFolder = baseRootFolder;
@@ -32,8 +30,10 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
         var (page, pageIndex, resourceUrl, resourceIndex) = resourceInfo;
         var destinationPath = await _destinationProvider.GetDestinationAsync(
             _destinationRootFolder,
-            page, pageIndex,
-            resourceUrl, resourceIndex);
+            page,
+            pageIndex,
+            resourceUrl,
+            resourceIndex);
         var description = Path.GetRelativePath(_destinationRootFolder, destinationPath);
 
         return new FileSystemResourceId(destinationPath, description);
@@ -48,8 +48,8 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
     public override async Task UpsertAsync(FileSystemResourceId id, Stream resourceStream)
     {
         var destinationPath = id.FullPath;
-        var directoryName = Path.GetDirectoryName(destinationPath)
-                            ?? throw new InvalidOperationException(
+        var directoryName = Path.GetDirectoryName(destinationPath) ??
+                            throw new InvalidOperationException(
                                 $"Could not get directory name from destination path {destinationPath}");
 
         if (!_disableWrites)
@@ -61,7 +61,8 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
         }
         else
         {
-            _logger.LogTrace("FAKE. WRITE {RelativePath}",
+            _logger.LogTrace(
+                "FAKE. WRITE {RelativePath}",
                 Path.GetRelativePath(_destinationRootFolder, destinationPath));
         }
     }

@@ -12,8 +12,7 @@ public class FileLogger : ILogger
             configuration.FolderPath,
             configuration.FilePath == null
                 ? $"log{Guid.NewGuid():D}.txt"
-                : configuration.FilePath
-                    .Replace("{date}", DateTimeOffset.UtcNow.ToString("yyyyMMdd"))
+                : configuration.FilePath.Replace("{date}", DateTimeOffset.UtcNow.ToString("yyyyMMdd"))
                     .Replace("{guid}", Guid.NewGuid().ToString("D")));
     }
 

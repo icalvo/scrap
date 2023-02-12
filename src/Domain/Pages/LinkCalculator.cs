@@ -13,9 +13,7 @@ public class LinkCalculator : ILinkCalculator
         _pageMarkerRepository = pageMarkerRepository;
     }
 
-    public async IAsyncEnumerable<Uri> CalculateLinks(
-        IPage page,
-        XPath? adjacencyXPath)
+    public async IAsyncEnumerable<Uri> CalculateLinks(IPage page, XPath? adjacencyXPath)
     {
         if (adjacencyXPath == null)
         {

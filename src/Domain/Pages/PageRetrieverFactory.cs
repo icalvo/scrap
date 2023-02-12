@@ -30,8 +30,8 @@ public class PageRetrieverFactory : IFactory<Job, IPageRetriever>
     public IPageRetriever Build(Job job) =>
         new HttpPageRetriever(
             _downloadStreamProviderFactory.Build(job),
-            policy: _asyncPolicyFactory.Build(job, AsyncPolicyConfiguration.WithCache),
-            noCachePolicy: _asyncPolicyFactory.Build(job, AsyncPolicyConfiguration.WithoutCache),
+            _asyncPolicyFactory.Build(job, AsyncPolicyConfiguration.WithCache),
+            _asyncPolicyFactory.Build(job, AsyncPolicyConfiguration.WithoutCache),
             _loggerFactory.CreateLogger<HttpPageRetriever>(),
             _loggerFactory);
 }

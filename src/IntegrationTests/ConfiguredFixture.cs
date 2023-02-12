@@ -16,7 +16,8 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture
             $"{InstallFullPath}/scrap",
             $"config /key=Scrap:Definitions /value={jobDefsFullPath}",
             outputToConsole: true);
-        RunAndCheck($"{InstallFullPath}/scrap",
+        RunAndCheck(
+            $"{InstallFullPath}/scrap",
             $"config /key=Scrap:Database /value=\"Filename={_dbFullPath};Connection=shared\"");
         RunAndCheck("dotnet", $"tool install dotnet-serve --tool-path \"{InstallFullPath}\"");
         var wwwPath = Path.GetFullPath("./IntegrationTests/www/");

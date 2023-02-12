@@ -54,29 +54,31 @@ public class ServicesLocator
         container.AddTransient<IResourcesApplicationService, ResourcesApplicationService>();
 
         container.AddSingleton<IAsyncCacheProvider, MemoryCacheProvider>();
-        container.AddSingleton(sp =>
-        {
-            var logger = sp.GetRequiredService<ILogger<ServicesLocator>>();
-            var config = sp.GetRequiredService<IConfiguration>();
-            logger.LogDebug("Scrap DB: {ConnectionString}", config["Scrap:Database"]);
-            return new ConnectionString(config["Scrap:Database"]);
-        });
-        container.AddSingleton<ILiteDatabase, LiteDatabase>();
-        container.AddSingleton<IJobDefinitionRepository>(sp =>
-        {
-            var logger = sp.GetRequiredService<ILogger<ServicesLocator>>();
-            var config = sp.GetRequiredService<IConfiguration>();
-            var definitionsFilePath = config["Scrap:Definitions"];
-            if (definitionsFilePath == null)
+        container.AddSingleton(
+            sp =>
             {
-                throw new Exception("No definitions file in the configuration!");
-            }
+                var logger = sp.GetRequiredService<ILogger<ServicesLocator>>();
+                var config = sp.GetRequiredService<IConfiguration>();
+                logger.LogDebug("Scrap DB: {ConnectionString}", config["Scrap:Database"]);
+                return new ConnectionString(config["Scrap:Database"]);
+            });
+        container.AddSingleton<ILiteDatabase, LiteDatabase>();
+        container.AddSingleton<IJobDefinitionRepository>(
+            sp =>
+            {
+                var logger = sp.GetRequiredService<ILogger<ServicesLocator>>();
+                var config = sp.GetRequiredService<IConfiguration>();
+                var definitionsFilePath = config["Scrap:Definitions"];
+                if (definitionsFilePath == null)
+                {
+                    throw new Exception("No definitions file in the configuration!");
+                }
 
-            logger.LogDebug("Definitions file: {DefinitionsPath}", definitionsFilePath);
-            return new MemoryJobDefinitionRepository(
-                definitionsFilePath,
-                sp.GetRequiredService<ILogger<MemoryJobDefinitionRepository>>());
-        });
+                logger.LogDebug("Definitions file: {DefinitionsPath}", definitionsFilePath);
+                return new MemoryJobDefinitionRepository(
+                    definitionsFilePath,
+                    sp.GetRequiredService<ILogger<MemoryJobDefinitionRepository>>());
+            });
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
         container
             .AddSingleton<IResourceRepositoryConfigurationValidator,
@@ -88,12 +90,14 @@ public class ServicesLocator
         container.AddFactory<Job, IPageRetriever, PageRetrieverFactory>();
         container.AddFactory<Job, IDownloadStreamProvider, DownloadStreamProviderFactory>();
         container.AddFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy, AsyncPolicyFactory>();
-        container.AddFactory<Job, IResourceRepository, ResourceRepositoryFactory>(sp =>
-        {
-            var config = sp.GetRequiredService<IConfiguration>();
-            return new ResourceRepositoryFactory(config["Scrap:BaseRootFolder"],
-                sp.GetRequiredService<ILoggerFactory>());
-        });
+        container.AddFactory<Job, IResourceRepository, ResourceRepositoryFactory>(
+            sp =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                return new ResourceRepositoryFactory(
+                    config["Scrap:BaseRootFolder"],
+                    sp.GetRequiredService<ILoggerFactory>());
+            });
         container.AddSingleton<IFactory<Job, ILinkCalculator>, LinkCalculatorFactory>();
         container
             .AddSingleton<IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>,

@@ -58,11 +58,12 @@ public class EnumerableExtensionsTests
 
 
         var result = "";
-        var b = a.DoAwait(x =>
-        {
-            result += x + ",";
-            return Task.CompletedTask;
-        });
+        var b = a.DoAwait(
+            x =>
+            {
+                result += x + ",";
+                return Task.CompletedTask;
+            });
         result.Should().Be("");
         var arrayAsync = await b.ToArrayAsync();
         result.Should().Be("1,5,2,");
@@ -76,11 +77,12 @@ public class EnumerableExtensionsTests
 
 
         var result = "";
-        var b = a.DoAwait((x, i) =>
-        {
-            result += $"{i}-{x},";
-            return Task.CompletedTask;
-        });
+        var b = a.DoAwait(
+            (x, i) =>
+            {
+                result += $"{i}-{x},";
+                return Task.CompletedTask;
+            });
         result.Should().Be("");
         var arrayAsync = await b.ToArrayAsync();
         result.Should().Be("0-1,1-5,2-2,");

@@ -21,11 +21,8 @@ public class ScrapTextsServiceTests
     {
         var builder = new MockBuilder(
             _output,
-            new PageMock("https://example.com/a")
-                .Contents(MockBuilder.ResourceXPath, "qwer", "asdf"),
-            new PageMock(
-                    "https://example.com/b")
-                .Contents(MockBuilder.ResourceXPath, "zxcv", "yuio"));
+            new PageMock("https://example.com/a").Contents(MockBuilder.ResourceXPath, "qwer", "asdf"),
+            new PageMock("https://example.com/b").Contents(MockBuilder.ResourceXPath, "zxcv", "yuio"));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
         var jobDto = builder.BuildJobDto(ResourceType.Text);
         var service = builder.BuildScrapTextsService(jobDto);
@@ -36,15 +33,9 @@ public class ScrapTextsServiceTests
             x => x.UpsertAsync(It.IsAny<ResourceInfo>(), It.IsAny<Stream>()),
             Times.Exactly(4));
 
-        builder.PageMarkerRepositoryMock.Verify(
-            x => x.ExistsAsync(It.IsAny<Uri>()),
-            Times.Never);
-        builder.PageMarkerRepositoryMock.Verify(
-            x => x.UpsertAsync(new Uri("https://example.com/a")),
-            Times.Once);
-        builder.PageMarkerRepositoryMock.Verify(
-            x => x.UpsertAsync(new Uri("https://example.com/b")),
-            Times.Once);
+        builder.PageMarkerRepositoryMock.Verify(x => x.ExistsAsync(It.IsAny<Uri>()), Times.Never);
+        builder.PageMarkerRepositoryMock.Verify(x => x.UpsertAsync(new Uri("https://example.com/a")), Times.Once);
+        builder.PageMarkerRepositoryMock.Verify(x => x.UpsertAsync(new Uri("https://example.com/b")), Times.Once);
     }
 
 

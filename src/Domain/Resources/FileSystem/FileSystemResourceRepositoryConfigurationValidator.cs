@@ -1,8 +1,7 @@
 ﻿namespace Scrap.Domain.Resources.FileSystem;
 
-public class
-    FileSystemResourceRepositoryConfigurationValidator : BaseResourceRepositoryConfigurationValidator<
-        FileSystemResourceRepository>
+public class FileSystemResourceRepositoryConfigurationValidator
+    : BaseResourceRepositoryConfigurationValidator<FileSystemResourceRepository>
 {
     private readonly IDestinationProvider _destinationProvider;
 

@@ -55,7 +55,9 @@ public class ScrapDownloadsService : IScrapDownloadsService
         {
             var (info, stream) = x;
             await resourceRepository.UpsertAsync(info, stream);
-            _logger.LogInformation("Downloaded {Url} to {Key}", info.ResourceUrl,
+            _logger.LogInformation(
+                "Downloaded {Url} to {Key}",
+                info.ResourceUrl,
                 await resourceRepository.GetKeyAsync(info));
         }
 
@@ -69,32 +71,27 @@ public class ScrapDownloadsService : IScrapDownloadsService
         var linkCalculator = _linkCalculatorFactory.Build(job);
         var pageMarkerRepository = _pageMarkerRepositoryFactory.Build(job);
         var downloadStreamProvider = _downloadStreamProviderFactory.Build(job);
-        var pipeline =
-            Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
-                .Do(page => _logger.LogDebug("Processing page {PageUrl}", page.Uri))
-                .DoAwait((page, pageIndex) =>
+        var pipeline = Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
+            .Do(page => _logger.LogDebug("Processing page {PageUrl}", page.Uri)).DoAwait(
+                (page, pageIndex) =>
                 {
                     var privatePage = page;
-                    return Policy.Handle<Exception>()
-                        .RetryAsync(
-                            RetryCount,
-                            async (ex, retryCount) =>
-                            {
-                                _logger.LogWarning(
-                                    "Error #{RetryCount} processing page resources: {Message}. Reloading page and trying again...",
-                                    retryCount, ex.Message);
-                                privatePage = await privatePage.RecreateAsync();
-                            })
-                        .ExecuteAsync(() => GetResourceLinks(privatePage, pageIndex)
-                            .ToAsyncEnumerable()
-                            .WhereAwait(IsNotDownloaded)
-                            .SelectAwait(async resourceLink => (
-                                x: resourceLink,
-                                stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
-                            .DoAwait(Download)
-                            .ExecuteAsync());
-                })
-                .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
+                    return Policy.Handle<Exception>().RetryAsync(
+                        RetryCount,
+                        async (ex, retryCount) =>
+                        {
+                            _logger.LogWarning(
+                                "Error #{RetryCount} processing page resources: {Message}. Reloading page and trying again...",
+                                retryCount,
+                                ex.Message);
+                            privatePage = await privatePage.RecreateAsync();
+                        }).ExecuteAsync(
+                        () => GetResourceLinks(privatePage, pageIndex).ToAsyncEnumerable().WhereAwait(IsNotDownloaded)
+                            .SelectAwait(
+                                async resourceLink => (x: resourceLink,
+                                    stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
+                            .DoAwait(Download).ExecuteAsync());
+                }).DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();
     }
@@ -105,8 +102,8 @@ public class ScrapDownloadsService : IScrapDownloadsService
         XPath resourceXPathExpression)
     {
         var links = page.Links(resourceXPathExpression).ToArray();
-        return links.Select((resourceUrl, resourceIndex) =>
-            new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex));
+        return links.Select(
+            (resourceUrl, resourceIndex) => new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex));
     }
 
     private IAsyncEnumerable<IPage> Pages(

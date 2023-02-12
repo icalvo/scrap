@@ -8,6 +8,7 @@ using Polly.Caching;
 using Polly.Caching.Memory;
 using Scrap.Application;
 using Scrap.Application.Scrap;
+using Scrap.Common;
 using Scrap.DependencyInjection.Factories;
 using Scrap.Domain;
 using Scrap.Domain.Downloads;
@@ -59,8 +60,8 @@ public class ServicesLocator
             {
                 var logger = sp.GetRequiredService<ILogger<ServicesLocator>>();
                 var config = sp.GetRequiredService<IConfiguration>();
-                logger.LogDebug("Scrap DB: {ConnectionString}", config["Scrap:Database"]);
-                return new ConnectionString(config["Scrap:Database"]);
+                logger.LogDebug("Scrap DB: {ConnectionString}", config[ConfigKeys.Database]);
+                return new ConnectionString(config[ConfigKeys.Database]);
             });
         container.AddSingleton<ILiteDatabase, LiteDatabase>();
         container.AddSingleton<IJobDefinitionRepository>(
@@ -68,7 +69,7 @@ public class ServicesLocator
             {
                 var logger = sp.GetRequiredService<ILogger<ServicesLocator>>();
                 var config = sp.GetRequiredService<IConfiguration>();
-                var definitionsFilePath = config["Scrap:Definitions"];
+                var definitionsFilePath = config[ConfigKeys.Definitions];
                 if (definitionsFilePath == null)
                 {
                     throw new Exception("No definitions file in the configuration!");
@@ -95,7 +96,7 @@ public class ServicesLocator
             {
                 var config = sp.GetRequiredService<IConfiguration>();
                 return new ResourceRepositoryFactory(
-                    config["Scrap:BaseRootFolder"],
+                    config[ConfigKeys.BaseRootFolder],
                     sp.GetRequiredService<ILoggerFactory>());
             });
         container.AddSingleton<IFactory<Job, ILinkCalculator>, LinkCalculatorFactory>();

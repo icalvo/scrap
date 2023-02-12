@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Xml.XPath;
 using Microsoft.Extensions.Logging;
+using Scrap.Common;
 
 namespace Scrap.Domain.Pages;
 

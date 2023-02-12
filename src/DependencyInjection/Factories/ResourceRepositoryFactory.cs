@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Scrap.Common;
 using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
@@ -34,20 +35,4 @@ public class ResourceRepositoryFactory : IFactory<Job, IResourceRepository>
                 $"Unknown resource processor config type: {job.ResourceRepoArgs.GetType().Name}",
                 nameof(job))
         };
-}
-
-public class Singleton<T>
-{
-    private static T? _item;
-    private static readonly object Lock = new();
-
-    public static T Get(Func<T> constructor)
-    {
-        lock (Lock)
-        {
-            _item ??= constructor();
-        }
-
-        return _item;
-    }
 }

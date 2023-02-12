@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Scrap.Common;
 
 namespace Scrap.Tests.Integration;
 
@@ -14,11 +15,11 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture
         _dbFullPath = Path.GetFullPath("./scrap.db");
         RunAndCheck(
             $"{InstallFullPath}/scrap",
-            $"config /key=Scrap:Definitions /value={jobDefsFullPath}",
+            $"config /key={ConfigKeys.Definitions} /value={jobDefsFullPath}",
             outputToConsole: true);
         RunAndCheck(
             $"{InstallFullPath}/scrap",
-            $"config /key=Scrap:Database /value=\"Filename={_dbFullPath};Connection=shared\"");
+            $"config /key={ConfigKeys.Database} /value=\"Filename={_dbFullPath};Connection=shared\"");
         RunAndCheck("dotnet", $"tool install dotnet-serve --tool-path \"{InstallFullPath}\"");
         var wwwPath = Path.GetFullPath("./IntegrationTests/www/");
 

@@ -5,12 +5,6 @@ using Scrap.Domain.Jobs;
 
 namespace Scrap.Domain.Pages;
 
-public enum AsyncPolicyConfiguration
-{
-    WithCache,
-    WithoutCache
-}
-
 public class PageRetrieverFactory : IFactory<Job, IPageRetriever>
 {
     private readonly IFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy> _asyncPolicyFactory;

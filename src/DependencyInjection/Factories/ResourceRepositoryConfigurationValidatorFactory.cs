@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Scrap.Common;
 using Scrap.Domain;
 using Scrap.Domain.Resources;
 using Scrap.Domain.Resources.FileSystem;

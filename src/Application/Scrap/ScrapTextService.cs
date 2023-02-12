@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Microsoft.Extensions.Logging;
+using Scrap.Common;
 using Scrap.Domain;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;

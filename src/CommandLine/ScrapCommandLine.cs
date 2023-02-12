@@ -9,8 +9,8 @@ using Microsoft.Extensions.Logging;
 using Scrap.Application;
 using Scrap.Application.Scrap;
 using Scrap.CommandLine.Logging;
+using Scrap.Common;
 using Scrap.DependencyInjection;
-using Scrap.Domain;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
 
@@ -330,13 +330,23 @@ public class ScrapCommandLine
 
     [Verb(Description = "Configures the tool", Aliases = "c,config")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public void Configure(string? key = null, string? value = null)
+    public void Configure(
+        [Description($"Config key (e.g. {ConfigKeys.BaseRootFolder})")] string? key = null,
+        [Description("Value for the key")] string? value = null)
     {
-        var isInteractive = key == null;
-        if (isInteractive)
+        if (key == null)
         {
-            PrintHeader();
+            ConfigureInteractive();
         }
+        else
+        {
+            ConfigureNonInteractive(key, value);
+        }
+    }
+
+    private void ConfigureInteractive()
+    {
+        PrintHeader();
 
         var globalUserConfigFolder = GetGlobalUserConfigFolder();
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
@@ -348,13 +358,10 @@ public class ScrapCommandLine
         }
         else
         {
-            if (isInteractive)
-            {
-                Console.WriteLine(
-                    $"Global config file not found. We are going to create a global config file and ask some values. This file is located at: {globalUserConfigPath}");
-                Console.WriteLine(
-                    "The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
-            }
+            Console.WriteLine(
+                $"Global config file not found. We are going to create a global config file and ask some values. This file is located at: {globalUserConfigPath}");
+            Console.WriteLine(
+                "The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
 
             File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
             Console.WriteLine($"Created global config at: {globalUserConfigPath}");
@@ -362,10 +369,55 @@ public class ScrapCommandLine
 
         var cfg = new ConfigurationBuilder().AddJsonFile(globalUserConfigPath, false, false).Build();
 
-        if (isInteractive)
+        CreateGlobalConfigFile(globalUserConfigFolder, globalUserConfigPath);
+
+        var updates = GetGlobalConfigs(globalUserConfigFolder).Select(AskGlobalConfigValue).RemoveNulls().ToArray();
+        if (updates.Length == 0)
         {
-            SetUpGlobalConfigValuesInteractively(globalUserConfigFolder, globalUserConfigPath, cfg);
-            return;
+            Console.WriteLine("Nothing changed!");
+        }
+        else
+        {
+            Console.WriteLine($"Adding or updating {updates.Length} config value(s)");
+            var updater = new JsonUpdater(globalUserConfigPath);
+            updater.AddOrUpdate(updates);
+        }
+
+        KeyValuePair<string, object?>? AskGlobalConfigValue(GlobalConfig globalConfig)
+        {
+            var (key, defaultValue, prompt, _) = globalConfig;
+            var promptDefaultValue = cfg[key] ?? defaultValue;
+
+            Console.Write($"{prompt} [{promptDefaultValue}]: ");
+            var value = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                value = promptDefaultValue;
+            }
+
+            if (value == cfg[key])
+            {
+                return null;
+            }
+
+            return new KeyValuePair<string, object?>(key, value);
+        }
+    }
+
+    private void ConfigureNonInteractive(string key, string? value = null)
+    {
+        var globalUserConfigFolder = GetGlobalUserConfigFolder();
+        var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
+
+        Directory.CreateDirectory(globalUserConfigFolder);
+        if (File.Exists(globalUserConfigPath))
+        {
+            Console.WriteLine($"Global config file found at: {globalUserConfigPath}");
+        }
+        else
+        {
+            File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
+            Console.WriteLine($"Created global config at: {globalUserConfigPath}");
         }
 
         if (value == null)
@@ -375,7 +427,17 @@ public class ScrapCommandLine
         }
 
         System.Diagnostics.Debug.Assert(key != null, $"{nameof(key)} != null");
-        SetUpGlobalConfigValue(globalUserConfigFolder, globalUserConfigPath, key, value);
+        CreateGlobalConfigFile(globalUserConfigFolder, globalUserConfigPath);
+
+        var update = GetGlobalConfigs(globalUserConfigFolder).SingleOrDefault(x => x.Key == key);
+        if (update == null)
+        {
+            Console.Error.WriteLine("Key not found!");
+        }
+
+        var updater = new JsonUpdater(globalUserConfigPath);
+        updater.AddOrUpdate(new[] { new KeyValuePair<string, object?>(key, value) });
+        Console.WriteLine($"{key}={value}");
     }
 
     [Verb(Description = "Show configuration", Aliases = "sc")]
@@ -427,59 +489,19 @@ public class ScrapCommandLine
         new[]
         {
             new GlobalConfig(
-                "Scrap:Definitions",
+                ConfigKeys.Definitions,
                 Path.Combine(globalUserConfigFolder, "jobDefinitions.json"),
                 "Path for job definitions JSON"),
             new GlobalConfig(
-                "Scrap:Database",
+                ConfigKeys.Database,
                 $"Filename={Path.Combine(globalUserConfigFolder, "scrap.db")};Connection=shared",
                 "Connection string for page markings LiteDB database"),
             new GlobalConfig(
-                "Scrap:BaseRootFolder",
+                ConfigKeys.BaseRootFolder,
                 null,
                 "Base download path for your file-based resource repository",
                 true)
         };
-
-    private static void SetUpGlobalConfigValuesInteractively(
-        string globalUserConfigFolder,
-        string globalUserConfigPath,
-        IConfiguration cfg)
-    {
-        CreateGlobalConfigFile(globalUserConfigFolder, globalUserConfigPath);
-
-        var updates = GetGlobalConfigs(globalUserConfigFolder).Select(AskGlobalConfigValue).RemoveNulls().ToArray();
-        if (updates.Length == 0)
-        {
-            Console.WriteLine("Nothing changed!");
-        }
-        else
-        {
-            Console.WriteLine($"Adding or updating {updates.Length} config value(s)");
-            var updater = new JsonUpdater(globalUserConfigPath);
-            updater.AddOrUpdate(updates);
-        }
-
-        KeyValuePair<string, object?>? AskGlobalConfigValue(GlobalConfig globalConfig)
-        {
-            var (key, defaultValue, prompt, _) = globalConfig;
-            var promptDefaultValue = cfg[key] ?? defaultValue;
-
-            Console.Write($"{prompt} [{promptDefaultValue}]: ");
-            var value = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                value = promptDefaultValue;
-            }
-
-            if (value == cfg[key])
-            {
-                return null;
-            }
-
-            return new KeyValuePair<string, object?>(key, value);
-        }
-    }
 
     private static void CreateGlobalConfigFile(string globalUserConfigFolder, string globalUserConfigPath)
     {
@@ -493,25 +515,6 @@ public class ScrapCommandLine
             File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
             Console.WriteLine($"Created global config at: {globalUserConfigPath}");
         }
-    }
-
-    private static void SetUpGlobalConfigValue(
-        string globalUserConfigFolder,
-        string globalUserConfigPath,
-        string key,
-        string value)
-    {
-        CreateGlobalConfigFile(globalUserConfigFolder, globalUserConfigPath);
-
-        var update = GetGlobalConfigs(globalUserConfigFolder).SingleOrDefault(x => x.Key == key);
-        if (update == null)
-        {
-            Console.Error.WriteLine("Key not found!");
-        }
-
-        var updater = new JsonUpdater(globalUserConfigPath);
-        updater.AddOrUpdate(new[] { new KeyValuePair<string, object?>(key, value) });
-        Console.WriteLine($"{key}={value}");
     }
 
     private void ConfigureLoggingWithConsole(ILoggingBuilder builder) => ConfigureLogging(builder, true);

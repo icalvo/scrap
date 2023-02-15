@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
 using Scrap.Domain.JobDefinitions;
+using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,13 +20,14 @@ public class ScrapTextsServiceTests
     [Fact]
     public async Task ScrapTextAsync()
     {
-        var builder = new MockBuilder(
-            _output,
-            new PageMock("https://example.com/a").Contents(MockBuilder.ResourceXPath, "qwer", "asdf"),
-            new PageMock("https://example.com/b").Contents(MockBuilder.ResourceXPath, "zxcv", "yuio"));
+        var builder = new ScrapTextsServiceMockBuilder(_output);
+        builder.SetupTraversal(
+            new PageMock("https://example.com/a").Contents(JobDtoBuilder.ResourceXPath, "qwer", "asdf"),
+            new PageMock("https://example.com/b").Contents(JobDtoBuilder.ResourceXPath, "zxcv", "yuio"));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
-        var jobDto = builder.BuildJobDto(ResourceType.Text);
-        var service = builder.BuildScrapTextsService(jobDto);
+        var jobDto = JobDtoBuilder.Build(ResourceType.Text);
+        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
+        var service = builder.Build();
 
         await service.ScrapTextAsync(jobDto);
 
@@ -42,10 +44,11 @@ public class ScrapTextsServiceTests
     [Fact]
     public async Task? ScrapTextAsync_DownloadJob_Throws()
     {
-        var builder = new MockBuilder(_output);
-        var jobDto = builder.BuildJobDto(ResourceType.DownloadLink);
+        var builder = new ScrapTextsServiceMockBuilder(_output);
+        var jobDto = JobDtoBuilder.Build(ResourceType.DownloadLink);
+        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
-        var service = builder.BuildScrapTextsService(jobDto);
+        var service = builder.Build();
 
         var action = () => service.ScrapTextAsync(jobDto);
         await action.Should().ThrowAsync<InvalidOperationException>();

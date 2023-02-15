@@ -104,8 +104,7 @@ public class PageTests
 
         var expectedLinkedPage = new PageMock("https://other.com/a");
         var retrieverMock = new Mock<IPageRetriever>(MockBehavior.Strict);
-        retrieverMock.Setup(x => x.GetPageAsync(new Uri("https://other.com/a"), false))
-            .ReturnsAsync(expectedLinkedPage);
+        retrieverMock.Setup(x => x.GetPageAsync(new Uri("https://other.com/a"))).ReturnsAsync(expectedLinkedPage);
 
         var page = new Page(new Uri("https://example.com"), doc, retrieverMock.Object, Mock.Of<ILogger<Page>>());
 

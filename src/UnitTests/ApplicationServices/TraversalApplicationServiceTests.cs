@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using Scrap.Domain.JobDefinitions;
+using Scrap.Domain.Jobs;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,12 +18,11 @@ public class TraversalApplicationServiceTests
     [Fact]
     public async Task Traverse()
     {
-        var builder = new MockBuilder(
-            _output,
-            new PageMock("https://example.com/a"),
-            new PageMock("https://example.com/b"));
-        var jobDto = builder.BuildJobDto(ResourceType.DownloadLink);
-        var service = builder.BuildTraversalApplicationService(jobDto);
+        var builder = new TraversalApplicationServiceMockBuilder();
+        builder.SetupTraversal(new PageMock("https://example.com/a"), new PageMock("https://example.com/b"));
+        var jobDto = JobDtoBuilder.Build(ResourceType.DownloadLink);
+        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
+        var service = builder.Build();
 
         var actual = await service.TraverseAsync(jobDto).ToArrayAsync();
 

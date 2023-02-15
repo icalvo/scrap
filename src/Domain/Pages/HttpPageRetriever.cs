@@ -27,7 +27,11 @@ public class HttpPageRetriever : IPageRetriever
         _pageLogger = new Logger<Page>(loggerFactory);
     }
 
-    public Task<IPage> GetPageAsync(Uri uri, bool noCache)
+    public Task<IPage> GetPageAsync(Uri uri) => GetPageAsync(uri, false);
+
+    public Task<IPage> GetPageWithoutCacheAsync(Uri uri) => GetPageAsync(uri, true);
+
+    private Task<IPage> GetPageAsync(Uri uri, bool noCache)
     {
         _logger.LogTrace("GET {Uri}", uri);
         var policy = noCache ? _noCachePolicy : _policy;

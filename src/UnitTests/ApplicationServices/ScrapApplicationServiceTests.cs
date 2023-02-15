@@ -20,8 +20,7 @@ public class ScrapApplicationServiceTests
     [Fact]
     public async Task ScrapAsync()
     {
-        var builder = new MockBuilder(_output);
-        var jobDto = builder.BuildJobDto(ResourceType.DownloadLink);
+        var jobDto = JobDtoBuilder.Build(ResourceType.DownloadLink);
 
         var scrapDownloadsServiceMock = new Mock<IScrapDownloadsService>();
         scrapDownloadsServiceMock.Setup(x => x.DownloadLinksAsync(It.IsAny<JobDto>())).Returns(Task.CompletedTask);
@@ -42,8 +41,7 @@ public class ScrapApplicationServiceTests
     [Fact]
     public async Task ScrapAsync_Texts()
     {
-        var builder = new MockBuilder(_output);
-        var jobDto = builder.BuildJobDto(ResourceType.Text);
+        var jobDto = JobDtoBuilder.Build(ResourceType.Text);
 
         var scrapDownloadsServiceMock = new Mock<IScrapDownloadsService>();
         scrapDownloadsServiceMock.Setup(x => x.DownloadLinksAsync(It.IsAny<JobDto>())).Returns(Task.CompletedTask);

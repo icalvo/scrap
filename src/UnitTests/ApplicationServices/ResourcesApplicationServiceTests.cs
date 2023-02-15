@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using Scrap.Domain.JobDefinitions;
+using Scrap.Domain.Jobs;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,18 +18,19 @@ public class ResourcesApplicationServiceTests
     [Fact]
     public async Task GetResourcesAsync()
     {
-        var builder = new MockBuilder(
-            _output,
+        var builder = new ResourcesApplicationServiceMockBuilder();
+        builder.SetupTraversal(
             new PageMock("https://example.com/a").ResourceLinks(
-                MockBuilder.ResourceXPath,
+                JobDtoBuilder.ResourceXPath,
                 "https://example.com/1.txt",
                 "https://example.com/2.txt"),
             new PageMock("https://example.com/b").ResourceLinks(
-                MockBuilder.ResourceXPath,
+                JobDtoBuilder.ResourceXPath,
                 "https://example.com/3.txt",
                 "https://example.com/4.txt"));
-        var jobDto = builder.BuildJobDto(ResourceType.DownloadLink);
-        var service = builder.BuildResourcesApplicationService(jobDto);
+        var jobDto = JobDtoBuilder.Build(ResourceType.DownloadLink);
+        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
+        var service = builder.Build();
 
         var actual = await service.GetResourcesAsync(jobDto, new Uri("https://example.com/a"), 7).ToArrayAsync();
 

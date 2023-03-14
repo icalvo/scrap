@@ -1,4 +1,4 @@
-﻿namespace Scrap.Domain;
+﻿namespace Scrap.Common;
 
 public interface IAsyncFactory<in TIn, TOut>
 {

@@ -1,4 +1,4 @@
-﻿namespace Scrap.Domain;
+﻿namespace Scrap.Common;
 
 public interface IFactory<out TOut>
 {

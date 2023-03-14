@@ -1,6 +1,6 @@
 ﻿using Moq;
 using Scrap.Application.Scrap;
-using Scrap.Domain;
+using Scrap.Common;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
 using Xunit;

@@ -1,5 +1,7 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Scrap.Application;
+using Scrap.Common;
 using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
@@ -19,5 +21,5 @@ public class VisitedPagesApplicationServiceMockBuilder
     public Mock<IPageMarkerRepository> PageMarkerRepositoryMock { get; } = new();
 
     public IVisitedPagesApplicationService Build() =>
-        new VisitedPagesApplicationService(_pageMarkerRepositoryFactoryMock.Object);
+        new VisitedPagesApplicationService(_pageMarkerRepositoryFactoryMock.Object, NullLoggerFactory.Instance);
 }

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Polly;
-using Scrap.Domain;
+using Scrap.Common;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;

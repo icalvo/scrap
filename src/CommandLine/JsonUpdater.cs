@@ -1,23 +1,26 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Scrap.Domain.Resources.FileSystem;
 
 namespace Scrap.CommandLine;
 
 public class JsonUpdater
 {
+    private readonly IFileSystem _fileSystem;
     private readonly string _jsonFilePath;
 
-    public JsonUpdater(string jsonFilePath)
+    public JsonUpdater(IFileSystem fileSystem, string jsonFilePath)
     {
+        _fileSystem = fileSystem;
         _jsonFilePath = jsonFilePath;
     }
 
-    public void AddOrUpdate(IEnumerable<KeyValuePair<string, object?>> updates)
+    public async Task AddOrUpdateAsync(IEnumerable<KeyValuePair<string, object?>> updates)
     {
         try
         {
-            var filePath = Path.Combine(AppContext.BaseDirectory, _jsonFilePath);
-            var json = File.ReadAllText(filePath);
+            var filePath = _fileSystem.PathCombine(AppContext.BaseDirectory, _jsonFilePath);
+            var json = await _fileSystem.FileReadAllTextAsync(filePath);
             var jsonObj = JObject.Parse(json);
             var rootProp = new JProperty("root", jsonObj);
             foreach (var (sectionPathKey, value) in updates)
@@ -26,7 +29,7 @@ public class JsonUpdater
             }
 
             var output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
-            File.WriteAllText(filePath, output);
+            await _fileSystem.FileWriteAllTextAsync(filePath, output);
         }
         catch (Exception ex)
         {

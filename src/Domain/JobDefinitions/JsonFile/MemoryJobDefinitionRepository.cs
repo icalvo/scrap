@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Scrap.Domain.Resources.FileSystem;
 
 namespace Scrap.Domain.JobDefinitions.JsonFile;
 
@@ -19,18 +20,21 @@ public class MemoryJobDefinitionRepository : IJobDefinitionRepository
         _store = AsyncLazy.Create(jobDefinitions.ToImmutableDictionary(def => def.Name));
     }
 
-    public MemoryJobDefinitionRepository(string jsonFilePath, ILogger<MemoryJobDefinitionRepository> logger)
+    public MemoryJobDefinitionRepository(
+        string jsonFilePath,
+        IFileSystem fileSystem,
+        ILogger<MemoryJobDefinitionRepository> logger)
     {
         _logger = logger;
         _store = AsyncLazy.Create(
             async () =>
             {
-                if (!File.Exists(jsonFilePath))
+                if (!await fileSystem.FileExistsAsync(jsonFilePath))
                 {
-                    await File.WriteAllTextAsync(jsonFilePath, "[]");
+                    await fileSystem.FileWriteAllTextAsync(jsonFilePath, "[]");
                 }
 
-                await using var stream = File.OpenRead(jsonFilePath);
+                await using var stream = await fileSystem.FileOpenReadAsync(jsonFilePath);
                 var jobDefinitionDtos = await JsonSerializer.DeserializeAsync<IEnumerable<JobDefinitionDto>>(
                     stream,
                     new JsonSerializerOptions

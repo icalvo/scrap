@@ -1,4 +1,5 @@
-﻿using Scrap.Domain.Resources;
+﻿using Scrap.Common;
+using Scrap.Domain.Resources;
 
 namespace Scrap.Domain.Jobs;
 

@@ -20,6 +20,7 @@ public class CompiledDestinationProviderTests
                     "resourceIndex + (String.IsNullOrEmpty(resourceUrl.Extension()) ? \".unknown\" : resourceUrl.Extension())"
                 },
                 "rootFolder"),
+            new LocalFileSystem(),
             Mock.Of<ILogger<CompiledDestinationProvider>>());
         var doc = new HtmlDocument();
         doc.LoadHtml(

@@ -12,13 +12,15 @@ public class LiteDbPageMarkerRepository : IPageMarkerRepository
     private readonly ILogger<LiteDbPageMarkerRepository> _logger;
 
     public LiteDbPageMarkerRepository(
-        ILiteCollection<PageMarker> collection,
+        string connectionString,
         ILogger<LiteDbPageMarkerRepository> logger,
         bool disableWrites)
     {
+        var cnx = new ConnectionString(connectionString);
+        var liteDatabase = new LiteDatabase(cnx);
+        _collection = liteDatabase.GetCollection<PageMarker>();
         _logger = logger;
         _disableWrites = disableWrites;
-        _collection = collection;
     }
 
     public Task<bool> ExistsAsync(Uri uri)
@@ -26,6 +28,8 @@ public class LiteDbPageMarkerRepository : IPageMarkerRepository
         var findById = _collection.FindById(uri.AbsoluteUri);
         return Task.FromResult(findById != null);
     }
+
+    public Task<IEnumerable<PageMarker>> GetAllAsync() => Task.FromResult(_collection.FindAll());
 
     public Task UpsertAsync(Uri link)
     {

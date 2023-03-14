@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
 using Scrap.Application.Scrap;
+using Scrap.Common;
 using Scrap.Domain;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;

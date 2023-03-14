@@ -13,13 +13,16 @@ public class CompiledDestinationProvider : IDestinationProvider
     private readonly FileSystemResourceRepositoryConfiguration _config;
     private readonly ILogger<CompiledDestinationProvider> _logger;
     private IDestinationProvider? _destinationProvider;
+    private readonly IFileSystem _fileSystem;
 
     public CompiledDestinationProvider(
         FileSystemResourceRepositoryConfiguration config,
+        IFileSystem fileSystem,
         ILogger<CompiledDestinationProvider> logger)
     {
         _config = config;
         _logger = logger;
+        _fileSystem = fileSystem;
     }
 
     public async Task<string> GetDestinationAsync(
@@ -64,16 +67,20 @@ public class CompiledDestinationProvider : IDestinationProvider
 
     private static async Task<string> GenerateSourceCodeAsync(string[] destinationFolderPattern)
     {
+        var sourceCode = await ReadTemplateAsync();
+        var callChain = string.Join("", destinationFolderPattern.Select(p => $"ToArray({p}),\n"));
+        sourceCode = sourceCode.Replace("/* DestinationPattern */", callChain);
+        return sourceCode;
+    }
+
+    private static async Task<string> ReadTemplateAsync()
+    {
         await using var stream =
             typeof(CompiledDestinationProvider).Assembly.GetManifestResourceStream(
                 "Scrap.Domain.Resources.FileSystem.TemplateDestinationProvider.cs") ??
             throw new Exception("TemplateDestinationProvider resource not found");
         using var reader = new StreamReader(stream);
-
-        var sourceCode = await reader.ReadToEndAsync();
-        var callChain = string.Join("", destinationFolderPattern.Select(p => $"ToArray({p}),\n"));
-        sourceCode = sourceCode.Replace("/* DestinationPattern */", callChain);
-        return sourceCode;
+        return await reader.ReadToEndAsync();
     }
 
     private Assembly CompileSourceCode(string sourceCode)
@@ -127,11 +134,11 @@ public class CompiledDestinationProvider : IDestinationProvider
         return assembly;
     }
 
-    private static IDestinationProvider CreateDestinationProviderInstance(Assembly assembly)
+    private IDestinationProvider CreateDestinationProviderInstance(Assembly assembly)
     {
         var typeName = "Scrap.Resources.FileSystem.TemplateDestinationProvider";
         var type = assembly.GetType(typeName) ?? throw new Exception($"Type {typeName} not found");
-        var obj = Activator.CreateInstance(type) ?? throw new Exception("Could not activate instance");
+        var obj = Activator.CreateInstance(type, _fileSystem) ?? throw new Exception("Could not activate instance");
 
         return (IDestinationProvider)obj;
     }

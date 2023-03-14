@@ -14,9 +14,16 @@ using Scrap.Domain.Resources.FileSystem.Extensions;
 
 namespace Scrap.Resources.FileSystem;
 
-// ReSharper disable once UnusedType.Global
+// ReSharper disable once UnusedType.Global -- Used when compiling expressions
 public class TemplateDestinationProvider: IDestinationProvider
 {
+    private readonly IFileSystem _fileSystem;
+
+    public TemplateDestinationProvider(IFileSystem fileSystem)
+    {
+        _fileSystem = fileSystem;
+    }
+    
     public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config)
     {
         return Task.CompletedTask;
@@ -48,8 +55,8 @@ public class TemplateDestinationProvider: IDestinationProvider
         return items.ToArray();
     }
 
-    private static string ToPath(IEnumerable<string> parts)
+    private string ToPath(IEnumerable<string> parts)
     {
-        return Path.Combine(parts.ToArray());
+        return _fileSystem.PathCombine(parts.ToArray());
     }
 }

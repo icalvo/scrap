@@ -1,8 +1,12 @@
-﻿using LiteDB;
+﻿using System.Diagnostics;
+using System.Net;
+using Dropbox.Api;
+using LiteDB;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Caching;
 using Polly.Caching.Memory;
@@ -24,24 +28,29 @@ namespace Scrap.DependencyInjection;
 
 public class ServicesLocator
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public ServicesLocator(IConfiguration config, Action<ILoggingBuilder> configureLogging)
+    public static async Task<IServiceProvider> Build(IConfiguration config, Action<ILoggingBuilder> configureLogging)
     {
         IServiceCollection container = new ServiceCollection();
-        ConfigureServices(config, container, configureLogging);
-
-        _serviceProvider = container.BuildServiceProvider();
+        await ConfigureServices(config, container, configureLogging);
+        return container.BuildServiceProvider();
     }
 
-    public T Get<T>() where T : notnull => _serviceProvider.GetRequiredService<T>();
-
-    private static void ConfigureServices(
+    private static async Task ConfigureServices(
         IConfiguration cfg,
         IServiceCollection container,
         Action<ILoggingBuilder> configureLogging)
-    {
+    { 
+        var enableDropbox = cfg.GetValue("Scrap:Dropbox", false);
+        var appKey = "0lemimx20njvqt2";
+        var tokenFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap", "dropboxtoken.txt");
+        IFileSystem fileSystem =
+            enableDropbox
+            ? new DropboxFileSystem(await GetDropboxClientAsync(appKey, tokenFile))
+            : new LocalFileSystem();
+
         container.AddSingleton(cfg);
+        container.Configure<DatabaseInfo>(cfg.GetSection("Scrap"));
+        container.AddSingleton<DatabaseInfo>(sp => sp.GetRequiredService<IOptions<DatabaseInfo>>().Value);
         container.AddOptions<MemoryCacheOptions>();
         container.AddMemoryCache();
         container.AddLogging(configureLogging);
@@ -78,6 +87,7 @@ public class ServicesLocator
                 logger.LogDebug("Definitions file: {DefinitionsPath}", definitionsFilePath);
                 return new MemoryJobDefinitionRepository(
                     definitionsFilePath,
+                    sp.GetRequiredService<IFileSystem>(),
                     sp.GetRequiredService<ILogger<MemoryJobDefinitionRepository>>());
             });
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
@@ -87,6 +97,7 @@ public class ServicesLocator
 
         container.AddSingleton<IVisitedPagesApplicationService, VisitedPagesApplicationService>();
 
+        container.AddSingleton<IFileSystem>(fileSystem);
         container.AddAsyncFactory<JobDto, Job, JobFactory>();
         container.AddFactory<Job, IPageRetriever, PageRetrieverFactory>();
         container.AddFactory<Job, IDownloadStreamProvider, DownloadStreamProviderFactory>();
@@ -97,7 +108,8 @@ public class ServicesLocator
                 var config = sp.GetRequiredService<IConfiguration>();
                 return new ResourceRepositoryFactory(
                     config[ConfigKeys.BaseRootFolder],
-                    sp.GetRequiredService<ILoggerFactory>());
+                    sp.GetRequiredService<ILoggerFactory>(),
+                    sp.GetRequiredService<IFileSystem>());
             });
         container.AddSingleton<IFactory<Job, ILinkCalculator>, LinkCalculatorFactory>();
         container
@@ -106,4 +118,78 @@ public class ServicesLocator
 
         container.AddOptionalFactory<Job, IPageMarkerRepository, PageMarkerRepositoryFactory>();
     }
+
+    private static async Task<DropboxClient> GetDropboxClientAsync(string appKey, string tokenFile)
+    {
+        string? existingRefreshToken = null;
+        if (File.Exists(tokenFile))
+        {
+            existingRefreshToken = await File.ReadAllTextAsync(tokenFile);
+        }
+
+        var (refreshToken, client) = await GetDropboxClientAuxAsync(appKey, existingRefreshToken);
+
+        if (existingRefreshToken != refreshToken)
+        {
+            await File.WriteAllTextAsync(tokenFile, refreshToken);
+        }
+
+        return client;
+    }
+    
+    private static async Task<(string refreshToken, DropboxClient client)> GetDropboxClientAuxAsync(string appKey, string? existingRefreshToken)
+    {
+        if (existingRefreshToken == null)
+        {
+            return await GetByAuth();
+        }
+
+        var dropboxClient = new DropboxClient(existingRefreshToken, appKey);
+        try
+        {
+            if (await dropboxClient.RefreshAccessToken(null))
+            {
+                return (existingRefreshToken, dropboxClient);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            if (ex.StatusCode >= HttpStatusCode.InternalServerError)
+            {
+                throw;
+            }
+        }
+
+        return await GetByAuth();
+
+        async Task<(string refreshToken, DropboxClient client)> GetByAuth()
+        {
+            var codeVerifier = DropboxOAuth2Helper.GeneratePKCECodeVerifier();
+            var codeChallenge = DropboxOAuth2Helper.GeneratePKCECodeChallenge(codeVerifier);
+
+            var authorizeUri = DropboxOAuth2Helper.GetAuthorizeUri(oauthResponseType:OAuthResponseType.Code,
+                clientId: appKey,
+                redirectUri: (string?)null,
+                state: null,
+                tokenAccessType: TokenAccessType.Offline,
+                scopeList: null,
+                includeGrantedScopes: IncludeGrantedScopes.None,
+                codeChallenge: codeChallenge);
+            Process.Start(new ProcessStartInfo { FileName = authorizeUri.ToString(), UseShellExecute = true });
+            Console.Write("Dropbox auth code: ");
+            var code = Console.ReadLine();
+            OAuth2Response tokenResult = await DropboxOAuth2Helper.ProcessCodeFlowAsync(
+                code: code,
+                appKey: appKey,
+                codeVerifier: codeVerifier,
+                redirectUri: null);
+            var client = new DropboxClient(
+                    appKey: appKey,
+                    oauth2AccessToken: tokenResult.AccessToken,
+                    oauth2RefreshToken: tokenResult.RefreshToken,
+                    oauth2AccessTokenExpiresAt: tokenResult.ExpiresAt ?? default(DateTime));
+            return (tokenResult.RefreshToken, client);
+        }
+    }
+    
 }

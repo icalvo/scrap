@@ -504,12 +504,13 @@ public class ScrapCommandLine
             new GlobalConfig(
                 ConfigKeys.FileSystemType,
                 "local",
-                "Filesystem type (local/dropbox)"),
+                "Filesystem type (local/dropbox)",
+                Optional: true),
             new GlobalConfig(
                 ConfigKeys.BaseRootFolder,
                 null,
                 "Base download path for your file-based resource repository",
-                true)
+                Optional: true)
         };
 
     private static void CreateGlobalConfigFile(string globalUserConfigFolder, string globalUserConfigPath)

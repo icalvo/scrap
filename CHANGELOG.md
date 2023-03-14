@@ -4,7 +4,7 @@ All notable changes to this project are be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.3.0] - 2023-01-31
+## [2.3.0] - 2023-03-14
 ### Changed
 - `database` verb split into `searchvisited` and `deletevisited`.
 - `scrap /all` replaced by `all` verb.
@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `showconfig` verb for showing all the current configuration values.
 - `Scrap:BaseRootFolder` global option
 ### Changed
+
 ## [2.2.0] - 2023-01-27
 ### Added
 - `database` verb for managing the visited page database.

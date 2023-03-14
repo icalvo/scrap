@@ -40,13 +40,15 @@ public class ServicesLocator
         IServiceCollection container,
         Action<ILoggingBuilder> configureLogging)
     { 
-        var enableDropbox = cfg.GetValue("Scrap:Dropbox", false);
+        var filesystemType = cfg[ConfigKeys.FileSystemType] ?? "local";
         var appKey = "0lemimx20njvqt2";
         var tokenFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap", "dropboxtoken.txt");
         IFileSystem fileSystem =
-            enableDropbox
-            ? new DropboxFileSystem(await GetDropboxClientAsync(appKey, tokenFile))
-            : new LocalFileSystem();
+            filesystemType.ToLowerInvariant() switch {
+            "dropbox" => new DropboxFileSystem(await GetDropboxClientAsync(appKey, tokenFile)),
+            "local" => new LocalFileSystem(),
+            _ => throw new Exception($"Unknown filesystem type: {filesystemType}")
+            };
 
         container.AddSingleton(cfg);
         container.Configure<DatabaseInfo>(cfg.GetSection("Scrap"));

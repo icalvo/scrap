@@ -52,10 +52,10 @@ public class PageMarkerRepositoryFactory : ISingleOptionalParameterFactory<Job, 
             type = "LiteDb";
             connectionString = _typedConnectionString;
         }
-        var instance = type switch
+        var instance = type.ToLowerInvariant() switch
         {
-            "LiteDb" => BuildLiteDb(connectionString, disableMarkingVisited),
-            "Postgres" => BuildPostgres(connectionString, disableMarkingVisited),
+            "litedb" => BuildLiteDb(connectionString, disableMarkingVisited),
+            "postgres" => BuildPostgres(connectionString, disableMarkingVisited),
             _ => throw new InvalidOperationException($"Database type {type} is not supported")
         };
 

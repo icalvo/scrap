@@ -394,6 +394,7 @@ public class ScrapCommandLine
 
             Console.Write($"{prompt} [{promptDefaultValue}]: ");
             var value = Console.ReadLine();
+
             if (string.IsNullOrWhiteSpace(value))
             {
                 value = promptDefaultValue;
@@ -499,7 +500,11 @@ public class ScrapCommandLine
             new GlobalConfig(
                 ConfigKeys.Database,
                 $"Filename={Path.Combine(globalUserConfigFolder, "scrap.db")};Connection=shared",
-                "Connection string for page markings LiteDB database"),
+                "Connection string for visited page database"),
+            new GlobalConfig(
+                ConfigKeys.FileSystemType,
+                "local",
+                "Filesystem type (local/dropbox)"),
             new GlobalConfig(
                 ConfigKeys.BaseRootFolder,
                 null,

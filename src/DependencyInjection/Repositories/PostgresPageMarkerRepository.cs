@@ -2,8 +2,9 @@
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using Polly;
+using Scrap.Domain.Pages;
 
-namespace Scrap.Domain.Pages.LiteDb;
+namespace Scrap.DependencyInjection.Factories;
 
 public class PostgresPageMarkerRepository : IPageMarkerRepository
 {

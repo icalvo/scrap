@@ -1,24 +1,28 @@
 ﻿using Microsoft.Extensions.Logging;
 using Scrap.Common;
+using Scrap.Domain;
+using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 using Scrap.Domain.Resources.FileSystem;
 
 namespace Scrap.DependencyInjection.Factories;
 
 public class ResourceRepositoryConfigurationValidatorFactory
-    : IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>
+    : IResourceRepositoryConfigurationValidatorFactory
 {
-    private readonly IFileSystem _fileSystem;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly IFileSystemFactory _fileSystemFactory;
 
-    public ResourceRepositoryConfigurationValidatorFactory(ILoggerFactory loggerFactory, IFileSystem fileSystem)
+    public ResourceRepositoryConfigurationValidatorFactory(ILoggerFactory loggerFactory, IFileSystemFactory fileSystemFactory)
     {
         _loggerFactory = loggerFactory;
-        _fileSystem = fileSystem;
+        _fileSystemFactory = fileSystemFactory;
     }
 
-    public IResourceRepositoryConfigurationValidator Build(IResourceRepositoryConfiguration resourceRepoArgs) =>
-        resourceRepoArgs switch
+    public async Task<IResourceRepositoryConfigurationValidator> BuildAsync(IResourceRepositoryConfiguration resourceRepoArgs)
+    {
+        var _fileSystem = await _fileSystemFactory.BuildAsync();
+        return resourceRepoArgs switch
         {
             FileSystemResourceRepositoryConfiguration config => new FileSystemResourceRepositoryConfigurationValidator(
                 Singleton<CompiledDestinationProvider>.Get(
@@ -29,4 +33,5 @@ public class ResourceRepositoryConfigurationValidatorFactory
             _ => throw new InvalidOperationException(
                 $"Unknown resource processor config type: {resourceRepoArgs.GetType().Name}")
         };
+    }
 }

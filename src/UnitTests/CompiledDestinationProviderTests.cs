@@ -13,6 +13,9 @@ public class CompiledDestinationProviderTests
     [Fact]
     public async Task GetDestinationAsync()
     {
+        var fsMock = new Mock<IFileSystem>();
+        fsMock.Setup(x => x.PathCombine(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns<string, string>((baseDirectory, filePath) => baseDirectory + ":" + filePath);
         var p = new CompiledDestinationProvider(
             new FileSystemResourceRepositoryConfiguration(
                 new[]
@@ -20,7 +23,7 @@ public class CompiledDestinationProviderTests
                     "resourceIndex + (String.IsNullOrEmpty(resourceUrl.Extension()) ? \".unknown\" : resourceUrl.Extension())"
                 },
                 "rootFolder"),
-            new LocalFileSystem(),
+            fsMock.Object,
             Mock.Of<ILogger<CompiledDestinationProvider>>());
         var doc = new HtmlDocument();
         doc.LoadHtml(
@@ -41,7 +44,6 @@ public class CompiledDestinationProviderTests
             new Uri("https://example.com/resource.gif"),
             3);
 
-        var expected = Path.Combine("destinationRootFolder", "3.gif");
-        result.Should().Be(expected);
+        result.Should().Be("destinationRootFolder:3.gif");
     }
 }

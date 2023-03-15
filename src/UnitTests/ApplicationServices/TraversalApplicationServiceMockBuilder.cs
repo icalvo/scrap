@@ -10,16 +10,16 @@ namespace Scrap.Tests.Unit.ApplicationServices;
 public class TraversalApplicationServiceMockBuilder
 {
     public const string ResourceXPath = "//img/@src";
-    private readonly Mock<IFactory<Job, ILinkCalculator>> _linkCalculatorFactoryMock = new();
-    private readonly Mock<IFactory<Job, IPageRetriever>> _pageRetrieverFactoryMock = new();
+    private readonly Mock<ILinkCalculatorFactory> _linkCalculatorFactoryMock = new();
+    private readonly Mock<IPageRetrieverFactory> _pageRetrieverFactoryMock = new();
 
     public TraversalApplicationServiceMockBuilder()
     {
-        _linkCalculatorFactoryMock.SetupFactory(LinkCalculatorMock.Object);
-        _pageRetrieverFactoryMock.SetupFactory(PageRetrieverMock.Object);
+        _linkCalculatorFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(LinkCalculatorMock.Object);
+        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
     }
 
-    public Mock<IAsyncFactory<JobDto, Job>> JobFactoryMock { get; } = new();
+    public Mock<IJobFactory> JobFactoryMock { get; } = new();
     public Mock<IGraphSearch> GraphSearchMock { get; private set; } = new();
     public Mock<ILinkCalculator> LinkCalculatorMock { get; } = new();
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();

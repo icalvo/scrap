@@ -12,6 +12,8 @@ using Scrap.Application.Scrap;
 using Scrap.CommandLine.Logging;
 using Scrap.Common;
 using Scrap.DependencyInjection;
+using Scrap.DependencyInjection.Factories;
+using Scrap.Domain;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources.FileSystem;
@@ -28,6 +30,7 @@ public class ScrapCommandLine
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         ".scrap");
 
+    private static readonly IOAuthCodeGetter OAuthCodeGetter = new ConsoleOAuthCodeGetter();
     private readonly IConfiguration _configuration;
     private readonly string _globalUserConfigFolder;
     private bool _debug;
@@ -97,7 +100,7 @@ public class ScrapCommandLine
     {
         PrintHeader();
 
-        var serviceResolver = await ServicesLocator.Build(_configuration, ConfigureLoggingWithConsole);
+        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithConsole, OAuthCodeGetter);
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
         var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
 
@@ -139,7 +142,7 @@ public class ScrapCommandLine
     {
         PrintHeader();
 
-        var serviceResolver = await ServicesLocator.Build(_configuration, ConfigureLoggingWithConsole);
+        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithConsole, OAuthCodeGetter);
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
         var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
 
@@ -209,7 +212,7 @@ public class ScrapCommandLine
         [Description("URL where the scrapping starts")] string? rootUrl = null,
         [Description("Navigate through already visited pages")] bool fullScan = false)
     {
-        var serviceResolver = await ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole);
+        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
         var newJob = await BuildJobDtoAsync(serviceResolver, name, rootUrl, fullScan, false, true, true);
         if (newJob == null)
         {
@@ -229,7 +232,7 @@ public class ScrapCommandLine
         [Description("Output only the resource link instead of the format expected by 'scrap download'")]
         bool onlyResourceLink = false)
     {
-        var serviceResolver = await ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole);
+        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
         var newJob = await BuildJobDtoAsync(serviceResolver, name, rootUrl, false, false, true, true);
         if (newJob == null)
         {
@@ -260,7 +263,7 @@ public class ScrapCommandLine
         [Description("Download resources even if they are already downloaded")] bool downloadAlways = false,
         [Description("Resource URLs to download [pipeline]")] string[]? resourceUrls = null)
     {
-        var serviceResolver = await ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole);
+        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
         var newJob = await BuildJobDtoAsync(serviceResolver, name, rootUrl, false, downloadAlways, true, false);
         if (newJob == null)
         {
@@ -285,7 +288,7 @@ public class ScrapCommandLine
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task MarkVisited([Description("URL [pipeline]")] string[]? url = null)
     {
-        var serviceResolver = await ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole);
+        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
 
         var visitedPagesAppService = serviceResolver.GetRequiredService<IVisitedPagesApplicationService>();
         var inputLines = url ?? ConsoleInput();
@@ -301,7 +304,7 @@ public class ScrapCommandLine
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task SearchVisited([Description("Search with Regular Expression [pipeline]")] string? search = null)
     {
-        var serviceResolver = await ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole);
+        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
 
         var visitedPagesAppService = serviceResolver.GetRequiredService<IVisitedPagesApplicationService>();
         search ??= ConsoleInput().First();
@@ -316,7 +319,7 @@ public class ScrapCommandLine
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task DeleteVisited([Description("Search with Regular Expression [pipeline]")] string? search = null)
     {
-        var serviceResolver = await ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole);
+        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
 
         var visitedPagesAppService = serviceResolver.GetRequiredService<IVisitedPagesApplicationService>();
         search ??= ConsoleInput().First();
@@ -699,7 +702,7 @@ public class ScrapCommandLine
         Console.WriteLine(helpText);
     }
 
-    private async Task ErrorHandler(ExceptionContext c, IEnumerable<string> args)
+    private void ErrorHandler(ExceptionContext c, IEnumerable<string> args)
     {
         var ex = c.Exception;
         if (c.Exception is TargetInvocationException && c.Exception.InnerException != null)
@@ -707,7 +710,7 @@ public class ScrapCommandLine
             ex = c.Exception.InnerException;
         }
 
-        var serviceResolver = await ServicesLocator.Build(_configuration, ConfigureLoggingWithConsole);
+        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithConsole, OAuthCodeGetter);
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
 
         if (ex is ScrapException)

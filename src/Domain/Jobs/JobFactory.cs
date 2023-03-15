@@ -3,23 +3,22 @@ using Scrap.Domain.Resources;
 
 namespace Scrap.Domain.Jobs;
 
-public class JobFactory : IAsyncFactory<JobDto, Job>
+public class JobFactory : IJobFactory
 {
-    private readonly IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator>
-        _validatorFactory;
+    private readonly IResourceRepositoryConfigurationValidatorFactory _validatorFactory;
 
     public JobFactory(
-        IFactory<IResourceRepositoryConfiguration, IResourceRepositoryConfigurationValidator> validatorFactory)
+        IResourceRepositoryConfigurationValidatorFactory validatorFactory)
     {
         _validatorFactory = validatorFactory;
     }
 
-    public async Task<Job> Build(JobDto jobDto)
+    public async Task<Job> BuildAsync(JobDto jobDto)
     {
         var job = new Job(jobDto);
         if (job.ResourceRepoArgs != null)
         {
-            var validator = _validatorFactory.Build(job.ResourceRepoArgs);
+            var validator = await _validatorFactory.BuildAsync(job.ResourceRepoArgs);
             await validator.ValidateAsync(job.ResourceRepoArgs);
         }
 

@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
 using Scrap.Application;
-using Scrap.Common;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
@@ -13,22 +12,23 @@ namespace Scrap.Tests.Unit.ApplicationServices;
 public class DownloadApplicationServiceMockBuilder
 {
     private readonly ITestOutputHelper _output;
-    private readonly Mock<IFactory<Job, IPageRetriever>> _pageRetrieverFactoryMock = new();
-    private readonly Mock<IFactory<Job, IResourceRepository>> _resourceRepositoryFactoryMock = new();
-    private readonly Mock<IFactory<Job, IDownloadStreamProvider>> _streamProviderFactoryMock = new();
+    private readonly Mock<IPageRetrieverFactory> _pageRetrieverFactoryMock = new();
+    private readonly Mock<IResourceRepositoryFactory> _resourceRepositoryFactoryMock = new();
+    private readonly Mock<IDownloadStreamProviderFactory> _streamProviderFactoryMock = new();
     private readonly Mock<IDownloadStreamProvider> _streamProviderMock = new();
 
     public DownloadApplicationServiceMockBuilder(ITestOutputHelper output)
     {
         _output = output;
-        _pageRetrieverFactoryMock.SetupFactory(PageRetrieverMock.Object);
-        _resourceRepositoryFactoryMock.SetupFactory(ResourceRepositoryMock.Object);
-        _streamProviderFactoryMock.SetupFactory(_streamProviderMock.Object);
+
+        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
+        _resourceRepositoryFactoryMock.Setup(x => x.BuildAsync(It.IsAny<Job>())).ReturnsAsync(ResourceRepositoryMock.Object);
+        _streamProviderFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(_streamProviderMock.Object);
         _streamProviderMock.SetupWithString();
         LoggerMock.SetupWithOutput(output);
     }
 
-    public Mock<IAsyncFactory<JobDto, Job>> JobFactoryMock { get; } = new();
+    public Mock<IJobFactory> JobFactoryMock { get; } = new();
     public Mock<ILogger> LoggerMock { get; } = new();
     public Mock<IResourceRepository> ResourceRepositoryMock { get; } = new();
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();

@@ -21,4 +21,5 @@ public class LocalFileSystem : IFileSystem
     public string PathGetRelativePath(string relativeTo, string path) => Path.GetRelativePath(relativeTo, path);
     public string? PathGetDirectoryName(string destinationPath) => Path.GetDirectoryName(destinationPath);
     public string PathNormalizeFolderSeparator(string path) => path;
+    public bool IsReadOnly => false;
 }

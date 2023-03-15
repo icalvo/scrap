@@ -1,18 +1,19 @@
 ﻿using Microsoft.Extensions.Logging;
 using Scrap.Common;
+using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 
 namespace Scrap.DependencyInjection.Factories;
 
-public class LinkCalculatorFactory : IFactory<Job, ILinkCalculator>
+public class LinkCalculatorFactory : ILinkCalculatorFactory
 {
     private readonly ILoggerFactory _loggerFactory;
-    private readonly IFactory<Job, IPageMarkerRepository> _pageMarkerRepositoryFactory;
+    private readonly IPageMarkerRepositoryFactory _pageMarkerRepositoryFactory;
 
     public LinkCalculatorFactory(
         ILoggerFactory loggerFactory,
-        IFactory<Job, IPageMarkerRepository> pageMarkerRepositoryFactory)
+        IPageMarkerRepositoryFactory pageMarkerRepositoryFactory)
     {
         _loggerFactory = loggerFactory;
         _pageMarkerRepositoryFactory = pageMarkerRepositoryFactory;

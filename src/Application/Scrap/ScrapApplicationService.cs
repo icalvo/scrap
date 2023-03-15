@@ -6,12 +6,12 @@ namespace Scrap.Application.Scrap;
 
 public class ScrapApplicationService : IScrapApplicationService
 {
-    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
+    private readonly IJobFactory _jobFactory;
     private readonly IScrapDownloadsService _scrapDownloadsService;
     private readonly IScrapTextService _scrapTextService;
 
     public ScrapApplicationService(
-        IAsyncFactory<JobDto, Job> jobFactory,
+        IJobFactory jobFactory,
         IScrapDownloadsService scrapDownloadsService,
         IScrapTextService scrapTextService)
     {
@@ -22,7 +22,7 @@ public class ScrapApplicationService : IScrapApplicationService
 
     public async Task ScrapAsync(JobDto jobDto)
     {
-        _ = await _jobFactory.Build(jobDto);
+        _ = await _jobFactory.BuildAsync(jobDto);
         await (jobDto.ResourceType switch
         {
             ResourceType.DownloadLink => _scrapDownloadsService.DownloadLinksAsync(jobDto),

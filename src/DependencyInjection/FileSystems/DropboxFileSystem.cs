@@ -61,4 +61,6 @@ public class DropboxFileSystem : IFileSystem
 
     public string PathNormalizeFolderSeparator(string path) =>
         path.Replace('\\', '/');
+
+    public bool IsReadOnly => false;
 }

@@ -13,26 +13,25 @@ namespace Scrap.Application.Scrap;
 public class ScrapDownloadsService : IScrapDownloadsService
 {
     private const int RetryCount = 5;
-    private readonly IFactory<Job, IDownloadStreamProvider> _downloadStreamProviderFactory;
+    private readonly IDownloadStreamProviderFactory _downloadStreamProviderFactory;
     private readonly IGraphSearch _graphSearch;
 
-    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
-
-    private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
+    private readonly IJobFactory _jobFactory;
+    private readonly ILinkCalculatorFactory _linkCalculatorFactory;
+    private readonly IPageMarkerRepositoryFactory _pageMarkerRepositoryFactory;
+    private readonly IPageRetrieverFactory _pageRetrieverFactory;
+    private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
     private readonly ILogger<ScrapDownloadsService> _logger;
-    private readonly IFactory<Job, IPageMarkerRepository> _pageMarkerRepositoryFactory;
-    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
-    private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
 
     public ScrapDownloadsService(
         IGraphSearch graphSearch,
         ILogger<ScrapDownloadsService> logger,
-        IFactory<Job, IDownloadStreamProvider> downloadStreamProviderFactory,
-        IFactory<Job, IResourceRepository> resourceRepositoryFactory,
-        IFactory<Job, IPageRetriever> pageRetrieverFactory,
-        IFactory<Job, IPageMarkerRepository> pageMarkerRepositoryFactory,
-        IFactory<Job, ILinkCalculator> linkCalculatorFactory,
-        IAsyncFactory<JobDto, Job> jobFactory)
+        IDownloadStreamProviderFactory downloadStreamProviderFactory,
+        IResourceRepositoryFactory resourceRepositoryFactory,
+        IPageRetrieverFactory pageRetrieverFactory,
+        IPageMarkerRepositoryFactory pageMarkerRepositoryFactory,
+        ILinkCalculatorFactory linkCalculatorFactory,
+        IJobFactory jobFactory)
     {
         _graphSearch = graphSearch;
         _logger = logger;
@@ -46,8 +45,8 @@ public class ScrapDownloadsService : IScrapDownloadsService
 
     public async Task DownloadLinksAsync(JobDto jobDto)
     {
-        var job = await _jobFactory.Build(jobDto);
-        var resourceRepository = _resourceRepositoryFactory.Build(job);
+        var job = await _jobFactory.BuildAsync(jobDto);
+        var resourceRepository = await _resourceRepositoryFactory.BuildAsync(job);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
         var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();
@@ -73,7 +72,8 @@ public class ScrapDownloadsService : IScrapDownloadsService
         var pageMarkerRepository = _pageMarkerRepositoryFactory.Build(job);
         var downloadStreamProvider = _downloadStreamProviderFactory.Build(job);
         var pipeline = Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
-            .Do(page => _logger.LogDebug("Processing page {PageUrl}", page.Uri)).DoAwait(
+            .Do(page => _logger.LogDebug("Processing page {PageUrl}", page.Uri))
+            .DoAwait(
                 (page, pageIndex) =>
                 {
                     var privatePage = page;
@@ -92,7 +92,8 @@ public class ScrapDownloadsService : IScrapDownloadsService
                                 async resourceLink => (x: resourceLink,
                                     stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
                             .DoAwait(Download).ExecuteAsync());
-                }).DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
+                })
+            .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();
     }

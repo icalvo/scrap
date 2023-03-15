@@ -8,11 +8,11 @@ namespace Scrap.Application;
 public class VisitedPagesApplicationService : IVisitedPagesApplicationService
 {
     private readonly IPageMarkerRepository _pageMarkerRepository;
-    private readonly ILoggerFactory _loggerFactory;
+    private readonly IPageMarkerRepositoryFactory _pageMarkerRepositoryFactory;
 
-    public VisitedPagesApplicationService(IFactory<IPageMarkerRepository> pageMarkerRepositoryFactory, ILoggerFactory loggerFactory)
+    public VisitedPagesApplicationService(IPageMarkerRepositoryFactory pageMarkerRepositoryFactory)
     {
-        _loggerFactory = loggerFactory;
+        _pageMarkerRepositoryFactory = pageMarkerRepositoryFactory;
         _pageMarkerRepository = pageMarkerRepositoryFactory.Build();
     }
 
@@ -24,9 +24,8 @@ public class VisitedPagesApplicationService : IVisitedPagesApplicationService
 
     public async Task MigrateAsync(DatabaseInfo dbInfo1, DatabaseInfo dbInfo2)
     {
-        var repo1 = new PageMarkerRepositoryFactory(
-            dbInfo1, _loggerFactory.CreateLogger<PageMarkerRepositoryFactory>(), _loggerFactory).Build();
-        var repo2 = new PageMarkerRepositoryFactory(dbInfo2, _loggerFactory.CreateLogger<PageMarkerRepositoryFactory>(), _loggerFactory).Build();
+        var repo1 = _pageMarkerRepositoryFactory.Build(dbInfo1);
+        var repo2 = _pageMarkerRepositoryFactory.Build(dbInfo2);
 
         foreach (var marker in await repo1.GetAllAsync())
         {

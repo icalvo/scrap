@@ -2,13 +2,13 @@
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Caching;
-using Scrap.Common;
+using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 
 namespace Scrap.DependencyInjection.Factories;
 
-public class AsyncPolicyFactory : IFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy>
+public class AsyncPolicyFactory : IAsyncPolicyFactory
 {
     private static readonly TimeSpan DefaultCacheTtl = TimeSpan.FromMinutes(5);
 

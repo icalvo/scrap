@@ -9,12 +9,12 @@ namespace Scrap.Application;
 
 public class ResourcesApplicationService : IResourcesApplicationService
 {
-    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
-    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
+    private readonly IJobFactory _jobFactory;
+    private readonly IPageRetrieverFactory _pageRetrieverFactory;
 
     public ResourcesApplicationService(
-        IAsyncFactory<JobDto, Job> jobFactory,
-        IFactory<Job, IPageRetriever> pageRetrieverFactory)
+        IJobFactory jobFactory,
+        IPageRetrieverFactory pageRetrieverFactory)
     {
         _jobFactory = jobFactory;
         _pageRetrieverFactory = pageRetrieverFactory;
@@ -27,7 +27,7 @@ public class ResourcesApplicationService : IResourcesApplicationService
             throw new Exception();
         }
 
-        var job = await _jobFactory.Build(jobDto);
+        var job = await _jobFactory.BuildAsync(jobDto);
 
         var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();
 

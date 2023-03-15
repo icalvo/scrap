@@ -1,56 +1,60 @@
 ﻿using Microsoft.Extensions.Logging;
-using Scrap.Common;
+using Scrap.Domain;
 using Scrap.Domain.Jobs;
-using Scrap.Domain.Pages.LiteDb;
+using Scrap.Domain.Pages;
 
-namespace Scrap.Domain.Pages;
+namespace Scrap.DependencyInjection.Factories;
 
-public class PageMarkerRepositoryFactory : ISingleOptionalParameterFactory<Job, IPageMarkerRepository>
+public class PageMarkerRepositoryFactory : IPageMarkerRepositoryFactory
 {
-    private readonly string _typedConnectionString;
+    private readonly DatabaseInfo _options;
     private readonly ILoggerFactory _loggerFactory;
-    private static readonly Dictionary<string, IPageMarkerRepository> _store = new();
+    private static readonly Dictionary<string, IPageMarkerRepository> Store = new();
 
     public PageMarkerRepositoryFactory(
         DatabaseInfo options,
         ILogger<PageMarkerRepositoryFactory> logger,
         ILoggerFactory loggerFactory)
     {
-        _typedConnectionString = options.Database ?? throw new ArgumentException("Database cannot be null", nameof(options));
+        var _typedConnectionString = options.Database ?? throw new ArgumentException("Database cannot be null", nameof(options));
+        _options = options;
         _loggerFactory = loggerFactory;
         logger.LogDebug("Scrap DB: {ConnectionString}", _typedConnectionString);
     }
     
     public IPageMarkerRepository Build(Job job)
     {
-        return Build(new JobId(), job.DisableMarkingVisited);
+        return Build(_options, new JobId(), job.DisableMarkingVisited);
     }
 
-    public IPageMarkerRepository Build() => Build(new JobId(), false);
+    public IPageMarkerRepository Build(DatabaseInfo param) => Build(param, new JobId(), false);
 
-    private IPageMarkerRepository Build(JobId id, bool disableMarkingVisited)
+    public IPageMarkerRepository Build() => Build(_options, new JobId(), false);
+
+    private IPageMarkerRepository Build(DatabaseInfo options, JobId id, bool disableMarkingVisited)
     {
-        if (_store.TryGetValue(id.ToString(), out var repo))
+        var typedConnectionString = options.Database ?? throw new ArgumentException("Database cannot be null", nameof(options));
+        if (Store.TryGetValue(id.ToString(), out var repo))
             return repo;
 
         string type;
         string connectionString;
-        if (_typedConnectionString.StartsWith("["))
+        if (typedConnectionString.StartsWith("["))
         {
-            var typeEnd = _typedConnectionString.IndexOf("]", StringComparison.Ordinal);
+            var typeEnd = typedConnectionString.IndexOf("]", StringComparison.Ordinal);
             if (typeEnd == 1)
             {
                 throw new Exception("Typed connection string is invalid (no ] found)");
             }
 
-            type = _typedConnectionString[1..typeEnd];
+            type = typedConnectionString[1..typeEnd];
             var cnxstrStart = typeEnd + 1;
-            connectionString = _typedConnectionString[cnxstrStart..];
+            connectionString = typedConnectionString[cnxstrStart..];
         }
         else
         {
             type = "LiteDb";
-            connectionString = _typedConnectionString;
+            connectionString = typedConnectionString;
         }
         var instance = type.ToLowerInvariant() switch
         {
@@ -59,7 +63,7 @@ public class PageMarkerRepositoryFactory : ISingleOptionalParameterFactory<Job, 
             _ => throw new InvalidOperationException($"Database type {type} is not supported")
         };
 
-        _store[id.ToString()] = instance;
+        Store[id.ToString()] = instance;
         return instance;
     }
 

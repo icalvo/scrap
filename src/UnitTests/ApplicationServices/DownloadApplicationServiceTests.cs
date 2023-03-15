@@ -22,7 +22,7 @@ public class DownloadApplicationServiceTests
         var builder = new DownloadApplicationServiceMockBuilder(_output);
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
         var jobDto = JobDtoBuilder.Build(ResourceType.DownloadLink);
-        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
+        builder.JobFactoryMock.Setup(x => x.BuildAsync(It.IsAny<JobDto>())).ReturnsAsync(new Job(jobDto));
         var service = builder.Build();
 
         await service.DownloadAsync(

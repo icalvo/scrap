@@ -32,7 +32,7 @@ public class ScrapDownloadsServiceTests
                 "https://example.com/4.txt"));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
         var jobDto = JobDtoBuilder.Build(ResourceType.DownloadLink);
-        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
+        builder.JobFactoryMock.Setup(x => x.BuildAsync(It.IsAny<JobDto>())).ReturnsAsync(new Job(jobDto));
         var service = builder.BuildScrapDownloadsService();
 
         await service.DownloadLinksAsync(jobDto);
@@ -80,7 +80,7 @@ public class ScrapDownloadsServiceTests
                 "https://example.com/4.txt"));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
         var jobDto = JobDtoBuilder.Build(ResourceType.DownloadLink);
-        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
+        builder.JobFactoryMock.Setup(x => x.BuildAsync(It.IsAny<JobDto>())).ReturnsAsync(new Job(jobDto));
         var service = builder.BuildScrapDownloadsService();
 
         await service.DownloadLinksAsync(jobDto);

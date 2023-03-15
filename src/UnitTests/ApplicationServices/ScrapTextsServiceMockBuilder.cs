@@ -1,9 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
 using Scrap.Application.Scrap;
-using Scrap.Common;
-using Scrap.Domain;
-using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Jobs.Graphs;
 using Scrap.Domain.Pages;
@@ -15,27 +12,27 @@ namespace Scrap.Tests.Unit.ApplicationServices;
 public class ScrapTextsServiceMockBuilder
 {
     public const string ResourceXPath = "//img/@src";
-    private readonly Mock<IFactory<Job, ILinkCalculator>> _linkCalculatorFactoryMock = new();
+    private readonly Mock<ILinkCalculatorFactory> _linkCalculatorFactoryMock = new();
     private readonly ITestOutputHelper _output;
 
-    private readonly Mock<IOptionalParameterFactory<Job, IPageMarkerRepository>> _pageMarkerRepositoryFactoryMock =
+    private readonly Mock<IPageMarkerRepositoryFactory> _pageMarkerRepositoryFactoryMock =
         new();
 
-    private readonly Mock<IFactory<Job, IPageRetriever>> _pageRetrieverFactoryMock = new();
-    private readonly Mock<IFactory<Job, IResourceRepository>> _resourceRepositoryFactoryMock = new();
-    private readonly Mock<IFactory<Job, IDownloadStreamProvider>> _streamProviderFactoryMock = new();
+    private readonly Mock<IPageRetrieverFactory> _pageRetrieverFactoryMock = new();
+    private readonly Mock<IResourceRepositoryFactory> _resourceRepositoryFactoryMock = new();
 
     public ScrapTextsServiceMockBuilder(ITestOutputHelper output)
     {
         _output = output;
-        _linkCalculatorFactoryMock.SetupFactory(LinkCalculatorMock.Object);
-        _pageMarkerRepositoryFactoryMock.SetupFactory(PageMarkerRepositoryMock.Object);
-        _pageRetrieverFactoryMock.SetupFactory(PageRetrieverMock.Object);
-        _resourceRepositoryFactoryMock.SetupFactory(ResourceRepositoryMock.Object);
+        _linkCalculatorFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(LinkCalculatorMock.Object);
+        _pageMarkerRepositoryFactoryMock.Setup(x => x.Build()).Returns(PageMarkerRepositoryMock.Object);
+        _pageMarkerRepositoryFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageMarkerRepositoryMock.Object);
+        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
+        _resourceRepositoryFactoryMock.Setup(x => x.BuildAsync(It.IsAny<Job>())).ReturnsAsync(ResourceRepositoryMock.Object);
         LoggerMock.SetupWithOutput(output);
     }
 
-    public Mock<IAsyncFactory<JobDto, Job>> JobFactoryMock { get; } = new();
+    public Mock<IJobFactory> JobFactoryMock { get; } = new();
     public Mock<ILogger> LoggerMock { get; } = new();
     public Mock<IGraphSearch> GraphSearchMock { get; private set; } = new();
     public Mock<ILinkCalculator> LinkCalculatorMock { get; } = new();

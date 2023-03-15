@@ -1,6 +1,5 @@
 ﻿using Moq;
 using Scrap.Application.Scrap;
-using Scrap.Common;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
 using Xunit;
@@ -28,7 +27,7 @@ public class ScrapApplicationServiceTests
         scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<JobDto>())).Returns(Task.CompletedTask);
 
         var service = new ScrapApplicationService(
-            Mock.Of<IAsyncFactory<JobDto, Job>>(),
+            Mock.Of<IJobFactory>(),
             scrapDownloadsServiceMock.Object,
             scrapTextServiceMock.Object);
 
@@ -49,7 +48,7 @@ public class ScrapApplicationServiceTests
         scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<JobDto>())).Returns(Task.CompletedTask);
 
         var service = new ScrapApplicationService(
-            Mock.Of<IAsyncFactory<JobDto, Job>>(),
+            Mock.Of<IJobFactory>(),
             scrapDownloadsServiceMock.Object,
             scrapTextServiceMock.Object);
 

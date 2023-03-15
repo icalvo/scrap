@@ -6,15 +6,15 @@ using Scrap.Domain.Jobs;
 
 namespace Scrap.Domain.Pages;
 
-public class PageRetrieverFactory : IFactory<Job, IPageRetriever>
+public class PageRetrieverFactory : IPageRetrieverFactory
 {
-    private readonly IFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy> _asyncPolicyFactory;
-    private readonly IFactory<Job, IDownloadStreamProvider> _downloadStreamProviderFactory;
+    private readonly IAsyncPolicyFactory _asyncPolicyFactory;
+    private readonly IDownloadStreamProviderFactory _downloadStreamProviderFactory;
     private readonly ILoggerFactory _loggerFactory;
 
     public PageRetrieverFactory(
-        IFactory<Job, IDownloadStreamProvider> downloadStreamProviderFactory,
-        IFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy> asyncPolicyFactory,
+        IDownloadStreamProviderFactory downloadStreamProviderFactory,
+        IAsyncPolicyFactory asyncPolicyFactory,
         ILoggerFactory loggerFactory)
     {
         _downloadStreamProviderFactory = downloadStreamProviderFactory;

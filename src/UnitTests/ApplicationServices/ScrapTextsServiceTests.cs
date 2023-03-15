@@ -26,7 +26,7 @@ public class ScrapTextsServiceTests
             new PageMock("https://example.com/b").Contents(JobDtoBuilder.ResourceXPath, "zxcv", "yuio"));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
         var jobDto = JobDtoBuilder.Build(ResourceType.Text);
-        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
+        builder.JobFactoryMock.Setup(x => x.BuildAsync(It.IsAny<JobDto>())).ReturnsAsync(new Job(jobDto));
         var service = builder.Build();
 
         await service.ScrapTextAsync(jobDto);
@@ -46,7 +46,7 @@ public class ScrapTextsServiceTests
     {
         var builder = new ScrapTextsServiceMockBuilder(_output);
         var jobDto = JobDtoBuilder.Build(ResourceType.DownloadLink);
-        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
+        builder.JobFactoryMock.Setup(x => x.BuildAsync(It.IsAny<JobDto>())).ReturnsAsync(new Job(jobDto));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
         var service = builder.Build();
 

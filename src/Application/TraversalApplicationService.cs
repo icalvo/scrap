@@ -9,15 +9,15 @@ namespace Scrap.Application;
 public class TraversalApplicationService : ITraversalApplicationService
 {
     private readonly IGraphSearch _graphSearch;
-    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
-    private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
-    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
+    private readonly IJobFactory _jobFactory;
+    private readonly ILinkCalculatorFactory _linkCalculatorFactory;
+    private readonly IPageRetrieverFactory _pageRetrieverFactory;
 
     public TraversalApplicationService(
         IGraphSearch graphSearch,
-        IFactory<Job, IPageRetriever> pageRetrieverFactory,
-        IFactory<Job, ILinkCalculator> linkCalculatorFactory,
-        IAsyncFactory<JobDto, Job> jobFactory)
+        IPageRetrieverFactory pageRetrieverFactory,
+        ILinkCalculatorFactory linkCalculatorFactory,
+        IJobFactory jobFactory)
     {
         _graphSearch = graphSearch;
         _pageRetrieverFactory = pageRetrieverFactory;
@@ -27,7 +27,7 @@ public class TraversalApplicationService : ITraversalApplicationService
 
     public async IAsyncEnumerable<string> TraverseAsync(JobDto jobDto)
     {
-        var job = await _jobFactory.Build(jobDto);
+        var job = await _jobFactory.BuildAsync(jobDto);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
         var pageRetriever = _pageRetrieverFactory.Build(job);

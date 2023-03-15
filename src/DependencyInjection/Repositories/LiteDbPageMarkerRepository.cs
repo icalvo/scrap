@@ -2,8 +2,9 @@ using System.Text.RegularExpressions;
 using LiteDB;
 using Microsoft.Extensions.Logging;
 using Polly;
+using Scrap.Domain.Pages;
 
-namespace Scrap.Domain.Pages.LiteDb;
+namespace Scrap.DependencyInjection.Factories;
 
 public class LiteDbPageMarkerRepository : IPageMarkerRepository
 {

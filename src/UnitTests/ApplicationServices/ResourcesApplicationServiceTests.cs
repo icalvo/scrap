@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using Moq;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
 using Xunit;
@@ -29,7 +30,7 @@ public class ResourcesApplicationServiceTests
                 "https://example.com/3.txt",
                 "https://example.com/4.txt"));
         var jobDto = JobDtoBuilder.Build(ResourceType.DownloadLink);
-        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
+        builder.JobFactoryMock.Setup(x => x.BuildAsync(It.IsAny<JobDto>())).ReturnsAsync(new Job(jobDto));
         var service = builder.Build();
 
         var actual = await service.GetResourcesAsync(jobDto, new Uri("https://example.com/a"), 7).ToArrayAsync();

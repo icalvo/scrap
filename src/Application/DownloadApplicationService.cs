@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Scrap.Common;
+using Scrap.Domain;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
@@ -10,17 +11,17 @@ namespace Scrap.Application;
 
 public class DownloadApplicationService : IDownloadApplicationService
 {
-    private readonly IFactory<Job, IDownloadStreamProvider> _downloadStreamProviderFactory;
-    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
+    private readonly IJobFactory _jobFactory;
+    private readonly IDownloadStreamProviderFactory _downloadStreamProviderFactory;
+    private readonly IPageRetrieverFactory _pageRetrieverFactory;
+    private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
     private readonly ILogger<DownloadApplicationService> _logger;
-    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
-    private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
 
     public DownloadApplicationService(
-        IAsyncFactory<JobDto, Job> jobFactory,
-        IFactory<Job, IPageRetriever> pageRetrieverFactory,
-        IFactory<Job, IResourceRepository> resourceRepositoryFactory,
-        IFactory<Job, IDownloadStreamProvider> downloadStreamProviderFactory,
+        IJobFactory jobFactory,
+        IPageRetrieverFactory pageRetrieverFactory,
+        IResourceRepositoryFactory resourceRepositoryFactory,
+        IDownloadStreamProviderFactory downloadStreamProviderFactory,
         ILogger<DownloadApplicationService> logger)
     {
         _jobFactory = jobFactory;
@@ -37,8 +38,8 @@ public class DownloadApplicationService : IDownloadApplicationService
             throw new Exception();
         }
 
-        var job = await _jobFactory.Build(jobDto);
-        var resourceRepository = _resourceRepositoryFactory.Build(job);
+        var job = await _jobFactory.BuildAsync(jobDto);
+        var resourceRepository = await _resourceRepositoryFactory.BuildAsync(job);
         var pageRetriever = _pageRetrieverFactory.Build(job);
         var page = await pageRetriever.GetPageAsync(pageUrl);
 

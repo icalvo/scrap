@@ -6,14 +6,12 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
 {
     private readonly IDestinationProvider _destinationProvider;
     private readonly string _destinationRootFolder;
-    private readonly bool _disableWrites;
     private readonly ILogger<FileSystemResourceRepository> _logger;
     private readonly IFileSystem _fileSystem;
     public FileSystemResourceRepository(
         IDestinationProvider destinationProvider,
         FileSystemResourceRepositoryConfiguration config,
         ILogger<FileSystemResourceRepository> logger,
-        bool disableWrites,
         string? baseRootFolder,
         IFileSystem fileSystem)
     {
@@ -22,7 +20,6 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
         _destinationRootFolder =
             baseRootFolder != null ? fileSystem.PathCombine(baseRootFolder, rootFolder) : rootFolder;
         _logger = logger;
-        _disableWrites = disableWrites;
         _fileSystem = fileSystem;
     }
 
@@ -43,7 +40,6 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
     public override Task<bool> ExistsAsync(FileSystemResourceId id)
     {
         var destinationPath = id.FullPath;
-        _logger.LogTrace("EXISTS {Destination}", destinationPath);
         return _fileSystem.FileExistsAsync(destinationPath);
     }
 
@@ -54,16 +50,15 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
                             throw new InvalidOperationException(
                                 $"Could not get directory name from destination path {destinationPath}");
 
-        if (!_disableWrites)
+        var relativePath = _fileSystem.PathGetRelativePath(_destinationRootFolder, destinationPath);
+        if (_fileSystem.IsReadOnly)
         {
-            _logger.LogTrace("WRITE {RelativePath}", destinationPath);
-            await _fileSystem.FileWriteAsync(directoryName, destinationPath, resourceStream);
+            _logger.LogTrace("FAKE. WRITE {RelativePath}", relativePath);
         }
         else
         {
-            _logger.LogTrace(
-                "FAKE. WRITE {RelativePath}",
-                _fileSystem.PathGetRelativePath(_destinationRootFolder, destinationPath));
+            _logger.LogTrace("WRITE {RelativePath}", relativePath);
+            await _fileSystem.FileWriteAsync(directoryName, destinationPath, resourceStream);
         }
     }
 }

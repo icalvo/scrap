@@ -1,19 +1,20 @@
 ﻿using Microsoft.Extensions.Logging;
 using Polly;
 using Scrap.Common;
+using Scrap.Domain;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 
 namespace Scrap.DependencyInjection.Factories;
 
-public class DownloadStreamProviderFactory : IFactory<Job, IDownloadStreamProvider>
+public class DownloadStreamProviderFactory : IDownloadStreamProviderFactory
 {
-    private readonly IFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy> _asyncPolicyFactory;
+    private readonly IAsyncPolicyFactory _asyncPolicyFactory;
     private readonly ILoggerFactory _loggerFactory;
 
     public DownloadStreamProviderFactory(
-        IFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy> asyncPolicyFactory,
+        IAsyncPolicyFactory asyncPolicyFactory,
         ILoggerFactory loggerFactory)
     {
         _asyncPolicyFactory = asyncPolicyFactory;

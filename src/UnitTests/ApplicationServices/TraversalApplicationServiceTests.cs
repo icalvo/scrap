@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using Moq;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
 using Xunit;
@@ -21,7 +22,7 @@ public class TraversalApplicationServiceTests
         var builder = new TraversalApplicationServiceMockBuilder();
         builder.SetupTraversal(new PageMock("https://example.com/a"), new PageMock("https://example.com/b"));
         var jobDto = JobDtoBuilder.Build(ResourceType.DownloadLink);
-        builder.JobFactoryMock.SetupFactory(new Job(jobDto));
+        builder.JobFactoryMock.Setup(x => x.BuildAsync(It.IsAny<JobDto>())).ReturnsAsync(new Job(jobDto));
         var service = builder.Build();
 
         var actual = await service.TraverseAsync(jobDto).ToArrayAsync();

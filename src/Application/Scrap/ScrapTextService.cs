@@ -13,20 +13,20 @@ namespace Scrap.Application.Scrap;
 public class ScrapTextService : IScrapTextService
 {
     private readonly IGraphSearch _graphSearch;
-    private readonly IAsyncFactory<JobDto, Job> _jobFactory;
-    private readonly IFactory<Job, ILinkCalculator> _linkCalculatorFactory;
+    private readonly IJobFactory _jobFactory;
+    private readonly ILinkCalculatorFactory _linkCalculatorFactory;
+    private readonly IPageMarkerRepositoryFactory _pageMarkerRepositoryFactory;
+    private readonly IPageRetrieverFactory _pageRetrieverFactory;
+    private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
     private readonly ILogger<ScrapTextService> _logger;
-    private readonly IFactory<Job, IPageMarkerRepository> _pageMarkerRepositoryFactory;
-    private readonly IFactory<Job, IPageRetriever> _pageRetrieverFactory;
-    private readonly IFactory<Job, IResourceRepository> _resourceRepositoryFactory;
 
     public ScrapTextService(
         IGraphSearch graphSearch,
-        IAsyncFactory<JobDto, Job> jobFactory,
-        IFactory<Job, IResourceRepository> resourceRepositoryFactory,
-        IFactory<Job, IPageRetriever> pageRetrieverFactory,
-        IFactory<Job, IPageMarkerRepository> pageMarkerRepositoryFactory,
-        IFactory<Job, ILinkCalculator> linkCalculatorFactory,
+        IJobFactory jobFactory,
+        IResourceRepositoryFactory resourceRepositoryFactory,
+        IPageRetrieverFactory pageRetrieverFactory,
+        IPageMarkerRepositoryFactory pageMarkerRepositoryFactory,
+        ILinkCalculatorFactory linkCalculatorFactory,
         ILogger<ScrapTextService> logger)
     {
         _graphSearch = graphSearch;
@@ -45,9 +45,9 @@ public class ScrapTextService : IScrapTextService
             throw new InvalidOperationException($"Invalid resource type (should be {nameof(ResourceType.Text)})");
         }
 
-        var job = await _jobFactory.Build(jobDto);
+        var job = await _jobFactory.BuildAsync(jobDto);
 
-        var resourceRepository = _resourceRepositoryFactory.Build(job);
+        var resourceRepository = await _resourceRepositoryFactory.BuildAsync(job);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
         var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();

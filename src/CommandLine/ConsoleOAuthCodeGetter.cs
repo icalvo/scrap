@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
-using Scrap.DependencyInjection.Factories;
 using Scrap.Domain;
+using Scrap.Infrastructure;
 
 namespace Scrap.CommandLine;
 

@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Scrap.Common;
 using Scrap.Domain.Downloads;
 using Xunit.Abstractions;
 

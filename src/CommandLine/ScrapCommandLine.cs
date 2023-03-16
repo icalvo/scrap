@@ -9,23 +9,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scrap.Application;
 using Scrap.Application.Scrap;
-using Scrap.CommandLine.Logging;
 using Scrap.Common;
-using Scrap.DependencyInjection;
-using Scrap.DependencyInjection.Factories;
 using Scrap.Domain;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
-using Scrap.Domain.Resources.FileSystem;
+using Scrap.Infrastructure;
+using Scrap.Infrastructure.FileSystems;
 
 namespace Scrap.CommandLine;
 
 public class ScrapCommandLine
 {
-    private const string JobDefNameEnvironment = "JobDefinition:DefaultName";
-    private const string JobDefRootUrlEnvironment = "JobDefinition:DefaultRootUrl";
-    private const string ConfigFolderEnvironment = "GlobalConfigurationFolder";
-
     private static readonly string DefaultGlobalUserConfigFolder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         ".scrap");
@@ -47,7 +41,7 @@ public class ScrapCommandLine
 
         const string environmentVarPrefix = "Scrap_";
         _configuration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
-        _globalUserConfigFolder = GetGlobalUserConfigFolder();
+        _globalUserConfigFolder = GetGlobalUserConfigFolder(_configuration);
         if (_globalUserConfigFolder == DefaultGlobalUserConfigFolder)
         {
             if (!Directory.Exists(DefaultGlobalUserConfigFolder))
@@ -100,12 +94,12 @@ public class ScrapCommandLine
     {
         PrintHeader();
 
-        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithConsole, OAuthCodeGetter);
+        var serviceResolver = BuildServiceProviderWithConsole();
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
         var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
 
-        var envRootUrl = _configuration[JobDefRootUrlEnvironment];
-        var envName = _configuration[JobDefNameEnvironment];
+        var envRootUrl = _configuration[ConfigKeys.JobDefRootUrlEnvironment];
+        var envName = _configuration[ConfigKeys.JobDefNameEnvironment];
 
         var jobDef = await GetJobDefinitionAsync(
             name,
@@ -130,6 +124,7 @@ public class ScrapCommandLine
             serviceResolver);
     }
 
+    
 
     [Verb(Description = "Executes all default job definitions", Aliases = "a")]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -142,7 +137,7 @@ public class ScrapCommandLine
     {
         PrintHeader();
 
-        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithConsole, OAuthCodeGetter);
+        var serviceResolver = BuildServiceProviderWithConsole();
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
         var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
 
@@ -212,7 +207,7 @@ public class ScrapCommandLine
         [Description("URL where the scrapping starts")] string? rootUrl = null,
         [Description("Navigate through already visited pages")] bool fullScan = false)
     {
-        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
+        var serviceResolver = BuildServiceProviderWithoutConsole();
         var newJob = await BuildJobDtoAsync(serviceResolver, name, rootUrl, fullScan, false, true, true);
         if (newJob == null)
         {
@@ -232,7 +227,7 @@ public class ScrapCommandLine
         [Description("Output only the resource link instead of the format expected by 'scrap download'")]
         bool onlyResourceLink = false)
     {
-        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
+        var serviceResolver = BuildServiceProviderWithoutConsole();
         var newJob = await BuildJobDtoAsync(serviceResolver, name, rootUrl, false, false, true, true);
         if (newJob == null)
         {
@@ -263,7 +258,7 @@ public class ScrapCommandLine
         [Description("Download resources even if they are already downloaded")] bool downloadAlways = false,
         [Description("Resource URLs to download [pipeline]")] string[]? resourceUrls = null)
     {
-        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
+        var serviceResolver = BuildServiceProviderWithoutConsole();
         var newJob = await BuildJobDtoAsync(serviceResolver, name, rootUrl, false, downloadAlways, true, false);
         if (newJob == null)
         {
@@ -288,7 +283,7 @@ public class ScrapCommandLine
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task MarkVisited([Description("URL [pipeline]")] string[]? url = null)
     {
-        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
+        var serviceResolver = BuildServiceProviderWithoutConsole();
 
         var visitedPagesAppService = serviceResolver.GetRequiredService<IVisitedPagesApplicationService>();
         var inputLines = url ?? ConsoleInput();
@@ -304,7 +299,7 @@ public class ScrapCommandLine
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task SearchVisited([Description("Search with Regular Expression [pipeline]")] string? search = null)
     {
-        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
+        var serviceResolver = BuildServiceProviderWithoutConsole();
 
         var visitedPagesAppService = serviceResolver.GetRequiredService<IVisitedPagesApplicationService>();
         search ??= ConsoleInput().First();
@@ -319,7 +314,7 @@ public class ScrapCommandLine
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public async Task DeleteVisited([Description("Search with Regular Expression [pipeline]")] string? search = null)
     {
-        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithoutConsole, OAuthCodeGetter);
+        var serviceResolver = BuildServiceProviderWithoutConsole();
 
         var visitedPagesAppService = serviceResolver.GetRequiredService<IVisitedPagesApplicationService>();
         search ??= ConsoleInput().First();
@@ -355,7 +350,7 @@ public class ScrapCommandLine
     {
         PrintHeader();
 
-        var globalUserConfigFolder = GetGlobalUserConfigFolder();
+        var globalUserConfigFolder = GetGlobalUserConfigFolder(_configuration);
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
 
         Directory.CreateDirectory(globalUserConfigFolder);
@@ -414,7 +409,7 @@ public class ScrapCommandLine
 
     private async Task ConfigureNonInteractiveAsync(string key, string? value = null)
     {
-        var globalUserConfigFolder = GetGlobalUserConfigFolder();
+        var globalUserConfigFolder = GetGlobalUserConfigFolder(_configuration);
         var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
 
         Directory.CreateDirectory(globalUserConfigFolder);
@@ -470,8 +465,8 @@ public class ScrapCommandLine
         }
     }
 
-    private string GetGlobalUserConfigFolder() =>
-        _configuration[ConfigFolderEnvironment] ?? DefaultGlobalUserConfigFolder;
+    private static string GetGlobalUserConfigFolder(IConfiguration configuration) =>
+        configuration[ConfigKeys.ConfigFolderEnvironment] ?? DefaultGlobalUserConfigFolder;
 
     private void EnsureGlobalConfiguration(string globalUserConfigFolder)
     {
@@ -530,34 +525,6 @@ public class ScrapCommandLine
         }
     }
 
-    private void ConfigureLoggingWithConsole(ILoggingBuilder builder) => ConfigureLogging(builder, true);
-
-    private void ConfigureLoggingWithoutConsole(ILoggingBuilder builder) => ConfigureLogging(builder, false);
-
-    private void ConfigureLogging(ILoggingBuilder builder, bool withConsole)
-    {
-        builder.ClearProviders();
-        builder.AddConfiguration(_configuration.GetSection("Logging"));
-        var globalUserConfigFolder = GetGlobalUserConfigFolder();
-        if (Directory.Exists(globalUserConfigFolder))
-        {
-            builder.AddFile(
-                _configuration.GetSection("Logging:File"),
-                options => options.FolderPath = globalUserConfigFolder);
-        }
-
-        if (!_verbose)
-        {
-            builder.AddFilter(level => level != LogLevel.Trace);
-        }
-
-        if (withConsole)
-        {
-            builder.AddConsole();
-            builder.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
-        }
-    }
-
     private static void PrintHeader()
     {
         var version = GetVersion();
@@ -592,8 +559,8 @@ public class ScrapCommandLine
     {
         var definitionsApplicationService = serviceLocator.GetRequiredService<JobDefinitionsApplicationService>();
         var logger = serviceLocator.GetRequiredService<ILogger<ScrapCommandLine>>();
-        var envName = _configuration[JobDefNameEnvironment];
-        var envRootUrl = _configuration[JobDefRootUrlEnvironment];
+        var envName = _configuration[ConfigKeys.JobDefNameEnvironment];
+        var envRootUrl = _configuration[ConfigKeys.JobDefRootUrlEnvironment];
 
         var jobDef = await GetJobDefinitionAsync(
             name,
@@ -710,7 +677,7 @@ public class ScrapCommandLine
             ex = c.Exception.InnerException;
         }
 
-        var serviceResolver = ServicesLocator.Build(_configuration, ConfigureLoggingWithConsole, OAuthCodeGetter);
+        var serviceResolver = BuildServiceProviderWithConsole();
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
 
         if (ex is ScrapException)
@@ -728,6 +695,17 @@ public class ScrapCommandLine
         }
     }
 
+    private ServiceProvider BuildServiceProviderWithConsole() => BuildServiceProvider(true);
+    private ServiceProvider BuildServiceProviderWithoutConsole() => BuildServiceProvider(false);
+    private ServiceProvider BuildServiceProvider(bool withConsole)
+    {
+        return new ServiceCollection()
+            .ConfigureDomainServices()
+            .ConfigureApplicationServices()
+            .ConfigureInfrastructureServices(_configuration, withConsole, _verbose, OAuthCodeGetter)
+            .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+    }
+
     private record GlobalConfig(string Key, string? DefaultValue, string Prompt, bool Optional = false);
 
     private class ScrapException : Exception
@@ -737,3 +715,4 @@ public class ScrapCommandLine
         }
     }
 }
+

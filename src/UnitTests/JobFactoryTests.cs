@@ -1,6 +1,5 @@
 ﻿using FluentAssertions;
 using Moq;
-using Scrap.Common;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;

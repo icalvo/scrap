@@ -1,7 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Scrap.Common;
-using Scrap.Domain;
-using Scrap.Domain.Downloads;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;

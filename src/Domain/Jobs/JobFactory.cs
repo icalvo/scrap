@@ -1,7 +1,4 @@
-﻿using Scrap.Common;
-using Scrap.Domain.Resources;
-
-namespace Scrap.Domain.Jobs;
+﻿namespace Scrap.Domain.Jobs;
 
 public class JobFactory : IJobFactory
 {

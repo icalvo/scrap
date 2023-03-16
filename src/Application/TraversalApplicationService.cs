@@ -1,5 +1,4 @@
-﻿using Scrap.Common;
-using Scrap.Domain;
+﻿using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Jobs.Graphs;
 using Scrap.Domain.Pages;

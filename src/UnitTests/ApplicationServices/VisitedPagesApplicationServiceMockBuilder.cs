@@ -1,7 +1,5 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
+﻿using Moq;
 using Scrap.Application;
-using Scrap.Common;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 

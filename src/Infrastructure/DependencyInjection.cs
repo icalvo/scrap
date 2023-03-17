@@ -60,7 +60,8 @@ public static class DependencyInjection
                     var config = sp.GetRequiredService<IConfiguration>();
                     return new FileSystemFactory(
                         sp.GetRequiredService<IOAuthCodeGetter>(),
-                        config[ConfigKeys.FileSystemType] ?? "local");
+                        config[ConfigKeys.FileSystemType] ?? "local",
+                        sp.GetRequiredService<ILogger<FileSystemFactory>>());
                 });
         }
 
@@ -90,12 +91,12 @@ public static class DependencyInjection
                 return new ResourceRepositoryFactory(
                     config[ConfigKeys.BaseRootFolder],
                     sp.GetRequiredService<ILoggerFactory>(),
-                    sp.GetRequiredService<IFileSystemFactory>());
+                    sp.GetRequiredService<IFileSystemFactory>(),
+                    sp.GetRequiredService<IDestinationProviderFactory>(),
+                    sp.GetRequiredService<ILogger<ResourceRepositoryFactory>>());
             });
         container.AddSingleton<ILinkCalculatorFactory, LinkCalculatorFactory>();
-        container
-            .AddSingleton<IResourceRepositoryConfigurationValidatorFactory,
-                ResourceRepositoryConfigurationValidatorFactory>();
+        container.AddSingleton<IResourceRepositoryConfigurationValidator, ResourceRepositoryConfigurationValidator>();
 
         if (pageMarkerRepoFactory != null)
         {
@@ -106,6 +107,7 @@ public static class DependencyInjection
             container.AddSingleton<IPageMarkerRepositoryFactory, PageMarkerRepositoryFactory>();
         }
 
+        container.AddSingleton<IDestinationProviderFactory, DestinationProviderFactory>();
         return container;
     }
 
@@ -125,13 +127,6 @@ public static class DependencyInjection
     {
         builder.ClearProviders();
         builder.AddConfiguration(configuration.GetSection("Logging"));
-        var globalUserConfigFolder = GlobalConfig.GetGlobalUserConfigFolder(configuration);
-        if (Directory.Exists(globalUserConfigFolder))
-        {
-            builder.AddFile(
-                configuration.GetSection("Logging:File"),
-                options => options.FolderPath = globalUserConfigFolder);
-        }
 
         if (!verbose)
         {
@@ -147,13 +142,14 @@ public static class DependencyInjection
     
 }
 
-public static class GlobalConfig
+public static class Global
 {
 
-    public static readonly string DefaultGlobalUserConfigFolder = Path.Combine(
+    public static readonly string DefaultGlobalUserConfigFile = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".scrap");
+        ".scrap",
+        "scrap-user.json");
 
-    public static string GetGlobalUserConfigFolder(IConfiguration configuration) =>
-        configuration[ConfigKeys.ConfigFolderEnvironment] ?? DefaultGlobalUserConfigFolder;
+    public static string GetGlobalUserConfigFile(IConfiguration configuration) =>
+        configuration[ConfigKeys.GlobalUserConfigPath] ?? DefaultGlobalUserConfigFile;
 }

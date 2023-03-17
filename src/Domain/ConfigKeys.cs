@@ -6,7 +6,7 @@ public static class ConfigKeys
     public const string BaseRootFolder = "Scrap:BaseRootFolder";
     public const string FileSystemType = "Scrap:FileSystemType";
     public const string Database = "Scrap:Database";
-    public const string JobDefNameEnvironment = "JobDefinition:DefaultName";
-    public const string JobDefRootUrlEnvironment = "JobDefinition:DefaultRootUrl";
-    public const string ConfigFolderEnvironment = "GlobalConfigurationFolder";
+    public const string JobDefName = "JobDefinition:DefaultName";
+    public const string JobDefRootUrl = "JobDefinition:DefaultRootUrl";
+    public const string GlobalUserConfigPath = "Scrap:GlobalConfigPath";
 }

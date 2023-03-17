@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using Dropbox.Api;
-using Scrap.Domain;
+using Microsoft.Extensions.Logging;
 using Scrap.Domain.Resources.FileSystem;
 using Scrap.Infrastructure.FileSystems;
 
@@ -8,97 +8,66 @@ namespace Scrap.Infrastructure.Factories;
 
 public class FileSystemFactory : IFileSystemFactory
 {
-    private readonly IOAuthCodeGetter _authCodeGetter;
-    private readonly string _fileSystemType;
+    private static IRawFileSystem? _instance;
 
-    public FileSystemFactory(IOAuthCodeGetter authCodeGetter, string fileSystemType)
+    private readonly IOAuthCodeGetter _authCodeGetter;
+    private readonly IFileSystem _tokenFileSystem;
+    private readonly ILogger<FileSystemFactory> _logger;
+
+    public FileSystemFactory(
+        IOAuthCodeGetter authCodeGetter,
+        string fileSystemType,
+        IFileSystem tokenFileSystem,
+        ILogger<FileSystemFactory> logger)
     {
+        _tokenFileSystem = tokenFileSystem;
+        _logger = logger;
         _authCodeGetter = authCodeGetter;
-        _fileSystemType = fileSystemType;
+        FileSystemType = fileSystemType;
     }
+
+    public FileSystemFactory(IOAuthCodeGetter authCodeGetter, string fileSystemType, ILogger<FileSystemFactory> logger)
+    {
+        var tokenFileSystem = new FileSystem(new LocalFileSystem());
+        _tokenFileSystem = tokenFileSystem;
+        _authCodeGetter = authCodeGetter;
+        FileSystemType = fileSystemType;
+        _logger = logger;
+    }
+
+    public string FileSystemType { get; }
 
     public async Task<IFileSystem> BuildAsync(bool? readOnly)
     {
-        var appKey = "0lemimx20njvqt2";
-        var tokenFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap", "dropboxtoken.txt");
-        IFileSystem fs =
-            _fileSystemType.ToLowerInvariant() switch {
-                "dropbox" => new DropboxFileSystem(await GetDropboxClientAsync(appKey, tokenFile)),
-                "local" => new LocalFileSystem(),
-                _ => throw new Exception($"Unknown filesystem type: {_fileSystemType}")
-            };
-
-        return readOnly ?? false ? new FileSystemReadOnlyWrapper(fs) : fs;
+        _instance ??= await BuildRawFileSystem();
+        return new FileSystem(readOnly ?? false ? new FileSystemReadOnlyWrapper(_instance) : _instance);
     }
-    
-    private async Task<DropboxClient> GetDropboxClientAsync(string appKey, string tokenFile)
+
+    private async Task<IRawFileSystem> BuildRawFileSystem()
     {
-        string? existingRefreshToken = null;
-        if (File.Exists(tokenFile))
+        var normalizedFileSystemType = FileSystemType.ToLowerInvariant();
+
+        if (normalizedFileSystemType != "local")
         {
-            existingRefreshToken = await File.ReadAllTextAsync(tokenFile);
+            _logger.LogInformation("{FileSystemType} filesystem will be used!", FileSystemType.ToUpperInvariant());
         }
 
-        var (refreshToken, client) = await GetDropboxClientAuxAsync(appKey, existingRefreshToken);
-
-        if (existingRefreshToken != refreshToken)
+        switch (normalizedFileSystemType)
         {
-            await File.WriteAllTextAsync(tokenFile, refreshToken);
-        }
-
-        return client;
-    }
-    
-    private async Task<(string refreshToken, DropboxClient client)> GetDropboxClientAuxAsync(string appKey, string? existingRefreshToken)
-    {
-        if (existingRefreshToken == null)
-        {
-            return await GetByAuth();
-        }
-
-        var dropboxClient = new DropboxClient(existingRefreshToken, appKey);
-        try
-        {
-            if (await dropboxClient.RefreshAccessToken(null))
+            case "dropbox":
             {
-                return (existingRefreshToken, dropboxClient);
+                var appKey = "0lemimx20njvqt2";
+                var tokenFile = _tokenFileSystem.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    ".scrap",
+                    "dropboxtoken.txt");
+                var repo = new LocalFileSystemDropboxRefreshTokenRepository(tokenFile);
+                return await DropboxFileSystem.CreateAsync(appKey, repo, _authCodeGetter);
             }
-        }
-        catch (HttpRequestException ex)
-        {
-            if (ex.StatusCode >= HttpStatusCode.InternalServerError)
-            {
-                throw;
-            }
-        }
-
-        return await GetByAuth();
-
-        async Task<(string refreshToken, DropboxClient client)> GetByAuth()
-        {
-            var codeVerifier = DropboxOAuth2Helper.GeneratePKCECodeVerifier();
-            var codeChallenge = DropboxOAuth2Helper.GeneratePKCECodeChallenge(codeVerifier);
-
-            var authorizeUri = DropboxOAuth2Helper.GetAuthorizeUri(oauthResponseType:OAuthResponseType.Code,
-                clientId: appKey,
-                redirectUri: (string?)null,
-                state: null,
-                tokenAccessType: TokenAccessType.Offline,
-                scopeList: null,
-                includeGrantedScopes: IncludeGrantedScopes.None,
-                codeChallenge: codeChallenge);
-            var code = await _authCodeGetter.GetAuthCodeAsync(authorizeUri);
-            OAuth2Response tokenResult = await DropboxOAuth2Helper.ProcessCodeFlowAsync(
-                code: code,
-                appKey: appKey,
-                codeVerifier: codeVerifier,
-                redirectUri: null);
-            var client = new DropboxClient(
-                    appKey: appKey,
-                    oauth2AccessToken: tokenResult.AccessToken,
-                    oauth2RefreshToken: tokenResult.RefreshToken,
-                    oauth2AccessTokenExpiresAt: tokenResult.ExpiresAt ?? default(DateTime));
-            return (tokenResult.RefreshToken, client);
+            case "local":
+                return new LocalFileSystem();
+            default:
+                throw new Exception($"Unknown filesystem type: {FileSystemType}");
         }
     }
 }

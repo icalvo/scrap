@@ -7,28 +7,29 @@ using Figgle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Scrap.Application;
 using Scrap.Application.Scrap;
 using Scrap.Common;
 using Scrap.Domain;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
+using Scrap.Domain.Resources.FileSystem;
 using Scrap.Infrastructure;
-using Scrap.Infrastructure.FileSystems;
+using Scrap.Infrastructure.Factories;
+using static System.Diagnostics.Debug;
 
 namespace Scrap.CommandLine;
 
 public class ScrapCommandLine
 {
-    private static readonly string DefaultGlobalUserConfigFolder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".scrap");
-
     private static readonly IOAuthCodeGetter OAuthCodeGetter = new ConsoleOAuthCodeGetter();
-    private readonly IConfiguration _configuration;
-    private readonly string _globalUserConfigFolder;
+    private IConfiguration? _configuration;
+    private string? _globalUserConfigFolder;
     private bool _debug;
     private bool _verbose;
+    private IFileSystem? _fileSystem;
+    private string? _fileSystemType;
 
     public ScrapCommandLine(Parser<ScrapCommandLine> parser, string[] args)
     {
@@ -38,28 +39,6 @@ public class ScrapCommandLine
         {
             Debugger.Launch();
         }
-
-        const string environmentVarPrefix = "Scrap_";
-        _configuration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
-        _globalUserConfigFolder = GetGlobalUserConfigFolder(_configuration);
-        if (_globalUserConfigFolder == DefaultGlobalUserConfigFolder)
-        {
-            if (!Directory.Exists(DefaultGlobalUserConfigFolder))
-            {
-                Directory.CreateDirectory(DefaultGlobalUserConfigFolder);
-            }
-        }
-
-        var globalUserConfigPath = Path.Combine(_globalUserConfigFolder, "scrap-user.json");
-        var configBuilder = new ConfigurationBuilder().AddJsonFile("scrap.json", false, false);
-        if (File.Exists(globalUserConfigPath))
-        {
-            _ = configBuilder.AddJsonFile(globalUserConfigPath, false, false);
-        }
-
-        configBuilder.AddJsonFile("scrap.Development.json", optional: true, reloadOnChange: false);
-        configBuilder.AddEnvironmentVariables(environmentVarPrefix);
-        _configuration = configBuilder.Build();
     }
 
     [PreVerbExecution]
@@ -67,10 +46,62 @@ public class ScrapCommandLine
     [SuppressMessage("ReSharper", "UnusedParameter.Local")]
     private void Before(PreVerbExecutionContext context)
     {
+        BeforeAsync(context).Wait();
+    }
+
+    private async Task BeforeAsync(PreVerbExecutionContext context)
+    {
+        const string environmentVarPrefix = "Scrap_";
+        _configuration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
+        _fileSystemType = _configuration[ConfigKeys.FileSystemType]?.ToLowerInvariant() ?? "local";
+        
+        var fileSystemFactory = new FileSystemFactory(OAuthCodeGetter, _fileSystemType, NullLogger<FileSystemFactory>.Instance);
+        _fileSystem = await fileSystemFactory.BuildAsync(false);
+
+        
+        var globalUserConfigPath = Global.GetGlobalUserConfigFile(_configuration);
+        _globalUserConfigFolder = _fileSystem.Path.GetDirectoryName(globalUserConfigPath);
+        
+        var defaultUserConfigFolder = _fileSystem.Path.GetDirectoryName(Global.DefaultGlobalUserConfigFile);
+
+        if (_globalUserConfigFolder == defaultUserConfigFolder)
+        {
+            await _fileSystem.Directory.CreateIfNotExistAsync(_globalUserConfigFolder);
+        }
+
+        var configBuilder = new ConfigurationBuilder();
+        _ = configBuilder.AddJsonFile("scrap.json", false, false);
+        await using var stream2 = await OpenAndDoIfExistsAsync(
+            globalUserConfigPath,
+            s => configBuilder.AddJsonStream(s));
+        await using var stream3 = await OpenAndDoIfExistsAsync(
+            "scrap.Development.json",
+            s => configBuilder.AddJsonStream(s));
+        configBuilder.AddEnvironmentVariables(environmentVarPrefix);
+        _configuration = configBuilder.Build();
         if (!context.Method.Names.Contains("configure"))
         {
-            EnsureGlobalConfiguration(_globalUserConfigFolder);
+            await EnsureGlobalConfigurationAsync(_globalUserConfigFolder);
         }
+    }
+
+    private async Task<IAsyncDisposable> OpenAndDoIfExistsAsync(
+        string globalUserConfigPath,
+        Action<Stream> action)
+    {
+        if (!await _fileSystem!.File.ExistsAsync(globalUserConfigPath))
+        {
+            return new NullAsyncDisposable();
+        }
+
+        var stream = await _fileSystem.File.OpenReadAsync(globalUserConfigPath);
+        action(stream);
+        return stream;
+    }
+
+    private class NullAsyncDisposable : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     [Global(Aliases = "dbg", Description = "Runs a debugger session at the beginning")]
@@ -98,8 +129,8 @@ public class ScrapCommandLine
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
         var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
 
-        var envRootUrl = _configuration[ConfigKeys.JobDefRootUrlEnvironment];
-        var envName = _configuration[ConfigKeys.JobDefNameEnvironment];
+        var envRootUrl = _configuration![ConfigKeys.JobDefRootUrl];
+        var envName = _configuration[ConfigKeys.JobDefName];
 
         var jobDef = await GetJobDefinitionAsync(
             name,
@@ -350,11 +381,13 @@ public class ScrapCommandLine
     {
         PrintHeader();
 
-        var globalUserConfigFolder = GetGlobalUserConfigFolder(_configuration);
-        var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
+        Assert(_configuration != null, nameof(_configuration) + " != null");
+        var globalUserConfigPath = Global.GetGlobalUserConfigFile(_configuration);
+        var globalUserConfigFolder = _fileSystem!.Path.GetDirectoryName(globalUserConfigPath);
 
-        Directory.CreateDirectory(globalUserConfigFolder);
-        if (File.Exists(globalUserConfigPath))
+
+        await _fileSystem.Directory.CreateIfNotExistAsync(globalUserConfigFolder);
+        if (await _fileSystem.File.ExistsAsync(globalUserConfigPath))
         {
             Console.WriteLine($"Global config file found at: {globalUserConfigPath}");
         }
@@ -365,13 +398,14 @@ public class ScrapCommandLine
             Console.WriteLine(
                 "The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
 
-            await File.WriteAllTextAsync(globalUserConfigPath, "{ \"Scrap\": {}}");
+            await _fileSystem.File.WriteAllTextAsync(globalUserConfigPath, "{ \"Scrap\": {}}");
             Console.WriteLine($"Created global config at: {globalUserConfigPath}");
         }
 
-        var cfg = new ConfigurationBuilder().AddJsonFile(globalUserConfigPath, false, false).Build();
+        var globalUserConfigStream = await _fileSystem.File.OpenReadAsync(globalUserConfigPath);
+        var cfg = new ConfigurationBuilder().AddJsonStream(globalUserConfigStream).Build();
 
-        CreateGlobalConfigFile(globalUserConfigFolder, globalUserConfigPath);
+        await CreateGlobalConfigFileAsync(globalUserConfigFolder, globalUserConfigPath);
 
         var updates = GetGlobalConfigs(globalUserConfigFolder).Select(AskGlobalConfigValue).RemoveNulls().ToArray();
         if (updates.Length == 0)
@@ -381,7 +415,7 @@ public class ScrapCommandLine
         else
         {
             Console.WriteLine($"Adding or updating {updates.Length} config value(s)");
-            var updater = new JsonUpdater(new LocalFileSystem(), globalUserConfigPath);
+            var updater = new JsonUpdater(_fileSystem, globalUserConfigPath);
             await updater.AddOrUpdateAsync(updates);
         }
 
@@ -409,17 +443,17 @@ public class ScrapCommandLine
 
     private async Task ConfigureNonInteractiveAsync(string key, string? value = null)
     {
-        var globalUserConfigFolder = GetGlobalUserConfigFolder(_configuration);
-        var globalUserConfigPath = Path.Combine(globalUserConfigFolder, "scrap-user.json");
-
-        Directory.CreateDirectory(globalUserConfigFolder);
-        if (File.Exists(globalUserConfigPath))
+        Assert(_configuration != null, nameof(_configuration) + " != null");
+        var globalUserConfigPath = Global.GetGlobalUserConfigFile(_configuration);
+        var globalUserConfigFolder = _fileSystem!.Path.GetDirectoryName(globalUserConfigPath);
+        await _fileSystem.Directory.CreateIfNotExistAsync(globalUserConfigFolder);
+        if (await _fileSystem.File.ExistsAsync(globalUserConfigPath))
         {
             Console.WriteLine($"Global config file found at: {globalUserConfigPath}");
         }
         else
         {
-            await File.WriteAllTextAsync(globalUserConfigPath, "{ \"Scrap\": {}}");
+            await _fileSystem.File.WriteAllTextAsync(globalUserConfigPath, "{ \"Scrap\": {}}");
             Console.WriteLine($"Created global config at: {globalUserConfigPath}");
         }
 
@@ -429,8 +463,8 @@ public class ScrapCommandLine
             return;
         }
 
-        System.Diagnostics.Debug.Assert(key != null, $"{nameof(key)} != null");
-        CreateGlobalConfigFile(globalUserConfigFolder, globalUserConfigPath);
+        Assert(key != null, $"{nameof(key)} != null");
+        await CreateGlobalConfigFileAsync(globalUserConfigFolder, globalUserConfigPath);
 
         var update = GetGlobalConfigs(globalUserConfigFolder).SingleOrDefault(x => x.Key == key);
         if (update == null)
@@ -438,7 +472,7 @@ public class ScrapCommandLine
             await Console.Error.WriteLineAsync("Key not found!");
         }
 
-        var updater = new JsonUpdater(new LocalFileSystem(), globalUserConfigPath);
+        var updater = new JsonUpdater(_fileSystem, globalUserConfigPath);
         await updater.AddOrUpdateAsync(new[] { new KeyValuePair<string, object?>(key, value) });
         Console.WriteLine($"{key}={value}");
     }
@@ -447,6 +481,7 @@ public class ScrapCommandLine
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public void ShowConfig()
     {
+        Assert(_configuration != null, nameof(_configuration) + " != null");
         var root = (IConfigurationRoot)_configuration;
         Console.WriteLine(root.GetDebugView());
     }
@@ -465,17 +500,15 @@ public class ScrapCommandLine
         }
     }
 
-    private static string GetGlobalUserConfigFolder(IConfiguration configuration) =>
-        configuration[ConfigKeys.ConfigFolderEnvironment] ?? DefaultGlobalUserConfigFolder;
-
-    private void EnsureGlobalConfiguration(string globalUserConfigFolder)
+    private async Task EnsureGlobalConfigurationAsync(string globalUserConfigFolder)
     {
-        if (!Directory.Exists(globalUserConfigFolder))
+        if (!await _fileSystem!.Directory.ExistsAsync(globalUserConfigFolder))
         {
             Console.WriteLine($"The global config folder [{globalUserConfigFolder}] does not exist");
             throw new ScrapException("The tool is not properly configured; call 'scrap config'");
         }
 
+        Assert(_configuration != null, nameof(_configuration) + " != null");
         var unsetKeys = GetGlobalConfigs(globalUserConfigFolder)
             .Where(config => !config.Optional && _configuration[config.Key] == null).ToArray();
         if (!unsetKeys.Any())
@@ -511,16 +544,16 @@ public class ScrapCommandLine
                 Optional: true)
         };
 
-    private static void CreateGlobalConfigFile(string globalUserConfigFolder, string globalUserConfigPath)
+    private async Task CreateGlobalConfigFileAsync(string globalUserConfigFolder, string globalUserConfigPath)
     {
-        Directory.CreateDirectory(globalUserConfigFolder);
-        if (!File.Exists(globalUserConfigPath))
+        await _fileSystem!.Directory.CreateIfNotExistAsync(globalUserConfigFolder);
+        if (!await _fileSystem.File.ExistsAsync(globalUserConfigPath))
         {
             Console.WriteLine(
                 "Global config file not found. We are going to create a global config file and ask some values. This file is located at: {globalUserConfigPath}");
             Console.WriteLine(
                 "The global config file will not be modified or deleted by any install, update or uninstall of this tool.");
-            File.WriteAllText(globalUserConfigPath, "{ \"Scrap\": {}}");
+            await _fileSystem.File.WriteAllTextAsync(globalUserConfigPath, "{ \"Scrap\": {}}");
             Console.WriteLine($"Created global config at: {globalUserConfigPath}");
         }
     }
@@ -559,8 +592,9 @@ public class ScrapCommandLine
     {
         var definitionsApplicationService = serviceLocator.GetRequiredService<JobDefinitionsApplicationService>();
         var logger = serviceLocator.GetRequiredService<ILogger<ScrapCommandLine>>();
-        var envName = _configuration[ConfigKeys.JobDefNameEnvironment];
-        var envRootUrl = _configuration[ConfigKeys.JobDefRootUrlEnvironment];
+        Assert(_configuration != null, nameof(_configuration) + " != null");
+        var envName = _configuration[ConfigKeys.JobDefName];
+        var envRootUrl = _configuration[ConfigKeys.JobDefRootUrl];
 
         var jobDef = await GetJobDefinitionAsync(
             name,
@@ -699,6 +733,7 @@ public class ScrapCommandLine
     private ServiceProvider BuildServiceProviderWithoutConsole() => BuildServiceProvider(false);
     private ServiceProvider BuildServiceProvider(bool withConsole)
     {
+        Assert(_configuration != null, nameof(_configuration) + " != null");
         return new ServiceCollection()
             .ConfigureDomainServices()
             .ConfigureApplicationServices()

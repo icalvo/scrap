@@ -15,10 +15,6 @@ public static class DependencyInjection
     public static IServiceCollection ConfigureDomainServices(this IServiceCollection container)
     {
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
-        container
-            .AddSingleton<IResourceRepositoryConfigurationValidator,
-                FileSystemResourceRepositoryConfigurationValidator>();
-
         container.AddSingleton<IJobFactory, JobFactory>();
         
         container.AddSingleton<IJobDefinitionRepository>(

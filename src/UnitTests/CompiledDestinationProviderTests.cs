@@ -13,7 +13,7 @@ public class CompiledDestinationProviderTests
     [Fact]
     public async Task GetDestinationAsync()
     {
-        var fsMock = new Mock<IFileSystem>();
+        var fsMock = new Mock<IRawFileSystem>();
         fsMock.Setup(x => x.PathCombine(It.IsAny<string>(), It.IsAny<string>()))
             .Returns<string, string>((baseDirectory, filePath) => baseDirectory + ":" + filePath);
         var p = new CompiledDestinationProvider(
@@ -23,7 +23,7 @@ public class CompiledDestinationProviderTests
                     "resourceIndex + (String.IsNullOrEmpty(resourceUrl.Extension()) ? \".unknown\" : resourceUrl.Extension())"
                 },
                 "rootFolder"),
-            fsMock.Object,
+            new FileSystem(fsMock.Object),
             Mock.Of<ILogger<CompiledDestinationProvider>>());
         var doc = new HtmlDocument();
         doc.LoadHtml(

@@ -1,13 +1,16 @@
-﻿namespace Scrap.Domain.Jobs;
+﻿using Scrap.Domain.Resources;
+using Scrap.Domain.Resources.FileSystem;
+
+namespace Scrap.Domain.Jobs;
 
 public class JobFactory : IJobFactory
 {
-    private readonly IResourceRepositoryConfigurationValidatorFactory _validatorFactory;
+    private readonly IResourceRepositoryConfigurationValidator _validator;
 
     public JobFactory(
-        IResourceRepositoryConfigurationValidatorFactory validatorFactory)
+        IResourceRepositoryConfigurationValidator validator)
     {
-        _validatorFactory = validatorFactory;
+        _validator = validator;
     }
 
     public async Task<Job> BuildAsync(JobDto jobDto)
@@ -15,8 +18,7 @@ public class JobFactory : IJobFactory
         var job = new Job(jobDto);
         if (job.ResourceRepoArgs != null)
         {
-            var validator = await _validatorFactory.BuildAsync(job.ResourceRepoArgs);
-            await validator.ValidateAsync(job.ResourceRepoArgs);
+            await _validator.ValidateAsync(job.ResourceRepoArgs);
         }
 
         return job;

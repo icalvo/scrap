@@ -12,9 +12,7 @@ public class JobFactoryTests
     [Fact]
     public async Task Build()
     {
-        var vf = new Mock<IResourceRepositoryConfigurationValidatorFactory>();
-        vf.Setup(f => f.BuildAsync(It.IsAny<IResourceRepositoryConfiguration>()))
-            .ReturnsAsync(Mock.Of<IResourceRepositoryConfigurationValidator>());
+        var vf = new Mock<IResourceRepositoryConfigurationValidator>();
         var jobFactory = new JobFactory(vf.Object);
         var resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();
 
@@ -38,12 +36,9 @@ public class JobFactoryTests
     [Fact]
     public void Build_ValidationFails_Throws()
     {
-        var failingValidator = new Mock<IResourceRepositoryConfigurationValidator>();
-        failingValidator.Setup(x => x.ValidateAsync(It.IsAny<IResourceRepositoryConfiguration>()))
+        var vf = new Mock<IResourceRepositoryConfigurationValidator>();
+        vf.Setup(f => f.ValidateAsync(It.IsAny<IResourceRepositoryConfiguration>()))
             .ThrowsAsync(new Exception());
-        var vf = new Mock<IResourceRepositoryConfigurationValidatorFactory>();
-        vf.Setup(f => f.BuildAsync(It.IsAny<IResourceRepositoryConfiguration>()))
-            .ReturnsAsync(failingValidator.Object);
         var jobFactory = new JobFactory(vf.Object);
 
         var resourceRepoConfig = Mock.Of<IResourceRepositoryConfiguration>();

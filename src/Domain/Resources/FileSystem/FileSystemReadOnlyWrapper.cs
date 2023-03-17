@@ -1,17 +1,19 @@
 ﻿namespace Scrap.Domain.Resources.FileSystem;
 
-public class FileSystemReadOnlyWrapper : IFileSystem
+public class FileSystemReadOnlyWrapper : IRawFileSystem
 {
-    private readonly IFileSystem _fileSystemImplementation;
+    private readonly IRawFileSystem _fileSystemImplementation;
 
-    public FileSystemReadOnlyWrapper(IFileSystem fileSystemImplementation)
+    public FileSystemReadOnlyWrapper(IRawFileSystem fileSystemImplementation)
     {
         _fileSystemImplementation = fileSystemImplementation;
     }
 
+    public Task DirectoryCreateAsync(string path) => Task.CompletedTask;
+
     public Task<bool> FileExistsAsync(string path) => _fileSystemImplementation.FileExistsAsync(path);
 
-    public Task FileWriteAsync(string directoryName, string destinationPath, Stream stream) => Task.CompletedTask;
+    public Task FileWriteAsync(string destinationPath, Stream stream) => Task.CompletedTask;
 
     public Task FileWriteAllTextAsync(string filePath, string content) => Task.CompletedTask;
 
@@ -23,8 +25,9 @@ public class FileSystemReadOnlyWrapper : IFileSystem
 
     public string PathGetRelativePath(string relativeTo, string path) => _fileSystemImplementation.PathGetRelativePath(relativeTo, path);
 
-    public string? PathGetDirectoryName(string destinationPath) => _fileSystemImplementation.PathGetDirectoryName(destinationPath);
+    public string PathGetDirectoryName(string destinationPath) => _fileSystemImplementation.PathGetDirectoryName(destinationPath);
 
     public string PathNormalizeFolderSeparator(string path) => _fileSystemImplementation.PathNormalizeFolderSeparator(path);
     public bool IsReadOnly => true;
+    public Task<bool> DirectoryExistsAsync(string path) => _fileSystemImplementation.DirectoryExistsAsync(path);
 }

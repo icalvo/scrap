@@ -30,12 +30,12 @@ public class MemoryJobDefinitionRepository : IJobDefinitionRepository
             async () =>
             {
                 var fileSystem = await fileSystemFactory.BuildAsync(false);
-                if (!await fileSystem.FileExistsAsync(jsonFilePath))
+                if (!await fileSystem.File.ExistsAsync(jsonFilePath))
                 {
-                    await fileSystem.FileWriteAllTextAsync(jsonFilePath, "[]");
+                    await fileSystem.File.WriteAllTextAsync(jsonFilePath, "[]");
                 }
 
-                await using var stream = await fileSystem.FileOpenReadAsync(jsonFilePath);
+                await using var stream = await fileSystem.File.OpenReadAsync(jsonFilePath);
                 var jobDefinitionDtos = await JsonSerializer.DeserializeAsync<IEnumerable<JobDefinitionDto>>(
                     stream,
                     new JsonSerializerOptions

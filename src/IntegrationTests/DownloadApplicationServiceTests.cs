@@ -11,6 +11,7 @@ using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources.FileSystem;
 using Scrap.Infrastructure;
+using Scrap.Infrastructure.Factories;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -43,7 +44,7 @@ public class DownloadApplicationServiceTests
 
         var pageMock = new Mock<IPage>();
         var pageMarkerRepoMock = new Mock<IPageMarkerRepository>();
-        var fileSystemMock = new Mock<IFileSystem>();
+        var fileSystemMock = new Mock<IRawFileSystem>();
         var pageRetrieverMock = new Mock<IPageRetriever>();
         var downloadStreamProviderMock = new Mock<IDownloadStreamProvider>();
         var mocksToShowInvocations = new Mock[]
@@ -57,7 +58,7 @@ public class DownloadApplicationServiceTests
         pageMarkerRepoFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(pageMarkerRepoMock.Object);
         pageMarkerRepoFactoryMock.Setup(x => x.Build(It.IsAny<DatabaseInfo>())).Returns(pageMarkerRepoMock.Object);
         var fileSystemFactoryMock = new Mock<IFileSystemFactory>();
-        fileSystemFactoryMock.Setup(x => x.BuildAsync(It.IsAny<bool?>())).ReturnsAsync(fileSystemMock.Object);
+        fileSystemFactoryMock.Setup(x => x.BuildAsync(It.IsAny<bool?>())).ReturnsAsync(new FileSystem(fileSystemMock.Object));
         var pageRetrieverFactoryMock = new Mock<IPageRetrieverFactory>();
         pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(pageRetrieverMock.Object);
         var downloadStreamProviderFactoryMock = new Mock<IDownloadStreamProviderFactory>();
@@ -91,9 +92,10 @@ public class DownloadApplicationServiceTests
         fileSystemMock.Setup(x =>
             x.PathGetDirectoryName("./test-results/Docs/Example/firlollo/22.jpg")).Returns("./test-results/Docs/Example/firlollo");
         fileSystemMock.Setup(x => x.IsReadOnly).Returns(false);
+        fileSystemMock.Setup(x => x.DirectoryCreateAsync("./test-results/Docs/Example/firlollo"))
+            .Returns(Task.CompletedTask);
         fileSystemMock.Setup(
             x => x.FileWriteAsync(
-                "./test-results/Docs/Example/firlollo",
                 "./test-results/Docs/Example/firlollo/22.jpg",
                 It.IsAny<MemoryStream>())).Returns(Task.CompletedTask);
         pageMock.Setup(x => x.Content("//*[contains(@class, 'post-title ')]/text()")).Returns("firlollo");

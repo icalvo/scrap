@@ -12,7 +12,7 @@ public class CompiledDestinationProvider : IDestinationProvider
 {
     private readonly FileSystemResourceRepositoryConfiguration _config;
     private readonly ILogger<CompiledDestinationProvider> _logger;
-    private IDestinationProvider? _destinationProvider;
+    private static IDestinationProvider? _destinationProvider;
     private readonly IFileSystem _fileSystem;
 
     public CompiledDestinationProvider(
@@ -32,7 +32,7 @@ public class CompiledDestinationProvider : IDestinationProvider
         Uri resourceUrl,
         int resourceIndex)
     {
-        var compiledDestinationProvider = await CompileAsync(_config);
+        var compiledDestinationProvider = await CompileAsync();
         return await compiledDestinationProvider.GetDestinationAsync(
             destinationRootFolder,
             page,
@@ -41,16 +41,16 @@ public class CompiledDestinationProvider : IDestinationProvider
             resourceIndex);
     }
 
-    public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config) => CompileAsync(config);
+    public Task ValidateAsync() => CompileAsync();
 
-    private async Task<IDestinationProvider> CompileAsync(FileSystemResourceRepositoryConfiguration config)
+    private async Task<IDestinationProvider> CompileAsync()
     {
         if (_destinationProvider != null)
         {
             return _destinationProvider;
         }
 
-        var destinationFolderPattern = config.PathFragments;
+        var destinationFolderPattern = _config.PathFragments;
         var sourceCode = await GenerateSourceCodeAsync(destinationFolderPattern);
         try
         {

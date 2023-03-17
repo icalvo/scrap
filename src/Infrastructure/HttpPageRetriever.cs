@@ -34,7 +34,7 @@ public class HttpPageRetriever : IPageRetriever
 
     private Task<IPage> GetPageAsync(Uri uri, bool noCache)
     {
-        _logger.LogTrace("GET {Uri}", uri);
+        //_logger.LogTrace("GET {Uri}", uri);
         var policy = noCache ? _noCachePolicy : _policy;
         return policy.ExecuteAsync<IPage>(
             async _ =>

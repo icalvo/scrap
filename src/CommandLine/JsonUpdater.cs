@@ -19,8 +19,8 @@ public class JsonUpdater
     {
         try
         {
-            var filePath = _fileSystem.PathCombine(AppContext.BaseDirectory, _jsonFilePath);
-            var json = await _fileSystem.FileReadAllTextAsync(filePath);
+            var filePath = _fileSystem.Path.Combine(AppContext.BaseDirectory, _jsonFilePath);
+            var json = await _fileSystem.File.ReadAllTextAsync(filePath);
             var jsonObj = JObject.Parse(json);
             var rootProp = new JProperty("root", jsonObj);
             foreach (var (sectionPathKey, value) in updates)
@@ -29,7 +29,7 @@ public class JsonUpdater
             }
 
             var output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
-            await _fileSystem.FileWriteAllTextAsync(filePath, output);
+            await _fileSystem.File.WriteAllTextAsync(filePath, output);
         }
         catch (Exception ex)
         {

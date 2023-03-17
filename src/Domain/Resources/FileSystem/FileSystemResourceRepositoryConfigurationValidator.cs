@@ -1,7 +1,6 @@
-﻿namespace Scrap.Domain.Resources.FileSystem;
+namespace Scrap.Domain.Resources.FileSystem;
 
 public class FileSystemResourceRepositoryConfigurationValidator
-    : BaseResourceRepositoryConfigurationValidator<FileSystemResourceRepository>
 {
     private readonly IDestinationProvider _destinationProvider;
 
@@ -10,6 +9,5 @@ public class FileSystemResourceRepositoryConfigurationValidator
         _destinationProvider = destinationProvider;
     }
 
-    public override Task ValidateAsync(IResourceRepositoryConfiguration config) =>
-        _destinationProvider.ValidateAsync((FileSystemResourceRepositoryConfiguration)config);
+    public Task ValidateAsync() => _destinationProvider.ValidateAsync();
 }

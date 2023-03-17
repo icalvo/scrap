@@ -2,4 +2,7 @@
 
 namespace Scrap.Domain.Resources.FileSystem;
 
-public interface IFileSystemFactory : IAsyncFactory<bool?, IFileSystem>{}
+public interface IFileSystemFactory : IAsyncFactory<bool?, IFileSystem>
+{
+    string FileSystemType { get; }
+}

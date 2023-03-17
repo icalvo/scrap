@@ -24,7 +24,7 @@ public class TemplateDestinationProvider: IDestinationProvider
         _fileSystem = fileSystem;
     }
     
-    public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config)
+    public Task ValidateAsync()
     {
         return Task.CompletedTask;
     }
@@ -57,6 +57,6 @@ public class TemplateDestinationProvider: IDestinationProvider
 
     private string ToPath(IEnumerable<string> parts)
     {
-        return _fileSystem.PathCombine(parts.ToArray());
+        return _fileSystem.Path.Combine(parts.ToArray());
     }
 }

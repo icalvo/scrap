@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Scrap.Domain;
+using Xunit.Abstractions;
 
 namespace Scrap.Tests.System;
 
@@ -8,7 +9,7 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture
     private readonly string _dbFullPath;
     private readonly Process _serverProcess;
 
-    public ConfiguredFixture()
+    public ConfiguredFixture(IMessageSink output) : base(output)
     {
         Console.WriteLine($"Setting up {nameof(ConfiguredFixture)} (configured tool)");
         var jobDefsFullPath = Path.GetFullPath("./IntegrationTests/jobDefinitions.json");
@@ -25,9 +26,9 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture
         {
             process.Kill();
         }
+
         RunAndCheck("dotnet", $"tool install dotnet-serve --tool-path \"{InstallFullPath}\"");
         var wwwPath = Path.GetFullPath("./IntegrationTests/www/");
-
 
         var psi = new ProcessStartInfo
         {
@@ -40,9 +41,9 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture
 
     public override void Dispose()
     {
-        base.Dispose();
         _serverProcess.Kill();
         Run("dotnet", $"tool uninstall dotnet-serve --tool-path \"{InstallFullPath}\"");
         File.Delete(_dbFullPath);
+        base.Dispose();
     }
 }

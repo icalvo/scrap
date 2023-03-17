@@ -26,10 +26,7 @@ public class ScrapApplicationServiceTests
         var scrapTextServiceMock = new Mock<IScrapTextService>();
         scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<JobDto>())).Returns(Task.CompletedTask);
 
-        var service = new ScrapApplicationService(
-            Mock.Of<IJobFactory>(),
-            scrapDownloadsServiceMock.Object,
-            scrapTextServiceMock.Object);
+        var service = new ScrapApplicationService(scrapDownloadsServiceMock.Object, scrapTextServiceMock.Object);
 
         await service.ScrapAsync(jobDto);
 
@@ -47,10 +44,7 @@ public class ScrapApplicationServiceTests
         var scrapTextServiceMock = new Mock<IScrapTextService>();
         scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<JobDto>())).Returns(Task.CompletedTask);
 
-        var service = new ScrapApplicationService(
-            Mock.Of<IJobFactory>(),
-            scrapDownloadsServiceMock.Object,
-            scrapTextServiceMock.Object);
+        var service = new ScrapApplicationService(scrapDownloadsServiceMock.Object, scrapTextServiceMock.Object);
 
         await service.ScrapAsync(jobDto);
 

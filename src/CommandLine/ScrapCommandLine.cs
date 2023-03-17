@@ -79,7 +79,8 @@ public class ScrapCommandLine
             s => configBuilder.AddJsonStream(s));
         configBuilder.AddEnvironmentVariables(environmentVarPrefix);
         _configuration = configBuilder.Build();
-        if (!context.Method.Names.Contains("configure"))
+        if (context.Method.MethodInfo.Name != nameof(Configure) &&
+            context.Method.MethodInfo.Name != nameof(Version))
         {
             await EnsureGlobalConfigurationAsync(_globalUserConfigFolder);
         }
@@ -703,25 +704,42 @@ public class ScrapCommandLine
         Console.WriteLine(helpText);
     }
 
+    private IEnumerable<Exception> AssociatedExceptions(Exception ex)
+    {
+        yield return ex;
+        if (ex.InnerException != null)
+        {
+            foreach (var assoc in AssociatedExceptions(ex.InnerException))
+            {
+                yield return assoc;
+            }
+        }
+
+        if (ex is AggregateException agg)
+        {
+            foreach (var inner in agg.InnerExceptions)
+            {
+                foreach (var assoc in AssociatedExceptions(inner))
+                {
+                    yield return assoc;
+                }
+            }
+        }
+    }
     private void ErrorHandler(ExceptionContext c, IEnumerable<string> args)
     {
-        var ex = c.Exception;
-        if (c.Exception is TargetInvocationException && c.Exception.InnerException != null)
+        var scrapEx = AssociatedExceptions(c.Exception).FirstOrDefault(x => x is ScrapException);
+        if (scrapEx != null)
         {
-            ex = c.Exception.InnerException;
+            Console.WriteLine(scrapEx.Message);
+            return;
         }
 
         var serviceResolver = BuildServiceProviderWithConsole();
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
 
-        if (ex is ScrapException)
-        {
-            Console.WriteLine(ex.Message);
-            return;
-        }
-
-        logger.LogError("ERROR: {Message}", ex.Message);
-        logger.LogTrace("{Stacktrace}", ex.Demystify().StackTrace);
+        logger.LogError("ERROR: {Message}", c.Exception.Message);
+        logger.LogTrace("{Stacktrace}", c.Exception.Demystify().StackTrace);
         logger.LogDebug("Arguments:");
         foreach (var (arg, idx) in args.Select((arg, idx) => (arg, idx)))
         {

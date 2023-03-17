@@ -1,6 +1,4 @@
-﻿using System.Net;
-using Dropbox.Api;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Scrap.Domain.Resources.FileSystem;
 using Scrap.Infrastructure.FileSystems;
 
@@ -37,7 +35,7 @@ public class FileSystemFactory : IFileSystemFactory
 
     public string FileSystemType { get; }
 
-    public async Task<IFileSystem> BuildAsync(bool? readOnly)
+    public async Task<IFileSystem> BuildAsync(bool? readOnly = false)
     {
         _instance ??= await BuildRawFileSystem();
         return new FileSystem(readOnly ?? false ? new FileSystemReadOnlyWrapper(_instance) : _instance);

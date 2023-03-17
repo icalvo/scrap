@@ -31,14 +31,15 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
         FileSystemResourceRepositoryConfiguration config,
         ILogger<FileSystemResourceRepository> logger,
         string? baseRootFolder,
-        IFileSystemFactory fileSystemFactory)
+        IFileSystemFactory fileSystemFactory,
+        bool isReadOnly)
     {
         return new FileSystemResourceRepository(
             destinationProvider,
             config,
             logger,
             baseRootFolder,
-            await fileSystemFactory.BuildAsync(true));
+            await fileSystemFactory.BuildAsync(isReadOnly));
     }
     public override async Task<FileSystemResourceId> GetIdAsync(ResourceInfo resourceInfo)
     {

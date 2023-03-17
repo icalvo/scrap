@@ -13,5 +13,5 @@ public interface IPage : IEquatable<IPage>
     string Content(XPath xPath);
     Task<IPage?> LinkedDoc(string xPath);
     string? ContentOrNull(XPath xPath);
-    Task<IPage> RecreateAsync();
+    Task<IPage> ReloadAsync();
 }

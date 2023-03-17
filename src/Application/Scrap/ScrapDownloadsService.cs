@@ -66,32 +66,38 @@ public class ScrapDownloadsService : IScrapDownloadsService
         ValueTask<bool> IsNotDownloaded(ResourceInfo info) =>
             IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways);
 
+        var downloadStreamProvider = _downloadStreamProviderFactory.Build(job);
+
+        Task ProcessPageAsync(IPage page, int pageIndex)
+        {
+            var privatePage = page;
+
+            Task ProcessResourceAsync() =>
+                GetResourceLinks(privatePage, pageIndex).ToAsyncEnumerable()
+                    .WhereAwait(IsNotDownloaded)
+                    .SelectAwait(async resourceLink =>
+                        (x: resourceLink, stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
+                    .DoAwait(Download)
+                    .ExecuteAsync();
+
+            return Policy.Handle<Exception>()
+                .RetryAsync(
+                    RetryCount,
+                    async (ex, retryCount) =>
+                    {
+                        _logger.LogWarning("Error #{RetryCount} processing page resources: {Message}. Reloading page and trying again...", retryCount, ex.Message);
+                        privatePage = await privatePage.ReloadAsync();
+                    })
+                .ExecuteAsync(ProcessResourceAsync);
+        }
+
         var pageRetriever = _pageRetrieverFactory.Build(job);
         var linkCalculator = _linkCalculatorFactory.Build(job);
         var pageMarkerRepository = _pageMarkerRepositoryFactory.Build(job);
-        var downloadStreamProvider = _downloadStreamProviderFactory.Build(job);
+
         var pipeline = Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
             .Do(page => _logger.LogDebug("Processing page {PageUrl}", page.Uri))
-            .DoAwait(
-                (page, pageIndex) =>
-                {
-                    var privatePage = page;
-                    return Policy.Handle<Exception>().RetryAsync(
-                        RetryCount,
-                        async (ex, retryCount) =>
-                        {
-                            _logger.LogWarning(
-                                "Error #{RetryCount} processing page resources: {Message}. Reloading page and trying again...",
-                                retryCount,
-                                ex.Message);
-                            privatePage = await privatePage.RecreateAsync();
-                        }).ExecuteAsync(
-                        () => GetResourceLinks(privatePage, pageIndex).ToAsyncEnumerable().WhereAwait(IsNotDownloaded)
-                            .SelectAwait(
-                                async resourceLink => (x: resourceLink,
-                                    stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
-                            .DoAwait(Download).ExecuteAsync());
-                })
+            .DoAwait(ProcessPageAsync)
             .DoAwait(page => pageMarkerRepository.UpsertAsync(page.Uri));
 
         await pipeline.ExecuteAsync();

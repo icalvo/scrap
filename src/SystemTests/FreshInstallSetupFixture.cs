@@ -1,11 +1,15 @@
 ﻿using System.Diagnostics;
+using Xunit.Abstractions;
 
 namespace Scrap.Tests.System;
 
 public class FreshInstallSetupFixture : IDisposable
 {
-    public FreshInstallSetupFixture()
+    protected readonly IMessageSink Output;
+
+    public FreshInstallSetupFixture(IMessageSink output)
     {
+        Output = output;
         const string version = "0.1.2-test1";
         const string mainVersion = "0.1.2";
 
@@ -16,6 +20,7 @@ public class FreshInstallSetupFixture : IDisposable
         Environment.CurrentDirectory = $"{Environment.CurrentDirectory.Split("src")[0]}src";
         DirectoryEx.DeleteIfExists("./CommandLine/nupkg", true);
         DirectoryEx.DeleteIfExists("./testsite-result", true);
+        Directory.CreateDirectory("./testsite-result");
 
         DirectoryEx.DeleteIfExists(InstallFullPath, true);
         Directory.CreateDirectory(InstallFullPath);
@@ -52,11 +57,16 @@ public class FreshInstallSetupFixture : IDisposable
             FileName = fileName,
             Arguments = arguments,
             RedirectStandardOutput = true,
-            Environment = { ["Scrap_GlobalConfigurationFolder"] = InstallFullPath }
+            Environment =
+            {
+                ["Scrap_Scrap__GlobalConfigPath"] = Path.Combine(InstallFullPath, "scrap-user.json"),
+                ["Scrap_Scrap__FileSystemType"] = "local"
+            }
         };
 
         // var outputWriter = outputToConsole? Console.Out : null;
-        var outputWriter = Console.Out;
+
+        var outputWriter = new MessageSinkTextWriter(Output);
         var (process, standardOutput, errorOutput, output) = psi.Run(timeout, outputWriter);
 
         if (checkExitCode && process.ExitCode != 0)

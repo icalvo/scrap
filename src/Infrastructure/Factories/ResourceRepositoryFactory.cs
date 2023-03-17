@@ -37,7 +37,8 @@ public class ResourceRepositoryFactory : IResourceRepositoryFactory
                 cfg,
                 _loggerFactory.CreateLogger<FileSystemResourceRepository>(),
                 _baseRootFolder,
-                _fileSystemFactory),
+                _fileSystemFactory,
+                job.DisableResourceWrites),
             null => throw new ArgumentException("No Resource Repository found", nameof(job)),
             _ => throw new ArgumentException(
                 $"Unknown resource processor config type: {job.ResourceRepoArgs.GetType().Name}",

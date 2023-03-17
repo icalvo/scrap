@@ -22,7 +22,11 @@ public class FreshInstallIntegrationTests
     {
         var psi = new ProcessStartInfo(Path.Combine(_fixture.InstallFullPath, "scrap"))
         {
-            Environment = { ["Scrap_GlobalConfigurationFolder"] = "NotExisting" }
+            Environment =
+            {
+                ["Scrap_Scrap__GlobalConfigPath"] = "NotExisting",
+                ["Scrap_Scrap__FileSystemType"] = "local"
+            }
         };
         var (_, standardOutput, standardError, _) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
 

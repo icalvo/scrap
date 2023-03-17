@@ -39,7 +39,7 @@ public class PageMock : IPage
 
     string? IPage.ContentOrNull(XPath xPath) => Page.ContentOrNull(xPath);
 
-    public Task<IPage> RecreateAsync() => Task.FromResult((IPage)this);
+    public Task<IPage> ReloadAsync() => Task.FromResult((IPage)this);
 
     public PageMock PageLinks(XPath linkXPath, params string[] linkResults)
     {

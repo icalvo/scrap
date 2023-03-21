@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using Polly;
 using Scrap.Common;
+using Scrap.Common.Graphs;
 using Scrap.Domain;
 using Scrap.Domain.Jobs;
-using Scrap.Domain.Jobs.Graphs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
 
@@ -48,7 +48,7 @@ public class ScrapDownloadsService : IScrapDownloadsService
         var resourceRepository = await _resourceRepositoryFactory.BuildAsync(job);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
-        var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();
+        job.ValidateResourceCapabilities();
 
         async Task Download((ResourceInfo info, Stream stream) x)
         {
@@ -60,9 +60,6 @@ public class ScrapDownloadsService : IScrapDownloadsService
                 await resourceRepository.GetKeyAsync(info));
         }
 
-        IEnumerable<ResourceInfo> GetResourceLinks(IPage page, int crawlPageIndex) =>
-            ResourceLinks(page, crawlPageIndex, resourceXPath);
-
         ValueTask<bool> IsNotDownloaded(ResourceInfo info) =>
             IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways);
 
@@ -73,7 +70,7 @@ public class ScrapDownloadsService : IScrapDownloadsService
             var privatePage = page;
 
             Task ProcessResourceAsync() =>
-                GetResourceLinks(privatePage, pageIndex).ToAsyncEnumerable()
+                ResourceLinks(page, pageIndex, job.ResourceXPath).ToAsyncEnumerable()
                     .WhereAwait(IsNotDownloaded)
                     .SelectAwait(async resourceLink =>
                         (x: resourceLink, stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))

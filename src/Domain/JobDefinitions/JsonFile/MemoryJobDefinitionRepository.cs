@@ -52,8 +52,6 @@ public class MemoryJobDefinitionRepository : IJobDefinitionRepository
             });
     }
 
-    public Task<JobDefinition?> GetByIdAsync(JobDefinitionId id) => Task.FromResult((JobDefinition?)null);
-
     public async Task<JobDefinition?> GetByNameAsync(string jobName)
     {
         var store = await _store.ValueAsync();
@@ -74,10 +72,6 @@ public class MemoryJobDefinitionRepository : IJobDefinitionRepository
             yield return definition;
         }
     }
-
-    public Task UpsertAsync(JobDefinition jobDefinition) => Task.CompletedTask;
-
-    public Task DeleteJobAsync(JobDefinitionId id) => Task.CompletedTask;
 
     public async IAsyncEnumerable<JobDefinition> ListAsync()
     {

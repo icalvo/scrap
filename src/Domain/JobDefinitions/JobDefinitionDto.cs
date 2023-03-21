@@ -3,7 +3,6 @@ using Scrap.Domain.Resources;
 namespace Scrap.Domain.JobDefinitions;
 
 public record JobDefinitionDto(
-    Guid Id,
     string Name,
     string? AdjacencyXPath,
     string? ResourceXPath,

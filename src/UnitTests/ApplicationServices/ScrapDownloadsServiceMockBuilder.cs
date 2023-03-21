@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
 using Scrap.Application.Scrap;
+using Scrap.Common.Graphs;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;
-using Scrap.Domain.Jobs.Graphs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
 using Xunit.Abstractions;

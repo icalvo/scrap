@@ -105,7 +105,6 @@ public class DownloadApplicationServiceTests
         var svc = sl.GetRequiredService<IDownloadApplicationService>();
 
         var jobDefinitionDto = new JobDefinitionDto(
-            Guid.NewGuid(),
             "Example",
             "example.com",
             "(//*[contains(@class, 'post-body')]//a[contains(@href,'.jpg') or contains(@href,'.gif') or contains(@href,'/img/')])/@href",

@@ -5,23 +5,8 @@ namespace Scrap.Domain.JobDefinitions;
 
 public class JobDefinition
 {
-    public JobDefinition(NewJobDefinitionDto dto)
-    {
-        Id = new JobDefinitionId();
-        Name = dto.Name;
-        AdjacencyXPath = dto.AdjacencyXPath == null ? null : new XPath(dto.AdjacencyXPath);
-        ResourceXPath = dto.ResourceXPath;
-        ResourceRepoArgs = dto.ResourceRepository;
-        UrlPattern = dto.UrlPattern;
-        RootUrl = dto.RootUrl;
-        HttpRequestRetries = dto.HttpRequestRetries;
-        HttpRequestDelayBetweenRetries = dto.HttpRequestDelayBetweenRetries;
-        ResourceType = dto.ResourceType;
-    }
-
     public JobDefinition(JobDefinitionDto dto)
     {
-        Id = dto.Id;
         Name = dto.Name;
         AdjacencyXPath = dto.AdjacencyXPath == null ? null : new XPath(dto.AdjacencyXPath);
         ResourceXPath = dto.ResourceXPath == null ? null : new XPath(dto.ResourceXPath);
@@ -37,7 +22,6 @@ public class JobDefinition
     {
     }
 
-    public JobDefinitionId Id { get; }
     public string Name { get; private set; }
     public string? RootUrl { get; private set; }
     public XPath? AdjacencyXPath { get; private set; }
@@ -50,7 +34,6 @@ public class JobDefinition
 
     public JobDefinitionDto ToDto() =>
         new(
-            Id,
             Name,
             AdjacencyXPath?.ToString(),
             ResourceXPath?.ToString(),
@@ -70,17 +53,5 @@ public class JobDefinition
         logger.Log(logLevel, "Resource repo args:\n{ResourceRepoArgs}", ResourceRepoArgs);
         logger.Log(logLevel, "Url Pattern: {UrlPattern}", UrlPattern);
         logger.Log(logLevel, "Resource Type: {ResourceType}", ResourceType);
-    }
-
-    public void SetValues(NewJobDefinitionDto dto)
-    {
-        Name = dto.Name;
-        AdjacencyXPath = dto.AdjacencyXPath == null ? null : new XPath(dto.AdjacencyXPath);
-        ResourceXPath = dto.ResourceXPath;
-        ResourceRepoArgs = dto.ResourceRepository;
-        UrlPattern = dto.UrlPattern;
-        RootUrl = dto.RootUrl;
-        HttpRequestRetries = dto.HttpRequestRetries;
-        HttpRequestDelayBetweenRetries = dto.HttpRequestDelayBetweenRetries;
     }
 }

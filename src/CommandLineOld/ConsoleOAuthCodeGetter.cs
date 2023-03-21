@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Scrap.Domain;
 using Scrap.Infrastructure;
 
 namespace Scrap.CommandLine;

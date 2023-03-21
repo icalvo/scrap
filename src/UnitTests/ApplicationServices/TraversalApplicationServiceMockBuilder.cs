@@ -1,7 +1,7 @@
 ﻿using Moq;
 using Scrap.Application;
+using Scrap.Common.Graphs;
 using Scrap.Domain.Jobs;
-using Scrap.Domain.Jobs.Graphs;
 using Scrap.Domain.Pages;
 
 namespace Scrap.Tests.Unit.ApplicationServices;

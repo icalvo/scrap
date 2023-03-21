@@ -20,7 +20,7 @@ public class XPath
         }
     }
 
-    public XPath(XPathExpression xpath)
+    private XPath(XPathExpression xpath)
     {
         _expression = xpath;
     }

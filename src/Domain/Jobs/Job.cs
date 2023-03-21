@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Resources;
@@ -11,7 +12,6 @@ public class Job
 
     public Job(JobDto dto)
     {
-        Id = new JobId();
         AdjacencyXPath = dto.AdjacencyXPath == null ? null : new XPath(dto.AdjacencyXPath);
         ResourceXPath = dto.ResourceXPath == null ? null : new XPath(dto.ResourceXPath);
         ResourceRepoArgs = dto.ResourceRepository;
@@ -24,8 +24,6 @@ public class Job
         DownloadAlways = dto.DownloadAlways ?? false;
         ResourceType = dto.ResourceType;
     }
-
-    public JobId Id { get; }
     public Uri RootUrl { get; }
     public XPath? AdjacencyXPath { get; }
     public XPath? ResourceXPath { get; }
@@ -55,7 +53,8 @@ public class Job
             HttpRequestDelayBetweenRetries);
     }
 
-    public (XPath ResourceXPath, IResourceRepositoryConfiguration ResourceRepoArgs) GetResourceCapabilitiesOrThrow()
+    [MemberNotNull(nameof(ResourceXPath), nameof(ResourceRepoArgs))]
+    public void ValidateResourceCapabilities()
     {
         if (ResourceXPath == null)
         {
@@ -66,7 +65,5 @@ public class Job
         {
             throw new InvalidOperationException("The job has no Resource Repository Configuration");
         }
-
-        return (ResourceXPath, ResourceRepoArgs);
     }
 }

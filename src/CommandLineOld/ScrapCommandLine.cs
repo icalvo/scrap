@@ -173,7 +173,7 @@ public class ScrapCommandLine
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
         var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
 
-        var jobDefs = await definitionsApplicationService.GetJobsAsync()
+        var jobDefs = await definitionsApplicationService.GetAllAsync()
             .Where(x => x.RootUrl != null && x.HasResourceCapabilities()).ToListAsync();
 
         await ScrapMultipleJobDefsAsync(
@@ -633,7 +633,7 @@ public class ScrapCommandLine
         JobDefinitionDto? jobDef = null;
         if (name != null)
         {
-            jobDef = await definitionsApplicationService.FindJobByNameAsync(name);
+            jobDef = await definitionsApplicationService.FindByNameAsync(name);
             if (jobDef == null)
             {
                 logger.LogError("Job definition {Name} does not exist", name);
@@ -644,7 +644,7 @@ public class ScrapCommandLine
 
         if (rootUrl != null)
         {
-            var jobDefs = await definitionsApplicationService.FindJobsByRootUrlAsync(rootUrl).ToArrayAsync();
+            var jobDefs = await definitionsApplicationService.FindByRootUrlAsync(rootUrl).ToArrayAsync();
             if (jobDefs.Length == 0)
             {
                 logger.LogWarning("No job definition matches with {RootUrl}", rootUrl);
@@ -661,7 +661,7 @@ public class ScrapCommandLine
 
         if (envName != null)
         {
-            jobDef = await definitionsApplicationService.FindJobByNameAsync(envName);
+            jobDef = await definitionsApplicationService.FindByNameAsync(envName);
             if (jobDef == null)
             {
                 logger.LogError("Job definition {Name} does not exist", envName);
@@ -672,7 +672,7 @@ public class ScrapCommandLine
 
         if (envRootUrl != null)
         {
-            var jobDefs = await definitionsApplicationService.FindJobsByRootUrlAsync(envRootUrl).ToArrayAsync();
+            var jobDefs = await definitionsApplicationService.FindByRootUrlAsync(envRootUrl).ToArrayAsync();
             if (jobDefs.Length == 0)
             {
                 logger.LogWarning("No job definition matches with {RootUrl}", envRootUrl);

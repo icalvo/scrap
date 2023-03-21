@@ -8,7 +8,6 @@ using Polly.Caching;
 using Polly.Caching.Memory;
 using Scrap.Common.Logging;
 using Scrap.Domain;
-using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
 using Scrap.Domain.Resources.FileSystem;

@@ -16,24 +16,18 @@ public class JobDefinitionsApplicationService
         _logger = logger;
     }
 
-    public async Task<JobDefinitionDto?> FindJobByNameAsync(string name)
+    public async Task<JobDefinitionDto?> FindByNameAsync(string name)
     {
         _logger.LogDebug("Getting job def. called {JobName}", name);
         return (await _definitionRepository.GetByNameAsync(name))?.ToDto();
     }
 
-    public IAsyncEnumerable<JobDefinitionDto> GetJobsAsync()
+    public IAsyncEnumerable<JobDefinitionDto> GetAllAsync()
     {
         _logger.LogDebug("Getting all job defs");
         return _definitionRepository.ListAsync().Select(x => x.ToDto());
     }
 
-    public IAsyncEnumerable<JobDefinitionDto> FindJobsByRootUrlAsync(string rootUrl) =>
+    public IAsyncEnumerable<JobDefinitionDto> FindByRootUrlAsync(string rootUrl) =>
         _definitionRepository.FindByRootUrlAsync(rootUrl).Select(x => x.ToDto());
-
-    public Task DeleteJobAsync(JobDefinitionId id)
-    {
-        _logger.LogDebug("Deleting job def. {JobId}", id);
-        return _definitionRepository.DeleteJobAsync(id);
-    }
 }

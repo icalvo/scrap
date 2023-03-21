@@ -23,19 +23,15 @@ public class ResourcesApplicationService : IResourcesApplicationService
     {
         if (jobDto.ResourceType != ResourceType.DownloadLink)
         {
-            throw new Exception();
+            throw new ArgumentException("Job resource type must be DownloadLink", nameof(jobDto));
         }
 
         var job = await _jobFactory.BuildAsync(jobDto);
-
-        var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();
-
-        IEnumerable<ResourceInfo> GetResourceLinks(IPage page, int crawlPageIndex) =>
-            ResourceLinks(page, crawlPageIndex, resourceXPath);
+        job.ValidateResourceCapabilities();
 
         var pageRetriever = _pageRetrieverFactory.Build(job);
         var page = await pageRetriever.GetPageAsync(pageUrl);
-        var resources = GetResourceLinks(page, pageIndex).Select(x => x.ResourceUrl.AbsoluteUri);
+        var resources = ResourceLinks(page, pageIndex, job.ResourceXPath).Select(x => x.ResourceUrl.AbsoluteUri);
 
         foreach (var resource in resources)
         {

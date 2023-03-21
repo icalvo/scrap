@@ -1,10 +1,10 @@
 ﻿using System.Text;
 using Microsoft.Extensions.Logging;
 using Scrap.Common;
+using Scrap.Common.Graphs;
 using Scrap.Domain;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
-using Scrap.Domain.Jobs.Graphs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
 
@@ -50,10 +50,10 @@ public class ScrapTextService : IScrapTextService
         var resourceRepository = await _resourceRepositoryFactory.BuildAsync(job);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
-        var (resourceXPath, _) = job.GetResourceCapabilitiesOrThrow();
+        job.ValidateResourceCapabilities();
 
         IAsyncEnumerable<(ResourceInfo info, string text)> PageTexts(IPage page, int crawlPageIndex) =>
-            page.Contents(resourceXPath).Where(text => text != null).Select(
+            page.Contents(job.ResourceXPath).Where(text => text != null).Select(
                 (text, textIndex) => (info: new ResourceInfo(page, crawlPageIndex, page.Uri, textIndex),
                     text: text ?? "")).ToAsyncEnumerable();
 

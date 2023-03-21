@@ -6,15 +6,15 @@ using Scrap.Domain.Pages;
 
 namespace Scrap.Infrastructure.Repositories;
 
-public class PostgresPageMarkerRepository : IPageMarkerRepository
+public class PostgresqlPageMarkerRepository : IPageMarkerRepository
 {
     private readonly bool _disableWrites;
-    private readonly ILogger<PostgresPageMarkerRepository> _logger;
+    private readonly ILogger<PostgresqlPageMarkerRepository> _logger;
     private readonly NpgsqlConnection _connection;
 
-    public PostgresPageMarkerRepository(
+    public PostgresqlPageMarkerRepository(
         string connectionString,
-        ILogger<PostgresPageMarkerRepository> logger,
+        ILogger<PostgresqlPageMarkerRepository> logger,
         bool disableWrites)
     {
         _logger = logger;
@@ -59,7 +59,7 @@ public class PostgresPageMarkerRepository : IPageMarkerRepository
         _connection.QueryAsync<PageMarker>("SELECT url AS uri FROM page_markers WHERE url ~* @search", new { search });
 
     public Task DeleteAsync(string search) =>
-        _connection.ExecuteAsync("DELETE page_markers WHERE url ~* @search", new { search });
+        _connection.ExecuteAsync("DELETE FROM page_markers WHERE url ~* @search", new { search });
 
     public void EnsureTables()
     {

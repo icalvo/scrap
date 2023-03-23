@@ -5,7 +5,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>Nullable</WarningsAsErrors>
-    <AssemblyName>scrap</AssemblyName>
+    <AssemblyName>scrapold</AssemblyName>
     <RootNamespace>Scrap.CommandLine</RootNamespace>
     <ImplicitUsings>true</ImplicitUsings>
     <PackAsTool>true</PackAsTool>

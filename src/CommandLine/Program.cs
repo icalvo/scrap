@@ -9,6 +9,9 @@ using Scrap.Infrastructure.Factories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
+TaskScheduler.UnobservedTaskException += (_, eventArgs) =>
+    Console.Error.WriteLine($"Unobserved exception: {eventArgs.Exception}");
+
 var app = new CommandApp<ScrapCommand>(await BuildTypeRegistrar());
 app.Configure(ConfigureCommandLine);
 await app.RunAsync(args);

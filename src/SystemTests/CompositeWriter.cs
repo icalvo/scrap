@@ -9,11 +9,6 @@ public class CompositeWriter : TextWriter
     private CompositeWriter(IEnumerable<TextWriter> childTextWriters)
     {
         var textWriters = childTextWriters as TextWriter[] ?? childTextWriters.ToArray();
-        if (textWriters.Select(x => x.Encoding).Distinct().Count() != 1)
-        {
-            throw new ArgumentException("Encodings are not the same", nameof(childTextWriters));
-        }
-
         _childTextWriters = textWriters;
     }
 

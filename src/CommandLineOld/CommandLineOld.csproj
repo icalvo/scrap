@@ -8,8 +8,7 @@
     <AssemblyName>scrapold</AssemblyName>
     <RootNamespace>Scrap.CommandLine</RootNamespace>
     <ImplicitUsings>true</ImplicitUsings>
-    <PackAsTool>true</PackAsTool>
-    <IsPackable>true</IsPackable>
+    <IsPackable>false</IsPackable>
     <ToolCommandName>scrap</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <Description>Scrap is a web scrapping command line tool.</Description>

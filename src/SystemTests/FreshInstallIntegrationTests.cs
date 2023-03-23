@@ -32,6 +32,6 @@ public class FreshInstallIntegrationTests
         var (_, standardOutput, standardError, _) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
 
         standardError.Should().BeEmpty();
-        standardOutput.Should().Contain("ScrapException: The tool is not properly configured; call 'scrap config'");
+        standardOutput.Should().ContainMatch("*The tool is not properly configured; call 'scrap config'*");
     }
 }

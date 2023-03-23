@@ -5,7 +5,6 @@ using Scrap.Common.Graphs;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.JobDefinitions.JsonFile;
 using Scrap.Domain.Jobs;
-using Scrap.Domain.Resources;
 using Scrap.Domain.Resources.FileSystem;
 
 namespace Scrap.Domain;

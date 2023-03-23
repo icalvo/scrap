@@ -1,5 +1,4 @@
 ﻿using Scrap.Domain.Resources;
-using Scrap.Domain.Resources.FileSystem;
 
 namespace Scrap.Domain.Jobs;
 

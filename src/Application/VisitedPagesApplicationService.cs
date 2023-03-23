@@ -1,5 +1,4 @@
-﻿using Scrap.Domain;
-using Scrap.Domain.Pages;
+﻿using Scrap.Domain.Pages;
 
 namespace Scrap.Application;
 

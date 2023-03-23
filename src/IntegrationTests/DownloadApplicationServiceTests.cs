@@ -11,7 +11,6 @@ using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources.FileSystem;
 using Scrap.Infrastructure;
-using Scrap.Infrastructure.Factories;
 using Xunit;
 using Xunit.Abstractions;
 

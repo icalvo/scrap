@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Scrap.Tests.System;
 
@@ -13,7 +14,9 @@ public class FreshInstallSetupFixture : IDisposable
         const string version = "0.1.2-test1";
         const string mainVersion = "0.1.2";
 
-        Console.WriteLine($"Setting up {nameof(FreshInstallSetupFixture)} (freshly installed tool, not configured)");
+        Output.OnMessage(
+            new DiagnosticMessage(
+                $"Setting up {nameof(FreshInstallSetupFixture)} (freshly installed tool, not configured)"));
 
         InstallFullPath = Path.GetFullPath("./install");
 
@@ -28,7 +31,7 @@ public class FreshInstallSetupFixture : IDisposable
         RunAndCheck(
             "dotnet",
             $"build ./CommandLine/CommandLine.csproj /p:Version=\"{version}\" /p:AssemblyVersion=\"{mainVersion}\" /p:FileVersion=\"{mainVersion}\" /p:InformationalVersion=\"{version}\"");
-        RunAndCheck("dotnet", $"pack /p:PackageVersion=\"{version}\" --no-build");
+        RunAndCheck("dotnet", $"pack /p:PackageVersion=\"{version}\" --no-build", outputToConsole: true);
         RunAndCheck(
             "dotnet",
             $"tool install scrap --tool-path \"{InstallFullPath}\" --add-source ./CommandLine/nupkg/ --version {version}");
@@ -66,7 +69,12 @@ public class FreshInstallSetupFixture : IDisposable
 
         // var outputWriter = outputToConsole? Console.Out : null;
 
-        var outputWriter = new MessageSinkTextWriter(Output);
+        TextWriter outputWriter = new MessageSinkTextWriter(Output);
+        if (outputToConsole)
+        {
+            outputWriter = CompositeWriter.Create(outputWriter, Console.Out);
+        }
+
         var (process, standardOutput, errorOutput, output) = psi.Run(timeout, outputWriter);
 
         if (checkExitCode && process.ExitCode != 0)

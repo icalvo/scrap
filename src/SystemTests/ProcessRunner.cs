@@ -30,7 +30,7 @@ public static class ProcessRunner
         {
             timer.Change(timeout.Value, Timeout.InfiniteTimeSpan);
             var line = args.Data;
-            outputWriter?.WriteLine(line);
+            outputWriter?.WriteLine($"PROC> {line}");
 
             if (!string.IsNullOrWhiteSpace(line))
             {

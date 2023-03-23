@@ -22,6 +22,7 @@ public class FreshInstallIntegrationTests
     {
         var psi = new ProcessStartInfo(Path.Combine(_fixture.InstallFullPath, "scrap"))
         {
+            Arguments = "sc",
             Environment =
             {
                 ["Scrap_Scrap__GlobalConfigPath"] = "NotExisting",
@@ -31,6 +32,6 @@ public class FreshInstallIntegrationTests
         var (_, standardOutput, standardError, _) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
 
         standardError.Should().BeEmpty();
-        standardOutput.Should().Contain("The tool is not properly configured; call 'scrap config'");
+        standardOutput.Should().Contain("ScrapException: The tool is not properly configured; call 'scrap config'");
     }
 }

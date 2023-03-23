@@ -20,14 +20,14 @@ public class ConfiguredIntegrationTests
     [Fact]
     public void CommandLine_Version()
     {
-        var commandLineOutput = GetCommandLineOutput("v").ToArray();
+        var commandLineOutput = GetCommandLineOutput("version").ToArray();
         commandLineOutput.Should().BeEquivalentTo("0.1.2-test1");
     }
 
     [Fact]
     public async Task CommandLine_Scrap_Simple()
     {
-        _ = GetCommandLineOutput("-name=testsite -v").ToList();
+        _ = GetCommandLineOutput("testsite -v").ToList();
         string? downloadedContent = null;
         if (File.Exists("./testsite-result/0.txt"))
         {

@@ -10,6 +10,8 @@ namespace Scrap.CommandLine;
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
 internal sealed class ConfigureCommand : AsyncCommandBase<ConfigureSettings>
 {
+    public const string Name = "configure";
+
     public ConfigureCommand(IConfiguration configuration, IOAuthCodeGetter oAuthCodeGetter, IFileSystem fileSystem)
         : base(configuration, oAuthCodeGetter, fileSystem)
     {

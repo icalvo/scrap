@@ -43,6 +43,8 @@ async Task<ITypeRegistrar> BuildTypeRegistrar()
         "scrap.Development.json",
         s => configBuilder.AddJsonStream(s));
     configBuilder.AddEnvironmentVariables(environmentVarPrefix);
+    configBuilder.AddInMemoryCollection(
+        new KeyValuePair<string, string?>[] { new("GlobalUserConfigFolder", globalUserConfigFolder) });
     configuration = configBuilder.Build();
 
     var registrations = new ServiceCollection();
@@ -85,9 +87,11 @@ void ConfigureCommandLine(IConfigurator config)
 
             return -99;
         });
+
     config.AddCommand<ScrapCommand>("scrap").WithAlias("s").WithDescription("Executes a job definition");
     config.AddCommand<AllCommand>("all").WithDescription("Executes all job definitions with a root URL");
-    config.AddCommand<ConfigureCommand>("configure").WithAlias("c").WithAlias("config").WithDescription("Configures the tool");
+    config.AddCommand<ConfigureCommand>(ConfigureCommand.Name).WithAlias("c").WithAlias("config")
+        .WithDescription("Configures the tool");
     config.AddCommand<TraverseCommand>("traverse").WithAlias("t").WithDescription("Lists all the pages reachable with the adjacency path");
     config.AddCommand<ResourcesCommand>("resources").WithAlias("r").WithDescription("Lists all the resources available in pages provided by console input");
     config.AddCommand<DownloadCommand>("download").WithAlias("d").WithDescription("Downloads resources as given by the console input");

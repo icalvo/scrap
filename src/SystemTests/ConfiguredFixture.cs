@@ -16,11 +16,11 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture
         _dbFullPath = Path.GetFullPath("./scrap.db");
         RunAndCheck(
             $"{InstallFullPath}/scrap",
-            $"config /key={ConfigKeys.Definitions} /value={jobDefsFullPath}",
+            $"config {ConfigKeys.Definitions} {jobDefsFullPath}",
             outputToConsole: true);
         RunAndCheck(
             $"{InstallFullPath}/scrap",
-            $"config /key={ConfigKeys.Database} /value=\"Filename={_dbFullPath};Connection=shared\"");
+            $"config {ConfigKeys.Database} \"Filename={_dbFullPath};Connection=shared\"");
 
         foreach (var process in Process.GetProcessesByName("dotnet-serve"))
         {

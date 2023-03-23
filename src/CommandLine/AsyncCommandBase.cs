@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Reflection;
 using Figgle;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +37,11 @@ internal abstract class AsyncCommandBase<TSettings> : AsyncCommand<TSettings> wh
 
         _verbose = settings.Verbose;
 
+        if (context.Name != ConfigureCommand.Name)
+        {
+            await EnsureGlobalConfigurationAsync();
+        }
+        
         var result = await CommandExecuteAsync(settings);
         
         if (settings.Debug)
@@ -46,6 +50,28 @@ internal abstract class AsyncCommandBase<TSettings> : AsyncCommand<TSettings> wh
         }
 
         return result;
+    }
+
+    private async Task EnsureGlobalConfigurationAsync()
+    {
+        var globalUserConfigPath = Configuration["Scrap:GlobalConfigPath"] ?? "";
+        if (!await FileSystem.File.ExistsAsync(globalUserConfigPath))
+        {
+            Console.WriteLine($"The global config file [{globalUserConfigPath}] does not exist");
+            throw new ScrapException("The tool is not properly configured; call 'scrap config'");
+        }
+
+        var globalUserConfigFolder = FileSystem.Path.GetDirectoryName(globalUserConfigPath);
+        var unsetKeys = GetGlobalConfigs(globalUserConfigFolder)
+            .Where(config => !config.Optional && Configuration[config.Key] == null).ToArray();
+        if (!unsetKeys.Any())
+        {
+            return;
+        }
+
+        var keyList = string.Join(", ", unsetKeys.Select(x => x.Key));
+        Console.WriteLine($"Unset configuration keys: {keyList}");
+        throw new ScrapException("The tool is not properly configured; call 'scrap config'");
     }
 
     protected abstract Task<int> CommandExecuteAsync(TSettings settings);
@@ -75,7 +101,7 @@ internal abstract class AsyncCommandBase<TSettings> : AsyncCommand<TSettings> wh
 
     protected static void PrintHeader()
     {
-        var version = GetVersion();
+        var version = VersionCommand.GetVersion();
         var currentColor = Console.ForegroundColor;
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine(FiggleFonts.Doom.Render($"scrap {version}"));
@@ -83,10 +109,6 @@ internal abstract class AsyncCommandBase<TSettings> : AsyncCommand<TSettings> wh
         Console.WriteLine();
         Console.ForegroundColor = currentColor;
     }
-
-    private static string? GetVersion() =>
-        Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-            ?.InformationalVersion;
 
     protected ServiceProvider BuildServiceProviderWithConsole() => BuildServiceProvider(true);
     protected ServiceProvider BuildServiceProviderWithoutConsole() => BuildServiceProvider(false);

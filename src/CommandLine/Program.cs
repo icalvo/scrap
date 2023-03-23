@@ -95,4 +95,5 @@ void ConfigureCommandLine(IConfigurator config)
     config.AddCommand<SearchVisitedCommand>("searchvisited").WithAlias("sv").WithDescription("Searches visited pages");
     config.AddCommand<DeleteVisitedCommand>("deletevisited").WithAlias("dv").WithDescription("Searches and removes visited pages");
     config.AddCommand<ShowConfigCommand>("showconfig").WithAlias("sc").WithDescription("Show configuration");
+    config.AddCommand<VersionCommand>("version").WithAlias("v").WithDescription("Show version");
 }

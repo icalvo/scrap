@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text;
 using Dropbox.Api;
 using Dropbox.Api.Files;
 using Scrap.Domain.Resources.FileSystem;
@@ -81,7 +82,7 @@ public class DropboxFileSystem : IRawFileSystem
     }
 
     public Task FileWriteAllTextAsync(string filePath, string content) =>
-        _client.Files.UploadAsync(filePath, body: new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)));
+        _client.Files.UploadAsync(filePath, body: new MemoryStream(Encoding.UTF8.GetBytes(content)));
 
     public async Task<Stream> FileOpenReadAsync(string filePath) =>
         await (await _client.Files.DownloadAsync(filePath)).GetContentAsStreamAsync();
@@ -106,6 +107,7 @@ public class DropboxFileSystem : IRawFileSystem
     public string PathNormalizeFolderSeparator(string path) => path.Replace('\\', '/');
 
     public bool IsReadOnly => false;
+    public string DefaultGlobalUserConfigFile => PathCombine("/.scrap", "scrap-user.json");
     public Task<bool> DirectoryExistsAsync(string path) => FileExistsAsync(path);
 
 

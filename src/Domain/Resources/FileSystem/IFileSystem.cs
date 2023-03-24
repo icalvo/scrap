@@ -2,8 +2,10 @@
 
 public interface IFileSystem
 {
-    public PathTools Path { get; }
-    public FileTools File { get; }
-    public DirectoryTools Directory { get; }
+    PathTools Path { get; }
+    FileTools File { get; }
+    DirectoryTools Directory { get; }
     bool IsReadOnly { get; }
+    public string DefaultGlobalUserConfigFile { get; }
+ 
 }

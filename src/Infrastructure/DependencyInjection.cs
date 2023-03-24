@@ -42,8 +42,8 @@ public static class DependencyInjection
             {
                 var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("InfrastructureServiceConfiguration");
                 var config = sp.GetRequiredService<IConfiguration>();
-                logger.LogDebug("Scrap DB: {ConnectionString}", config[ConfigKeys.Database]);
-                return new ConnectionString(config[ConfigKeys.Database]);
+                logger.LogDebug("Scrap DB: {ConnectionString}", config.Database());
+                return new ConnectionString(config.Database());
             });
         container.AddSingleton<ILiteDatabase, LiteDatabase>();
 
@@ -59,7 +59,7 @@ public static class DependencyInjection
                     var config = sp.GetRequiredService<IConfiguration>();
                     return new FileSystemFactory(
                         sp.GetRequiredService<IOAuthCodeGetter>(),
-                        config[ConfigKeys.FileSystemType] ?? "local",
+                        config.FileSystemType() ?? "local",
                         sp.GetRequiredService<ILogger<FileSystemFactory>>());
                 });
         }
@@ -88,7 +88,7 @@ public static class DependencyInjection
             {
                 var config = sp.GetRequiredService<IConfiguration>();
                 return new ResourceRepositoryFactory(
-                    config[ConfigKeys.BaseRootFolder],
+                    config.BaseRootFolder(),
                     sp.GetRequiredService<ILoggerFactory>(),
                     sp.GetRequiredService<IFileSystemFactory>(),
                     sp.GetRequiredService<IDestinationProviderFactory>(),
@@ -143,12 +143,4 @@ public static class DependencyInjection
 
 public static class Global
 {
-
-    public static readonly string DefaultGlobalUserConfigFile = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".scrap",
-        "scrap-user.json");
-
-    public static string GetGlobalUserConfigFile(IConfiguration configuration) =>
-        configuration[ConfigKeys.GlobalUserConfigPath] ?? DefaultGlobalUserConfigFile;
 }

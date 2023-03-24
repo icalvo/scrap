@@ -53,21 +53,24 @@ public class ScrapCommandLine
     {
         const string environmentVarPrefix = "Scrap_";
         _configuration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
-        _fileSystemType = _configuration[ConfigKeys.FileSystemType]?.ToLowerInvariant() ?? "local";
+        _fileSystemType = _configuration.FileSystemType()?.ToLowerInvariant() ?? "local";
         
         var fileSystemFactory = new FileSystemFactory(OAuthCodeGetter, _fileSystemType, NullLogger<FileSystemFactory>.Instance);
         _fileSystem = await fileSystemFactory.BuildAsync(false);
 
-        
-        var globalUserConfigPath = Global.GetGlobalUserConfigFile(_configuration);
-        _globalUserConfigFolder = _fileSystem.Path.GetDirectoryName(globalUserConfigPath);
-        
-        var defaultUserConfigFolder = _fileSystem.Path.GetDirectoryName(Global.DefaultGlobalUserConfigFile);
+        var globalUserConfigPath = _configuration.GlobalUserConfigPath();
 
-        if (_globalUserConfigFolder == defaultUserConfigFolder)
+        if (globalUserConfigPath == null)
         {
+            globalUserConfigPath = _fileSystem.DefaultGlobalUserConfigFile;
+            _globalUserConfigFolder = _fileSystem.Path.GetDirectoryName(globalUserConfigPath);
             await _fileSystem.Directory.CreateIfNotExistAsync(_globalUserConfigFolder);
         }
+        else
+        {
+            _globalUserConfigFolder = _fileSystem.Path.GetDirectoryName(globalUserConfigPath);
+        }
+
 
         var configBuilder = new ConfigurationBuilder();
         _ = configBuilder.AddJsonFile("scrap.json", false, false);
@@ -130,8 +133,8 @@ public class ScrapCommandLine
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
         var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
 
-        var envRootUrl = _configuration![ConfigKeys.JobDefRootUrl];
-        var envName = _configuration[ConfigKeys.JobDefName];
+        var envRootUrl = _configuration!.JobDefRootUrl();
+        var envName = _configuration!.JobDefName();
 
         var jobDef = await GetJobDefinitionAsync(
             name,
@@ -383,7 +386,7 @@ public class ScrapCommandLine
         PrintHeader();
 
         Assert(_configuration != null, nameof(_configuration) + " != null");
-        var globalUserConfigPath = Global.GetGlobalUserConfigFile(_configuration);
+        var globalUserConfigPath = _configuration.GlobalUserConfigPath() ?? _fileSystem!.DefaultGlobalUserConfigFile;
         var globalUserConfigFolder = _fileSystem!.Path.GetDirectoryName(globalUserConfigPath);
 
 
@@ -445,7 +448,7 @@ public class ScrapCommandLine
     private async Task ConfigureNonInteractiveAsync(string key, string? value = null)
     {
         Assert(_configuration != null, nameof(_configuration) + " != null");
-        var globalUserConfigPath = Global.GetGlobalUserConfigFile(_configuration);
+        var globalUserConfigPath = _configuration.GlobalUserConfigPath() ?? _fileSystem!.DefaultGlobalUserConfigFile;
         var globalUserConfigFolder = _fileSystem!.Path.GetDirectoryName(globalUserConfigPath);
         await _fileSystem.Directory.CreateIfNotExistAsync(globalUserConfigFolder);
         if (await _fileSystem.File.ExistsAsync(globalUserConfigPath))
@@ -594,8 +597,8 @@ public class ScrapCommandLine
         var definitionsApplicationService = serviceLocator.GetRequiredService<JobDefinitionsApplicationService>();
         var logger = serviceLocator.GetRequiredService<ILogger<ScrapCommandLine>>();
         Assert(_configuration != null, nameof(_configuration) + " != null");
-        var envName = _configuration[ConfigKeys.JobDefName];
-        var envRootUrl = _configuration[ConfigKeys.JobDefRootUrl];
+        var envName = _configuration.JobDefName();
+        var envRootUrl = _configuration.JobDefRootUrl();
 
         var jobDef = await GetJobDefinitionAsync(
             name,

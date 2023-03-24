@@ -26,8 +26,8 @@ internal sealed class ScrapCommand : ScrapCommandBase<ScrapSettings>
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommand>>();
         var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
 
-        var envRootUrl = Configuration[ConfigKeys.JobDefRootUrl];
-        var envName = Configuration[ConfigKeys.JobDefName];
+        var envRootUrl = Configuration.JobDefRootUrl();
+        var envName = Configuration.JobDefName();
 
         var jobDef = await GetJobDefinitionAsync(
             settings.Name,

@@ -13,4 +13,5 @@ public class FileSystem : IFileSystem
     public FileTools File => new(_fileSystem);
     public DirectoryTools Directory => new(_fileSystem);
     public bool IsReadOnly => _fileSystem.IsReadOnly;
+    public string DefaultGlobalUserConfigFile => _fileSystem.DefaultGlobalUserConfigFile;
 }

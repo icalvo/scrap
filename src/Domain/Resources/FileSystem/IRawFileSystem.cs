@@ -13,5 +13,6 @@ public interface IRawFileSystem
     string PathGetDirectoryName(string destinationPath);
     string PathNormalizeFolderSeparator(string path);
     bool IsReadOnly { get; }
+    string DefaultGlobalUserConfigFile { get; }
     Task<bool> DirectoryExistsAsync(string path);
 }

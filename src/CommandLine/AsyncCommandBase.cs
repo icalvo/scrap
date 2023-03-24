@@ -54,7 +54,7 @@ internal abstract class AsyncCommandBase<TSettings> : AsyncCommand<TSettings> wh
 
     private async Task EnsureGlobalConfigurationAsync()
     {
-        var globalUserConfigPath = Configuration["Scrap:GlobalConfigPath"] ?? "";
+        var globalUserConfigPath = Configuration.GlobalUserConfigPath() ?? FileSystem.DefaultGlobalUserConfigFile;
         if (!await FileSystem.File.ExistsAsync(globalUserConfigPath))
         {
             Console.WriteLine($"The global config file [{globalUserConfigPath}] does not exist");
@@ -207,8 +207,8 @@ internal abstract class AsyncCommandBase<TSettings> : AsyncCommand<TSettings> wh
         var definitionsApplicationService = serviceLocator.GetRequiredService<JobDefinitionsApplicationService>();
         var logger = serviceLocator.GetRequiredService<ILogger<AsyncCommandBase<TSettings>>>();
         Debug.Assert(Configuration != null, nameof(Configuration) + " != null");
-        var envName = Configuration[ConfigKeys.JobDefName];
-        var envRootUrl = Configuration[ConfigKeys.JobDefRootUrl];
+        var envName = Configuration.JobDefName();
+        var envRootUrl = Configuration.JobDefRootUrl();
 
         var jobDef = await GetJobDefinitionAsync(
             name,

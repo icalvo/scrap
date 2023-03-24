@@ -34,5 +34,10 @@ public class LocalFileSystem : IRawFileSystem
                                                                   throw new Exception("What??");
     public string PathNormalizeFolderSeparator(string path) => path;
     public bool IsReadOnly => false;
+
+    public string DefaultGlobalUserConfigFile =>
+        PathCombine(
+            PathCombine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap"),
+            "scrap-user.json");
     public Task<bool> DirectoryExistsAsync(string path) => Task.FromResult(Directory.Exists(path));
 }

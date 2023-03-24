@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Scrap.Common;
+using Scrap.Domain;
 using Scrap.Domain.Resources.FileSystem;
 using Scrap.Infrastructure;
 
@@ -36,7 +37,7 @@ internal sealed class ConfigureCommand : AsyncCommandBase<ConfigureSettings>
         PrintHeader();
 
         Debug.Assert(Configuration != null, nameof(Configuration) + " != null");
-        var globalUserConfigPath = Global.GetGlobalUserConfigFile(Configuration);
+        var globalUserConfigPath = Configuration.GlobalUserConfigPath() ?? FileSystem.DefaultGlobalUserConfigFile;
         var globalUserConfigFolder = FileSystem.Path.GetDirectoryName(globalUserConfigPath);
 
 
@@ -98,7 +99,7 @@ internal sealed class ConfigureCommand : AsyncCommandBase<ConfigureSettings>
     private async Task ConfigureNonInteractiveAsync(string key, string? value = null)
     {
         Debug.Assert(Configuration != null, nameof(Configuration) + " != null");
-        var globalUserConfigPath = Global.GetGlobalUserConfigFile(Configuration);
+        var globalUserConfigPath = Configuration.GlobalUserConfigPath() ?? FileSystem.DefaultGlobalUserConfigFile;
         var globalUserConfigFolder = FileSystem.Path.GetDirectoryName(globalUserConfigPath);
         await FileSystem.Directory.CreateIfNotExistAsync(globalUserConfigFolder);
         if (await FileSystem.File.ExistsAsync(globalUserConfigPath))

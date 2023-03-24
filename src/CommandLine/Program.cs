@@ -21,7 +21,7 @@ async Task<ITypeRegistrar> BuildTypeRegistrar()
     const string environmentVarPrefix = "Scrap_";
     IOAuthCodeGetter oAuthCodeGetter = new ConsoleOAuthCodeGetter();
     var configuration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
-    var fileSystemType = configuration[ConfigKeys.FileSystemType]?.ToLowerInvariant() ?? "local";
+    var fileSystemType = configuration.FileSystemType()?.ToLowerInvariant() ?? "local";
 
     var fileSystemFactory = new FileSystemFactory(
         oAuthCodeGetter,
@@ -29,20 +29,24 @@ async Task<ITypeRegistrar> BuildTypeRegistrar()
         NullLogger<FileSystemFactory>.Instance);
     var fileSystem = await fileSystemFactory.BuildAsync(false);
 
-    var globalUserConfigPath = Global.GetGlobalUserConfigFile(configuration);
-    var globalUserConfigFolder = fileSystem.Path.GetDirectoryName(globalUserConfigPath);
+    var globalUserConfigPath = configuration.GlobalUserConfigPath();
+    string globalUserConfigFolder;
 
-    var defaultUserConfigFolder = fileSystem.Path.GetDirectoryName(Global.DefaultGlobalUserConfigFile);
-
-    if (globalUserConfigFolder == defaultUserConfigFolder)
+    if (globalUserConfigPath == null)
     {
+        globalUserConfigPath = fileSystem.DefaultGlobalUserConfigFile;
+        globalUserConfigFolder = fileSystem.Path.GetDirectoryName(globalUserConfigPath);
         await fileSystem.Directory.CreateIfNotExistAsync(globalUserConfigFolder);
+    }
+    else
+    {
+        globalUserConfigFolder = fileSystem.Path.GetDirectoryName(globalUserConfigPath);
     }
 
     var configBuilder = new ConfigurationBuilder();
     _ = configBuilder.AddJsonFile("scrap.json", false, false);
-    await using var stream2 = await OpenAndDoIfExistsAsync(globalUserConfigPath, s => configBuilder.AddJsonStream(s));
-    await using var stream3 = await OpenAndDoIfExistsAsync(
+    await using var s1 = await OpenAndDoIfExistsAsync(globalUserConfigPath, s => configBuilder.AddJsonStream(s));
+    await using var s2 = await OpenAndDoIfExistsAsync(
         "scrap.Development.json",
         s => configBuilder.AddJsonStream(s));
     configBuilder.AddEnvironmentVariables(environmentVarPrefix);

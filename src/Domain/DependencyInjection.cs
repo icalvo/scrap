@@ -21,7 +21,7 @@ public static class DependencyInjection
             {
                 var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("InfrastructureServiceConfiguration");
                 var config = sp.GetRequiredService<IConfiguration>();
-                var definitionsFilePath = config[ConfigKeys.Definitions];
+                var definitionsFilePath = config.Definitions();
                 if (definitionsFilePath == null)
                 {
                     throw new Exception("No definitions file in the configuration!");

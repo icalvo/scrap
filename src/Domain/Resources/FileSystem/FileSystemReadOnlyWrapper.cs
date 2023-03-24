@@ -29,5 +29,6 @@ public class FileSystemReadOnlyWrapper : IRawFileSystem
 
     public string PathNormalizeFolderSeparator(string path) => _fileSystemImplementation.PathNormalizeFolderSeparator(path);
     public bool IsReadOnly => true;
+    public string DefaultGlobalUserConfigFile => _fileSystemImplementation.DefaultGlobalUserConfigFile;
     public Task<bool> DirectoryExistsAsync(string path) => _fileSystemImplementation.DirectoryExistsAsync(path);
 }

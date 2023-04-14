@@ -110,6 +110,10 @@ public class DropboxFileSystem : IRawFileSystem
     public string DefaultGlobalUserConfigFile => PathCombine("/.scrap", "scrap-user.json");
     public Task<bool> DirectoryExistsAsync(string path) => FileExistsAsync(path);
 
+    public string PathReplaceForbiddenChars(string path, string replacement = "") =>
+        Path.GetInvalidPathChars().Union(Path.GetInvalidFileNameChars()).Aggregate(
+            path,
+            (p, invalidChar) => p.Replace(invalidChar.ToString(), replacement));
 
     private static async Task<DropboxClient> GetDropboxClientAsync(
         string appKey,

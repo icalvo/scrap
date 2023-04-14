@@ -1,22 +1,13 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Scrap.Application.Scrap;
+﻿using Microsoft.Extensions.Logging;
+using Scrap.Application;
 using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
-using Scrap.Domain.Resources.FileSystem;
-using Scrap.Infrastructure;
 
 namespace Scrap.CommandLine;
 
-internal abstract class ScrapCommandBase<TSettings> : AsyncCommandBase<TSettings> where TSettings : SettingsBase, IScrapSettings
+internal static class ScrapCommandTools
 {
-    protected ScrapCommandBase(IConfiguration configuration, IOAuthCodeGetter oAuthCodeGetter, IFileSystem fileSystem)
-        : base(configuration, oAuthCodeGetter, fileSystem)
-    {
-    }
-
-    protected static async Task ScrapMultipleJobDefsAsync(
+    public static async Task ScrapMultipleJobDefsAsync(
         bool fullScan,
         bool downloadAlways,
         bool disableMarkingVisited,
@@ -26,7 +17,7 @@ internal abstract class ScrapCommandBase<TSettings> : AsyncCommandBase<TSettings
         IEnumerable<JobDefinitionDto> jobDefs,
         string? rootUrl,
         string? envRootUrl,
-        IServiceProvider serviceResolver)
+        IScrapApplicationService scrapApplicationService)
     {
         var jobDefsArray = jobDefs as JobDefinitionDto[] ?? jobDefs.ToArray();
         if (!jobDefsArray.Any())
@@ -52,9 +43,8 @@ internal abstract class ScrapCommandBase<TSettings> : AsyncCommandBase<TSettings
                 downloadAlways,
                 disableMarkingVisited,
                 disableResourceWrites);
-            var scrapAppService = serviceResolver.GetRequiredService<ScrapApplicationService>();
             logger.LogInformation("Starting {Definition}...", jobDef.Name);
-            await scrapAppService.ScrapAsync(newJob);
+            await scrapApplicationService.ScrapAsync(newJob);
             logger.LogInformation("Finished!");
         }
     }

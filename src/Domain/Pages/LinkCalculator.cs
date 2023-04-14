@@ -31,7 +31,7 @@ public class LinkCalculator : ILinkCalculator
         {
             if (await _pageMarkerRepository.ExistsAsync(link))
             {
-                _logger.LogTrace("Page {Link} already visited", link);
+                _logger.LogDebug("Page {Link} already visited", link);
                 continue;
             }
 

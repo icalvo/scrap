@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Scrap.CommandLine;
 using Scrap.Domain;
-using Scrap.Domain.Resources.FileSystem;
 using Scrap.Infrastructure;
 using Scrap.Infrastructure.Factories;
 using Spectre.Console;
@@ -54,12 +53,11 @@ async Task<ITypeRegistrar> BuildTypeRegistrar()
         new KeyValuePair<string, string?>[] { new("GlobalUserConfigFolder", globalUserConfigFolder) });
     configuration = configBuilder.Build();
 
-    var registrations = new ServiceCollection();
-    registrations.AddSingleton<IConfiguration>(configuration);
-    registrations.AddSingleton<IFileSystem>(fileSystem);
-    registrations.AddSingleton<IOAuthCodeGetter>(oAuthCodeGetter);
-// Create a type registrar and register any dependencies.
-// A type registrar is an adapter for a DI framework.
+    var scb = new ServiceCollectionBuilder(configuration, oAuthCodeGetter);
+
+    var registrations = scb.Build();
+    registrations.AddSingleton(registrations);
+    registrations.AddSingleton<IJobDtoBuilder, JobDtoBuilder>();
     var typeRegistrar = new TypeRegistrar(registrations);
     return typeRegistrar;
     
@@ -95,16 +93,50 @@ void ConfigureCommandLine(IConfigurator config)
             return -99;
         });
 
-    config.AddCommand<ScrapCommand>("scrap").WithAlias("s").WithDescription("Executes a job definition");
-    config.AddCommand<AllCommand>("all").WithDescription("Executes all job definitions with a root URL");
-    config.AddCommand<ConfigureCommand>(ConfigureCommand.Name).WithAlias("c").WithAlias("config")
+    config.AddCommand<ConfigCheckedServiceResolvedCommand<ScrapCommand, ScrapSettings>>("scrap").WithAlias("s")
+        .WithDescription("Executes a job definition");
+    config.AddCommand<ConfigCheckedServiceResolvedCommand<AllCommand, AllSettings>>("all")
+        .WithDescription("Executes all job definitions with a root URL");
+    config.AddCommand<ServiceResolverCommand<ConfigureCommand, ConfigureSettings>>(ConfigureCommand.Name).WithAlias("c")
+        .WithAlias("config")
         .WithDescription("Configures the tool");
-    config.AddCommand<TraverseCommand>("traverse").WithAlias("t").WithDescription("Lists all the pages reachable with the adjacency path");
-    config.AddCommand<ResourcesCommand>("resources").WithAlias("r").WithDescription("Lists all the resources available in pages provided by console input");
-    config.AddCommand<DownloadCommand>("download").WithAlias("d").WithDescription("Downloads resources as given by the console input");
-    config.AddCommand<MarkVisitedCommand>("markvisited").WithAlias("m").WithAlias("mv").WithDescription("Adds a visited page");
-    config.AddCommand<SearchVisitedCommand>("searchvisited").WithAlias("sv").WithDescription("Searches visited pages");
-    config.AddCommand<DeleteVisitedCommand>("deletevisited").WithAlias("dv").WithDescription("Searches and removes visited pages");
-    config.AddCommand<ShowConfigCommand>("showconfig").WithAlias("sc").WithDescription("Show configuration");
-    config.AddCommand<VersionCommand>("version").WithAlias("v").WithDescription("Show version");
+    config.AddCommand<ConfigCheckedServiceResolvedCommand<TraverseCommand, TraverseSettings>>("traverse").WithAlias("t")
+        .WithDescription("Lists all the pages reachable with the adjacency path").WithData(new CommandData(false));
+    config.AddCommand<ConfigCheckedServiceResolvedCommand<ResourcesCommand, ResourcesSettings>>("resources")
+        .WithAlias("r").WithDescription("Lists all the resources available in pages provided by console input")
+        .WithData(new CommandData(false));
+    config.AddCommand<ConfigCheckedServiceResolvedCommand<DownloadCommand, DownloadSettings>>("download").WithAlias("d")
+        .WithDescription("Downloads resources as given by the console input");
+    config.AddCommand<ConfigCheckedServiceResolvedCommand<MarkVisitedCommand, MarkVisitedSettings>>("markvisited")
+        .WithAlias("m").WithAlias("mv").WithDescription("Adds a visited page");
+    config.AddCommand<ConfigCheckedServiceResolvedCommand<SearchVisitedCommand, SearchSettings>>("searchvisited")
+        .WithAlias("sv").WithDescription("Searches visited pages").WithData(new CommandData(false));
+    config.AddCommand<ConfigCheckedServiceResolvedCommand<DeleteVisitedCommand, SearchSettings>>("deletevisited")
+        .WithAlias("dv").WithDescription("Searches and removes visited pages");
+    config.AddCommand<ConfigCheckedServiceResolvedCommand<ShowConfigCommand, ShowConfigSettings>>("showconfig")
+        .WithAlias("sc").WithDescription("Show configuration").WithData(new CommandData(false));
+    ;
+    config.AddCommand<VersionCommand>("version").WithAlias("v").WithDescription("Show version")
+        .WithData(new CommandData(false));
+}
+
+public record CommandData(bool ConsoleLog);
+
+internal class ConfigCheckedServiceResolvedCommand<TRawCommand, TSettings> : AsyncCommand<TSettings>
+    where TRawCommand : class, ICommand<TSettings> where TSettings : SettingsBase
+{
+    private readonly ICommand<TSettings> _commandImplementation;
+
+    public ConfigCheckedServiceResolvedCommand(
+        IGlobalConfigurationChecker globalConfigurationChecker,
+        IConfiguration configuration,
+        IServiceCollection serviceCollection)
+    {
+        _commandImplementation = new ConfigurationCheckedCommand<TSettings>(
+            new ServiceResolverCommand<TRawCommand, TSettings>(configuration, serviceCollection),
+            globalConfigurationChecker);
+    }
+
+    public override Task<int> ExecuteAsync(CommandContext context, TSettings settings) =>
+        _commandImplementation.Execute(context, settings);
 }

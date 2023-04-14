@@ -40,4 +40,9 @@ public class LocalFileSystem : IRawFileSystem
             PathCombine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scrap"),
             "scrap-user.json");
     public Task<bool> DirectoryExistsAsync(string path) => Task.FromResult(Directory.Exists(path));
+
+    public string PathReplaceForbiddenChars(string path, string replacement = "") =>
+        Path.GetInvalidPathChars().Union(Path.GetInvalidFileNameChars()).Aggregate(
+            path,
+            (p, invalidChar) => p.Replace(invalidChar.ToString(), replacement));
 }

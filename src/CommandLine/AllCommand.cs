@@ -1,43 +1,46 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scrap.Application;
-using Scrap.Domain.Resources.FileSystem;
-using Scrap.Infrastructure;
+using Spectre.Console.Cli;
 
 namespace Scrap.CommandLine;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-internal sealed class AllCommand : ScrapCommandBase<AllSettings>
+internal sealed class AllCommand : AsyncCommand<AllSettings>
 {
-    public AllCommand(IConfiguration configuration, IOAuthCodeGetter oAuthCodeGetter, IFileSystem fileSystem)
-        : base(configuration, oAuthCodeGetter, fileSystem)
+    private readonly ILogger<AllCommand> _logger;
+    private readonly JobDefinitionsApplicationService _jobDefinitionsApplicationService;
+    private readonly IScrapApplicationService _scrapApplicationService;
+
+    public AllCommand(
+        ILogger<AllCommand> logger,
+        JobDefinitionsApplicationService jobDefinitionsApplicationService,
+        IScrapApplicationService scrapApplicationService)
     {
+        _logger = logger;
+        _jobDefinitionsApplicationService = jobDefinitionsApplicationService;
+        _scrapApplicationService = scrapApplicationService;
     }
 
-    protected override async Task<int> CommandExecuteAsync(AllSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, AllSettings settings)
     {
-        PrintHeader();
+        ConsoleTools.PrintHeader();
 
-        var serviceResolver = BuildServiceProviderWithConsole();
-        var logger = serviceResolver.GetRequiredService<ILogger<AllCommand>>();
-        var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
-
-        var jobDefs = await definitionsApplicationService.GetAllAsync()
+        var jobDefs = await _jobDefinitionsApplicationService.GetAllAsync()
             .Where(x => x.RootUrl != null && x.HasResourceCapabilities()).ToListAsync();
 
-        await ScrapMultipleJobDefsAsync(
+        await ScrapCommandTools.ScrapMultipleJobDefsAsync(
             settings.FullScan,
             settings.DownloadAlways,
             settings.DisableMarkingVisited,
             settings.DisableResourceWrites,
-            logger,
+            _logger,
             true,
             jobDefs,
             null,
             null,
-            serviceResolver);
+            _scrapApplicationService);
+
         return 0;
     }
 }

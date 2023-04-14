@@ -1,31 +1,36 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Scrap.Application;
-using Scrap.Domain.Resources.FileSystem;
-using Scrap.Infrastructure;
+using Spectre.Console.Cli;
 
 namespace Scrap.CommandLine;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-internal sealed class DownloadCommand : AsyncCommandBase<DownloadSettings>
+internal sealed class DownloadCommand : AsyncCommand<DownloadSettings>
 {
-    public DownloadCommand(IConfiguration configuration, IOAuthCodeGetter oAuthCodeGetter, IFileSystem fileSystem)
-        : base(configuration, oAuthCodeGetter, fileSystem)
+    private readonly IJobDtoBuilder _jobDtoBuilder;
+    private readonly IDownloadApplicationService _downloadApplicationService;
+
+    public DownloadCommand(IJobDtoBuilder jobDtoBuilder, IDownloadApplicationService downloadApplicationService)
     {
+        _jobDtoBuilder = jobDtoBuilder;
+        _downloadApplicationService = downloadApplicationService;
     }
 
-    protected override async Task<int> CommandExecuteAsync(DownloadSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, DownloadSettings settings)
     {
-        var serviceResolver = BuildServiceProviderWithoutConsole();
-        var newJob = await BuildJobDtoAsync(serviceResolver, settings.Name, settings.RootUrl, false, settings.DownloadAlways, true, false);
+        var newJob = await _jobDtoBuilder.BuildJobDtoAsync(
+            settings.Name,
+            settings.RootUrl,
+            false,
+            settings.DownloadAlways,
+            true,
+            false);
         if (newJob == null)
         {
             return 1;
         }
 
-        var scrapAppService = serviceResolver.GetRequiredService<IDownloadApplicationService>();
-        var inputLines = settings.ResourceUrls ?? ConsoleInput();
+        var inputLines = settings.ResourceUrls ?? ConsoleTools.ConsoleInput();
         foreach (var line in inputLines)
         {
             var split = line.Split(" ");
@@ -33,7 +38,7 @@ internal sealed class DownloadCommand : AsyncCommandBase<DownloadSettings>
             var pageUrl = new Uri(split[1]);
             var resourceIndex = int.Parse(split[2]);
             var resourceUrl = new Uri(split[3]);
-            await scrapAppService.DownloadAsync(newJob, pageUrl, pageIndex, resourceUrl, resourceIndex);
+            await _downloadApplicationService.DownloadAsync(newJob, pageUrl, pageIndex, resourceUrl, resourceIndex);
             Console.WriteLine($"Downloaded {resourceUrl}");
         }
 

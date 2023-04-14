@@ -1,30 +1,26 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Scrap.Application;
-using Scrap.Domain.Resources.FileSystem;
-using Scrap.Infrastructure;
+using Spectre.Console.Cli;
 
 namespace Scrap.CommandLine;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-internal sealed class MarkVisitedCommand : AsyncCommandBase<MarkVisitedSettings>
+internal sealed class MarkVisitedCommand : AsyncCommand<MarkVisitedSettings>
 {
-    public MarkVisitedCommand(IConfiguration configuration, IOAuthCodeGetter oAuthCodeGetter, IFileSystem fileSystem)
-        : base(configuration, oAuthCodeGetter, fileSystem)
+    private readonly IVisitedPagesApplicationService _visitedPagesApplicationService;
+
+    public MarkVisitedCommand(IVisitedPagesApplicationService visitedPagesApplicationService)
     {
+        _visitedPagesApplicationService = visitedPagesApplicationService;
     }
 
-    protected override async Task<int> CommandExecuteAsync(MarkVisitedSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, MarkVisitedSettings settings)
     {
-        var serviceResolver = BuildServiceProviderWithoutConsole();
-
-        var visitedPagesAppService = serviceResolver.GetRequiredService<IVisitedPagesApplicationService>();
-        var inputLines = settings.Url ?? ConsoleInput();
+        var inputLines = settings.Url ?? ConsoleTools.ConsoleInput();
         foreach (var line in inputLines)
         {
             var pageUrl = new Uri(line);
-            await visitedPagesAppService.MarkVisitedPageAsync(pageUrl);
+            await _visitedPagesApplicationService.MarkVisitedPageAsync(pageUrl);
             Console.WriteLine($"Visited {pageUrl}");
         }
 

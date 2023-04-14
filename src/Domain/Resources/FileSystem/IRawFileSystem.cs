@@ -15,4 +15,5 @@ public interface IRawFileSystem
     bool IsReadOnly { get; }
     string DefaultGlobalUserConfigFile { get; }
     Task<bool> DirectoryExistsAsync(string path);
+    string PathReplaceForbiddenChars(string path, string replacement = "");
 }

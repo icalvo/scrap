@@ -1,36 +1,35 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Scrap.Application;
-using Scrap.Domain.Resources.FileSystem;
-using Scrap.Infrastructure;
+using Spectre.Console.Cli;
 
 namespace Scrap.CommandLine;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-internal sealed class ResourcesCommand : AsyncCommandBase<ResourcesSettings>
+internal sealed class ResourcesCommand : AsyncCommand<ResourcesSettings>
 {
-    public ResourcesCommand(IConfiguration configuration, IOAuthCodeGetter oAuthCodeGetter, IFileSystem fileSystem)
-        : base(configuration, oAuthCodeGetter, fileSystem)
+    private readonly IJobDtoBuilder _jobDtoBuilder;
+    private readonly IResourcesApplicationService _resourcesApplicationService;
+
+    public ResourcesCommand(IJobDtoBuilder jobDtoBuilder, IResourcesApplicationService resourcesApplicationService)
     {
+        _jobDtoBuilder = jobDtoBuilder;
+        _resourcesApplicationService = resourcesApplicationService;
     }
 
-    protected override async Task<int> CommandExecuteAsync(ResourcesSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, ResourcesSettings settings)
     {
-        var serviceResolver = BuildServiceProviderWithoutConsole();
-        var newJob = await BuildJobDtoAsync(serviceResolver, settings.Name, settings.RootUrl, false, false, true, true);
+        var newJob = await _jobDtoBuilder.BuildJobDtoAsync(settings.Name, settings.RootUrl, false, false, true, true);
         if (newJob == null)
         {
             return 1;
         }
 
-        var scrapAppService = serviceResolver.GetRequiredService<IResourcesApplicationService>();
         var pageIndex = 0;
-        var inputLines = settings.PageUrls ?? ConsoleInput();
+        var inputLines = settings.PageUrls ?? ConsoleTools.ConsoleInput();
         foreach (var line in inputLines)
         {
             var pageUrl = new Uri(line);
-            await scrapAppService.GetResourcesAsync(newJob, pageUrl, pageIndex).ForEachAsync(
+            await _resourcesApplicationService.GetResourcesAsync(newJob, pageUrl, pageIndex).ForEachAsync(
                 (resourceUrl, resourceIndex) =>
                 {
                     var format = settings.OnlyResourceLink ? "{3}" : "{0} {1} {2} {3}";

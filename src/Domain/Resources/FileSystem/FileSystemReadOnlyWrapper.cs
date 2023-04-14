@@ -31,4 +31,7 @@ public class FileSystemReadOnlyWrapper : IRawFileSystem
     public bool IsReadOnly => true;
     public string DefaultGlobalUserConfigFile => _fileSystemImplementation.DefaultGlobalUserConfigFile;
     public Task<bool> DirectoryExistsAsync(string path) => _fileSystemImplementation.DirectoryExistsAsync(path);
+
+    public string PathReplaceForbiddenChars(string path, string replacement = "") =>
+        _fileSystemImplementation.PathReplaceForbiddenChars(path, replacement);
 }

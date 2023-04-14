@@ -1,55 +1,52 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scrap.Application;
 using Scrap.Domain;
 using Scrap.Domain.JobDefinitions;
-using Scrap.Domain.Resources.FileSystem;
-using Scrap.Infrastructure;
+using Spectre.Console.Cli;
 
 namespace Scrap.CommandLine;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-internal sealed class ScrapCommand : ScrapCommandBase<ScrapSettings>
+internal sealed class ScrapCommand : AsyncCommand<ScrapSettings>
 {
-    public ScrapCommand(IConfiguration configuration, IOAuthCodeGetter oAuthCodeGetter, IFileSystem fileSystem)
-        : base(configuration, oAuthCodeGetter, fileSystem)
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<ScrapCommand> _logger;
+    private readonly IJobDtoBuilder _jobDtoBuilder;
+    private readonly IScrapApplicationService _scrapApplicationService;
+
+    public ScrapCommand(
+        IConfiguration configuration,
+        ILogger<ScrapCommand> logger,
+        IJobDtoBuilder jobDtoBuilder,
+        IScrapApplicationService scrapApplicationService)
     {
+        _configuration = configuration;
+        _logger = logger;
+        _jobDtoBuilder = jobDtoBuilder;
+        _scrapApplicationService = scrapApplicationService;
     }
 
-    protected override async Task<int> CommandExecuteAsync([NotNull] ScrapSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, ScrapSettings settings)
     {
-        PrintHeader();
+        ConsoleTools.PrintHeader();
 
-        var serviceResolver = BuildServiceProviderWithConsole();
-        var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommand>>();
-        var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
-
-        var envRootUrl = Configuration.JobDefRootUrl();
-        var envName = Configuration.JobDefName();
-
-        var jobDef = await GetJobDefinitionAsync(
-            settings.Name,
-            settings.RootUrl,
-            definitionsApplicationService,
-            envName,
-            envRootUrl,
-            logger);
+        var jobDef = await _jobDtoBuilder.GetJobDefinitionAsync(settings.Name, settings.RootUrl);
 
         var jobDefs = jobDef == null ? Array.Empty<JobDefinitionDto>() : new[] { jobDef };
 
-        await ScrapMultipleJobDefsAsync(
+        await ScrapCommandTools.ScrapMultipleJobDefsAsync(
             settings.FullScan,
             settings.DownloadAlways,
             settings.DisableMarkingVisited,
             settings.DisableResourceWrites,
-            logger,
+            _logger,
             settings.Name != null,
             jobDefs,
             settings.RootUrl,
-            envRootUrl,
-            serviceResolver);
+            _configuration.JobDefRootUrl(),
+            _scrapApplicationService);
 
         return 0;
     }

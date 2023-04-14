@@ -1,8 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
-using Scrap.Domain.Resources.FileSystem;
-using Scrap.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scrap.CommandLine;
 
@@ -16,8 +15,7 @@ internal sealed class ShowConfigSettings : SettingsBase
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
 internal sealed class ShowConfigCommand : AsyncCommandBase<ShowConfigSettings>
 {
-    public ShowConfigCommand(IConfiguration configuration, IOAuthCodeGetter oAuthCodeGetter, IFileSystem fileSystem)
-        : base(configuration, oAuthCodeGetter, fileSystem)
+    public ShowConfigCommand(IConfiguration configuration, IServiceCollection serviceCollection) : base(configuration)
     {
     }
 

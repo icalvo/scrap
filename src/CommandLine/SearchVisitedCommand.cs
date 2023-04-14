@@ -1,27 +1,23 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Scrap.Application;
-using Scrap.Domain.Resources.FileSystem;
-using Scrap.Infrastructure;
+using Spectre.Console.Cli;
 
 namespace Scrap.CommandLine;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-internal sealed class SearchVisitedCommand : AsyncCommandBase<SearchSettings>
+internal sealed class SearchVisitedCommand : AsyncCommand<SearchSettings>
 {
-    public SearchVisitedCommand(IConfiguration configuration, IOAuthCodeGetter oAuthCodeGetter, IFileSystem fileSystem)
-        : base(configuration, oAuthCodeGetter, fileSystem)
+    private readonly IVisitedPagesApplicationService _visitedPagesApplicationService;
+
+    public SearchVisitedCommand(IVisitedPagesApplicationService visitedPagesApplicationService)
     {
+        _visitedPagesApplicationService = visitedPagesApplicationService;
     }
 
-    protected override async Task<int> CommandExecuteAsync(SearchSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, SearchSettings settings)
     {
-        var serviceResolver = BuildServiceProviderWithoutConsole();
-
-        var visitedPagesAppService = serviceResolver.GetRequiredService<IVisitedPagesApplicationService>();
-        var search = settings.search ?? ConsoleInput().First();
-        var result = await visitedPagesAppService.SearchAsync(search);
+        var search = settings.search ?? ConsoleTools.ConsoleInput().First();
+        var result = await _visitedPagesApplicationService.SearchAsync(search);
         foreach (var line in result)
         {
             Console.WriteLine(line.Uri);

@@ -50,6 +50,7 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
             pageIndex,
             resourceUrl,
             resourceIndex);
+        destinationPath = _fileSystem.Path.ReplaceForbiddenChars(destinationPath);
         var description = _fileSystem.Path.GetRelativePath(_destinationRootFolder, destinationPath);
 
         return new FileSystemResourceId(destinationPath, description);
@@ -76,6 +77,7 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
         else
         {
             _logger.LogTrace("WRITE {RelativePath}", relativePath);
+            
             await _fileSystem.Directory.CreateIfNotExistAsync(directoryName);
             await _fileSystem.File.WriteAsync(destinationPath, resourceStream);
         }

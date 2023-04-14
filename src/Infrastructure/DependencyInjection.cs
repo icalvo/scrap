@@ -17,11 +17,19 @@ namespace Scrap.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection ConfigureInfrastructureServices(
+    public static IServiceCollection ConfigureLogging(
         this IServiceCollection container,
         IConfiguration cfg,
         bool withConsole,
-        bool verbose,
+        bool verbose)
+    {
+        container.AddLogging(o => ConfigureLogging(o, cfg, withConsole, verbose));
+        return container;
+    }
+
+    public static IServiceCollection ConfigureInfrastructureServices(
+        this IServiceCollection container,
+        IConfiguration cfg,
         IOAuthCodeGetter oAuthCodeGetter,
         IPageMarkerRepositoryFactory? pageMarkerRepoFactory = null,
         IFileSystemFactory? fileSystemFactory = null,
@@ -34,7 +42,6 @@ public static class DependencyInjection
         container.AddSingleton<DatabaseInfo>(sp => sp.GetRequiredService<IOptions<DatabaseInfo>>().Value);
         container.AddOptions<MemoryCacheOptions>();
         container.AddMemoryCache();
-        container.AddLogging(o => ConfigureLogging(o, cfg, withConsole, verbose));
 
         container.AddSingleton<IAsyncCacheProvider, MemoryCacheProvider>();
         container.AddSingleton(
@@ -108,18 +115,6 @@ public static class DependencyInjection
 
         container.AddSingleton<IDestinationProviderFactory, DestinationProviderFactory>();
         return container;
-    }
-
-    public static IServiceCollection ConfigureInfrastructureServices(
-        this IServiceCollection container,
-        IConfigurationRoot config,
-        IOAuthCodeGetter oAuthCodeGetter,
-        IPageMarkerRepositoryFactory pageMarkerRepoFactory,
-        IFileSystemFactory fileSystemFactory,
-        IPageRetrieverFactory pageRetrieverFactory,
-        IDownloadStreamProviderFactory downloadStreamProviderFactory)
-    {
-        return ConfigureInfrastructureServices(container, config, true, true, oAuthCodeGetter, pageMarkerRepoFactory, fileSystemFactory, pageRetrieverFactory, downloadStreamProviderFactory);
     }
 
     private static void ConfigureLogging(ILoggingBuilder builder, IConfiguration configuration, bool withConsole, bool verbose)

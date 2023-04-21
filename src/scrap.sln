@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommandLineOld", "CommandLineOld\CommandLineOld.csproj", "{7440D748-611F-4627-9AFA-F04675720952}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "Domain\Domain.csproj", "{DC01283F-FFD4-4DC8-8E86-C3B2E7A5D6CC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure", "Infrastructure\Infrastructure.csproj", "{FBB009F0-D550-40FD-B5A1-BFE0171D4398}"
@@ -35,18 +33,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7440D748-611F-4627-9AFA-F04675720952}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Debug|x64.Build.0 = Debug|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Debug|x86.Build.0 = Debug|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Release|x64.ActiveCfg = Release|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Release|x64.Build.0 = Release|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Release|x86.ActiveCfg = Release|Any CPU
-		{7440D748-611F-4627-9AFA-F04675720952}.Release|x86.Build.0 = Release|Any CPU
 		{DC01283F-FFD4-4DC8-8E86-C3B2E7A5D6CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DC01283F-FFD4-4DC8-8E86-C3B2E7A5D6CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC01283F-FFD4-4DC8-8E86-C3B2E7A5D6CC}.Debug|x64.ActiveCfg = Debug|Any CPU

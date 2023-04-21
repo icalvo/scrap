@@ -1,4 +1,5 @@
 ﻿using Figgle;
+using Scrap.CommandLine.Commands;
 
 namespace Scrap.CommandLine;
 

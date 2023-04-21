@@ -131,7 +131,7 @@ public class ScrapCommandLine
 
         var serviceResolver = BuildServiceProviderWithConsole();
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
-        var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
+        var definitionsApplicationService = serviceResolver.GetRequiredService<IJobDefinitionsApplicationService>();
 
         var envRootUrl = _configuration!.JobDefRootUrl();
         var envName = _configuration!.JobDefName();
@@ -174,7 +174,7 @@ public class ScrapCommandLine
 
         var serviceResolver = BuildServiceProviderWithConsole();
         var logger = serviceResolver.GetRequiredService<ILogger<ScrapCommandLine>>();
-        var definitionsApplicationService = serviceResolver.GetRequiredService<JobDefinitionsApplicationService>();
+        var definitionsApplicationService = serviceResolver.GetRequiredService<IJobDefinitionsApplicationService>();
 
         var jobDefs = await definitionsApplicationService.GetAllAsync()
             .Where(x => x.RootUrl != null && x.HasResourceCapabilities()).ToListAsync();
@@ -594,7 +594,7 @@ public class ScrapCommandLine
         bool? disableMarkingVisited,
         bool? disableResourceWrites)
     {
-        var definitionsApplicationService = serviceLocator.GetRequiredService<JobDefinitionsApplicationService>();
+        var definitionsApplicationService = serviceLocator.GetRequiredService<IJobDefinitionsApplicationService>();
         var logger = serviceLocator.GetRequiredService<ILogger<ScrapCommandLine>>();
         Assert(_configuration != null, nameof(_configuration) + " != null");
         var envName = _configuration.JobDefName();

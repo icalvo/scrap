@@ -7,8 +7,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection ConfigureApplicationServices(this IServiceCollection container)
     {
-        container.AddTransient<JobDefinitionsApplicationService>();
-        container.AddTransient<ScrapApplicationService>();
+        container.AddTransient<IJobDefinitionsApplicationService, JobDefinitionsApplicationService>();
+        container.AddTransient<IScrapApplicationService, ScrapApplicationService>();
         container.AddTransient<IScrapDownloadsService, ScrapDownloadsService>();
         container.AddTransient<IScrapTextService, ScrapTextService>();
         container.AddTransient<IDownloadApplicationService, DownloadApplicationService>();

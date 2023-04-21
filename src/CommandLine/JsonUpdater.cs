@@ -1,9 +1,17 @@
-﻿using Newtonsoft.Json;
+﻿using CommandLine.Text;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Scrap.CommandLine.Commands;
 using Scrap.Domain.Resources.FileSystem;
 
 namespace Scrap.CommandLine;
 
+public class UsageExamples
+{
+    [Usage]
+    public IEnumerable<Example> Examples =>
+        new[] { new Example("Scrap a job definition", new ScrapOptions { NameOrRootUrl = "myjobdefinition" }) };
+}
 public class JsonUpdater
 {
     private readonly IFileSystem _fileSystem;

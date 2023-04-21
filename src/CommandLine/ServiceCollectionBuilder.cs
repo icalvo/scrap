@@ -7,7 +7,7 @@ using Scrap.Infrastructure;
 
 namespace Scrap.CommandLine;
 
-public class ServiceCollectionBuilder : IServiceCollectionBuilder
+public class ServiceCollectionBuilder
 {
     private readonly IConfiguration _configuration;
     private readonly IOAuthCodeGetter _oAuthCodeGetter;

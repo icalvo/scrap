@@ -1,21 +1,58 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using CommandLine;
+using CommandLine.Text;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Scrap.CommandLine;
+using Scrap.CommandLine.Commands;
 using Scrap.Domain;
 using Scrap.Infrastructure;
 using Scrap.Infrastructure.Factories;
-using Spectre.Console;
-using Spectre.Console.Cli;
 
 TaskScheduler.UnobservedTaskException += (_, eventArgs) =>
     Console.Error.WriteLine($"Unobserved exception: {eventArgs.Exception}");
 
-var app = new CommandApp<ScrapCommand>(await BuildTypeRegistrar());
-app.Configure(ConfigureCommandLine);
-await app.RunAsync(args);
+var (cfg, sc) = await BuildServiceCollection();
+sc.AddSingleton<IGlobalConfigurationChecker, GlobalConfigurationChecker>();
 
-async Task<ITypeRegistrar> BuildTypeRegistrar()
+var commandSetups = new ICommandSetup[]
+{
+    BuildCommandSetup<ScrapCommand, ScrapOptions>(), BuildCommandSetup<AllCommand, AllOptions>(),
+    BuildCommandSetup<ConfigureCommand, ConfigureOptions>(),
+    BuildCommandSetup<DeleteVisitedCommand, DeleteVisitedOptions>(),
+    BuildCommandSetup<DownloadCommand, DownloadOptions>(), BuildCommandSetup<ResourcesCommand, ResourcesOptions>(),
+    BuildCommandSetup<SearchVisitedCommand, SearchVisitedOptions>(),
+    BuildCommandSetup<ShowConfigCommand, ShowConfigOptions>(), BuildCommandSetup<TraverseCommand, TraverseOptions>()
+};
+
+var optionTypes = commandSetups.Select(x => x.OptionsType).ToArray();
+var parser = new Parser(settings => settings.HelpWriter = null);
+var parserResult = parser.ParseArguments(args, optionTypes);
+await parserResult.WithNotParsed(errors => DisplayHelp(parserResult)).WithParsedAsync(
+    options => commandSetups.First(x => options.GetType() == x.OptionsType).ExecuteAsync(options));
+
+return;
+
+static void DisplayHelp<T>(ParserResult<T> result)
+{
+    var helpText = HelpText.AutoBuild(
+        result,
+        h =>
+        {
+            h.MaximumDisplayWidth = Console.WindowWidth;
+            h.AdditionalNewLineAfterOption = false;
+            h.Heading = HeadingInfo.Default;
+            h.Copyright = CopyrightInfo.Default;
+            return HelpText.DefaultParsingErrorsHandler(result, h);
+        });
+    Console.WriteLine(helpText);
+}
+
+CommandSetup<TCommand, TOptions> BuildCommandSetup<TCommand, TOptions>()
+    where TCommand : class, ICommand<TCommand, TOptions> where TOptions : OptionsBase =>
+    new(cfg, sc);
+
+async Task<(IConfiguration, IServiceCollection)> BuildServiceCollection()
 {
     const string environmentVarPrefix = "Scrap_";
     IOAuthCodeGetter oAuthCodeGetter = new ConsoleOAuthCodeGetter();
@@ -58,9 +95,9 @@ async Task<ITypeRegistrar> BuildTypeRegistrar()
     var registrations = scb.Build();
     registrations.AddSingleton(registrations);
     registrations.AddSingleton<IJobDtoBuilder, JobDtoBuilder>();
-    var typeRegistrar = new TypeRegistrar(registrations);
-    return typeRegistrar;
-    
+
+    return (configuration, registrations);
+        
     async Task<IAsyncDisposable> OpenAndDoIfExistsAsync(string path, Action<Stream> action)
     {
         if (!await fileSystem.File.ExistsAsync(path))
@@ -72,71 +109,4 @@ async Task<ITypeRegistrar> BuildTypeRegistrar()
         action(stream);
         return stream;
     }
-}
-
-void ConfigureCommandLine(IConfigurator config)
-{
-#if DEBUG
-    config.ValidateExamples();
-#endif
-    config.Settings.ApplicationName = "scrap";
-    config.SetExceptionHandler(
-        ex =>
-        {
-            if (ex is CommandRuntimeException)
-                AnsiConsole.WriteLine(ex.Message);
-            else
-            {
-                AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything | ExceptionFormats.ShowLinks);
-            }
-
-            return -99;
-        });
-
-    config.AddCommand<ConfigCheckedServiceResolvedCommand<ScrapCommand, ScrapSettings>>("scrap").WithAlias("s")
-        .WithDescription("Executes a job definition");
-    config.AddCommand<ConfigCheckedServiceResolvedCommand<AllCommand, AllSettings>>("all")
-        .WithDescription("Executes all job definitions with a root URL");
-    config.AddCommand<ServiceResolverCommand<ConfigureCommand, ConfigureSettings>>(ConfigureCommand.Name).WithAlias("c")
-        .WithAlias("config")
-        .WithDescription("Configures the tool");
-    config.AddCommand<ConfigCheckedServiceResolvedCommand<TraverseCommand, TraverseSettings>>("traverse").WithAlias("t")
-        .WithDescription("Lists all the pages reachable with the adjacency path").WithData(new CommandData(false));
-    config.AddCommand<ConfigCheckedServiceResolvedCommand<ResourcesCommand, ResourcesSettings>>("resources")
-        .WithAlias("r").WithDescription("Lists all the resources available in pages provided by console input")
-        .WithData(new CommandData(false));
-    config.AddCommand<ConfigCheckedServiceResolvedCommand<DownloadCommand, DownloadSettings>>("download").WithAlias("d")
-        .WithDescription("Downloads resources as given by the console input");
-    config.AddCommand<ConfigCheckedServiceResolvedCommand<MarkVisitedCommand, MarkVisitedSettings>>("markvisited")
-        .WithAlias("m").WithAlias("mv").WithDescription("Adds a visited page");
-    config.AddCommand<ConfigCheckedServiceResolvedCommand<SearchVisitedCommand, SearchSettings>>("searchvisited")
-        .WithAlias("sv").WithDescription("Searches visited pages").WithData(new CommandData(false));
-    config.AddCommand<ConfigCheckedServiceResolvedCommand<DeleteVisitedCommand, SearchSettings>>("deletevisited")
-        .WithAlias("dv").WithDescription("Searches and removes visited pages");
-    config.AddCommand<ConfigCheckedServiceResolvedCommand<ShowConfigCommand, ShowConfigSettings>>("showconfig")
-        .WithAlias("sc").WithDescription("Show configuration").WithData(new CommandData(false));
-    ;
-    config.AddCommand<VersionCommand>("version").WithAlias("v").WithDescription("Show version")
-        .WithData(new CommandData(false));
-}
-
-public record CommandData(bool ConsoleLog);
-
-internal class ConfigCheckedServiceResolvedCommand<TRawCommand, TSettings> : AsyncCommand<TSettings>
-    where TRawCommand : class, ICommand<TSettings> where TSettings : SettingsBase
-{
-    private readonly ICommand<TSettings> _commandImplementation;
-
-    public ConfigCheckedServiceResolvedCommand(
-        IGlobalConfigurationChecker globalConfigurationChecker,
-        IConfiguration configuration,
-        IServiceCollection serviceCollection)
-    {
-        _commandImplementation = new ConfigurationCheckedCommand<TSettings>(
-            new ServiceResolverCommand<TRawCommand, TSettings>(configuration, serviceCollection),
-            globalConfigurationChecker);
-    }
-
-    public override Task<int> ExecuteAsync(CommandContext context, TSettings settings) =>
-        _commandImplementation.Execute(context, settings);
 }

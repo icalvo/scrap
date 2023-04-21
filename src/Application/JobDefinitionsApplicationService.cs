@@ -3,7 +3,7 @@ using Scrap.Domain.JobDefinitions;
 
 namespace Scrap.Application;
 
-public class JobDefinitionsApplicationService
+public class JobDefinitionsApplicationService : IJobDefinitionsApplicationService
 {
     private readonly IJobDefinitionRepository _definitionRepository;
     private readonly ILogger<JobDefinitionsApplicationService> _logger;

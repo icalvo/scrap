@@ -10,12 +10,12 @@ namespace Scrap.CommandLine;
 
 internal class JobDtoBuilder : IJobDtoBuilder
 {
-    private readonly JobDefinitionsApplicationService _jobDefinitionsApplicationService;
+    private readonly IJobDefinitionsApplicationService _jobDefinitionsApplicationService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<JobDtoBuilder> _logger;
 
     public JobDtoBuilder(
-        JobDefinitionsApplicationService jobDefinitionsApplicationService,
+        IJobDefinitionsApplicationService jobDefinitionsApplicationService,
         IConfiguration configuration,
         ILogger<JobDtoBuilder> logger)
     {

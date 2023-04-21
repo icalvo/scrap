@@ -7,24 +7,25 @@ namespace Scrap.CommandLine;
 public class GlobalConfigurationChecker : IGlobalConfigurationChecker
 {
     private readonly IConfiguration _configuration;
-    private readonly IFileSystem _fileSystem;
+    private readonly IFileSystemFactory _fileSystemFactory;
 
-    public GlobalConfigurationChecker(IConfiguration configuration, IFileSystem fileSystem)
+    public GlobalConfigurationChecker(IConfiguration configuration, IFileSystemFactory fileSystemFactory)
     {
         _configuration = configuration;
-        _fileSystem = fileSystem;
+        _fileSystemFactory = fileSystemFactory;
     }
 
     public async Task EnsureGlobalConfigurationAsync()
     {
-        var globalUserConfigPath = _configuration.GlobalUserConfigPath() ?? _fileSystem.DefaultGlobalUserConfigFile;
-        if (!await _fileSystem.File.ExistsAsync(globalUserConfigPath))
+        var fileSystem = await _fileSystemFactory.BuildAsync(false);
+        var globalUserConfigPath = _configuration.GlobalUserConfigPath() ?? fileSystem.DefaultGlobalUserConfigFile;
+        if (!await fileSystem.File.ExistsAsync(globalUserConfigPath))
         {
             Console.WriteLine($"The global config file [{globalUserConfigPath}] does not exist");
             throw new ScrapException("The tool is not properly configured; call 'scrap config'");
         }
 
-        var globalUserConfigFolder = _fileSystem.Path.GetDirectoryName(globalUserConfigPath);
+        var globalUserConfigFolder = fileSystem.Path.GetDirectoryName(globalUserConfigPath);
         var unsetKeys = GlobalConfigurations.GetGlobalConfigs(globalUserConfigFolder)
             .Where(config => !config.Optional && _configuration[config.Key] == null).ToArray();
         if (!unsetKeys.Any())

@@ -21,9 +21,12 @@ public class GlobalConfigurationCheckerTests
         rfsMock.Setup(x => x.DefaultGlobalUserConfigFile).Returns("/def/scrap-user.json");
         rfsMock.Setup(x => x.FileExistsAsync("/def/scrap-user.json")).ReturnsAsync(false);
 
-        var mock = new GlobalConfigurationChecker(configMock.Object, new FileSystem(rfsMock.Object));
+        var fileSystem = new FileSystem(rfsMock.Object);
+        var fsFactoryMock = new Mock<IFileSystemFactory>();
+        fsFactoryMock.Setup(x => x.BuildAsync(It.IsAny<bool?>())).ReturnsAsync(fileSystem);
+        var sut = new GlobalConfigurationChecker(configMock.Object, fsFactoryMock.Object);
 
-        var action = () => mock.EnsureGlobalConfigurationAsync();
+        var action = () => sut.EnsureGlobalConfigurationAsync();
 
         (await action.Should().ThrowAsync<ScrapException>()).WithMessage(
             "The tool is not properly configured; call 'scrap config'");
@@ -42,7 +45,10 @@ public class GlobalConfigurationCheckerTests
         rfsMock.Setup(x => x.FileExistsAsync("/def/scrap-user.json")).ReturnsAsync(true);
         rfsMock.Setup(x => x.PathGetDirectoryName("/def/scrap-user.json")).Returns("/def");
 
-        var sut = new GlobalConfigurationChecker(configMock.Object, new FileSystem(rfsMock.Object));
+        var fileSystem = new FileSystem(rfsMock.Object);
+        var fsFactoryMock = new Mock<IFileSystemFactory>();
+        fsFactoryMock.Setup(x => x.BuildAsync(It.IsAny<bool?>())).ReturnsAsync(fileSystem);
+        var sut = new GlobalConfigurationChecker(configMock.Object, fsFactoryMock.Object);
 
         var action = () => sut.EnsureGlobalConfigurationAsync();
 
@@ -62,7 +68,10 @@ public class GlobalConfigurationCheckerTests
         rfsMock.Setup(x => x.FileExistsAsync("/def/scrap-user.json")).ReturnsAsync(true);
         rfsMock.Setup(x => x.PathGetDirectoryName("/def/scrap-user.json")).Returns("/def");
 
-        var sut = new GlobalConfigurationChecker(configMock.Object, new FileSystem(rfsMock.Object));
+        var fileSystem = new FileSystem(rfsMock.Object);
+        var fsFactoryMock = new Mock<IFileSystemFactory>();
+        fsFactoryMock.Setup(x => x.BuildAsync(It.IsAny<bool?>())).ReturnsAsync(fileSystem);
+        var sut = new GlobalConfigurationChecker(configMock.Object, fsFactoryMock.Object);
 
         var action = () => sut.EnsureGlobalConfigurationAsync();
 
@@ -84,7 +93,10 @@ public class GlobalConfigurationCheckerTests
         rfsMock.Setup(x => x.FileExistsAsync("/home/cfg/scrap.json")).ReturnsAsync(true);
         rfsMock.Setup(x => x.PathGetDirectoryName("/home/cfg/scrap.json")).Returns("/home/cfg");
 
-        var sut = new GlobalConfigurationChecker(configMock.Object, new FileSystem(rfsMock.Object));
+        var fileSystem = new FileSystem(rfsMock.Object);
+        var fsFactoryMock = new Mock<IFileSystemFactory>();
+        fsFactoryMock.Setup(x => x.BuildAsync(It.IsAny<bool?>())).ReturnsAsync(fileSystem);
+        var sut = new GlobalConfigurationChecker(configMock.Object, fsFactoryMock.Object);
 
         var action = () => sut.EnsureGlobalConfigurationAsync();
 

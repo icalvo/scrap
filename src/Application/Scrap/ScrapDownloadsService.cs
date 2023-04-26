@@ -54,10 +54,9 @@ public class ScrapDownloadsService : IScrapDownloadsService
         {
             var (info, stream) = x;
             await resourceRepository.UpsertAsync(info, stream);
-            _logger.LogInformation(
-                "Downloaded {Url} to {Key}",
-                info.ResourceUrl,
-                await resourceRepository.GetKeyAsync(info));
+            _logger.LogInformation("Downloading {Url}", info.ResourceUrl);
+            var key = await resourceRepository.GetKeyAsync(info);
+            _logger.LogInformation("Downloaded to {Key}", key);
         }
 
         ValueTask<bool> IsNotDownloaded(ResourceInfo info) =>

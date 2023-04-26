@@ -52,17 +52,10 @@ public class CompiledDestinationProvider : IDestinationProvider
 
         var destinationFolderPattern = _config.PathFragments;
         var sourceCode = await GenerateSourceCodeAsync(destinationFolderPattern);
-        try
-        {
-            var assembly = CompileSourceCode(sourceCode);
-            _destinationProvider = CreateDestinationProviderInstance(assembly);
-            return _destinationProvider;
-        }
-        catch (Exception)
-        {
-            _logger.LogTrace("Source: {SourceCode}", sourceCode);
-            throw;
-        }
+        _logger.LogTrace("Source: {SourceCode}", sourceCode);
+        var assembly = CompileSourceCode(sourceCode);
+        _destinationProvider = CreateDestinationProviderInstance(assembly);
+        return _destinationProvider;
     }
 
     private static async Task<string> GenerateSourceCodeAsync(string[] destinationFolderPattern)
@@ -91,7 +84,7 @@ public class CompiledDestinationProvider : IDestinationProvider
         // define other necessary objects for compilation
         var assemblyName = Path.GetRandomFileName();
 
-        var references = ReferenceAssemblies.Net60.Concat(
+        var references = Net70.References.All.Concat(
             new[]
             {
                 MetadataReference.CreateFromFile(typeof(IDestinationProvider).Assembly.Location),

@@ -10,8 +10,21 @@ namespace Scrap.CommandLine.Commands;
     HelpText = "Lists all the resources available in pages provided by console input")]
 internal sealed class ResourcesOptions : NameOrRootUrlOptions
 {
+    public ResourcesOptions(
+        bool debug,
+        bool verbose,
+        string? nameOrRootUrlOption,
+        string? nameOption,
+        string? rootUrlOption,
+        string[] pageUrls,
+        bool onlyResourceLink) : base(debug, verbose, nameOrRootUrlOption, nameOption, rootUrlOption)
+    {
+        PageUrls = pageUrls;
+        OnlyResourceLink = onlyResourceLink;
+    }
+
     [Option("pageUrls", Required = false, HelpText = "Page URLs [bold][[pipeline]][/]")]
-    public string[]? PageUrls { get; }
+    public string[] PageUrls { get; }
 
     [Option(
         "onlyResourceLink",

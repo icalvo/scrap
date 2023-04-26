@@ -13,15 +13,13 @@ internal sealed class SearchVisitedCommand : ICommand<SearchVisitedCommand, Sear
         _visitedPagesApplicationService = visitedPagesApplicationService;
     }
 
-    public async Task<int> ExecuteAsync(SearchVisitedOptions options)
+    public async Task ExecuteAsync(SearchVisitedOptions options)
     {
-        var search = options.search ?? ConsoleTools.ConsoleInput().First();
+        var search = options.Search ?? ConsoleTools.ConsoleInput().First();
         var result = await _visitedPagesApplicationService.SearchAsync(search);
         foreach (var line in result)
         {
             Console.WriteLine(line.Uri);
         }
-
-        return 0;
     }
 }

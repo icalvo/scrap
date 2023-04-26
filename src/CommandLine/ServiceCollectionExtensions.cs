@@ -7,10 +7,10 @@ namespace Scrap.CommandLine;
 
 internal static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddLogging<TCommand, TOptions>(
+    public static IServiceCollection AddLogging<TOptions>(
         this IServiceCollection sc,
         IConfiguration configuration,
-        TOptions settings) where TCommand : class, ICommand<TCommand, TOptions> =>
+        TOptions settings) =>
         sc.ConfigureLogging(
             configuration,
             settings is OptionsBase { ConsoleLog: true },

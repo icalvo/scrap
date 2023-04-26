@@ -11,8 +11,8 @@ internal interface ICommand<TCommand, TOptions> where TCommand : class, ICommand
         return cb.BuildCommand(cfg, sc, options);
     }
 
-    static Task<int> ExecuteAsync(IConfiguration cfg, IServiceCollection sc, TOptions options) =>
+    static Task ExecuteAsync(IConfiguration cfg, IServiceCollection sc, TOptions options) =>
         BuildCommand(cfg, sc, options).ExecuteAsync(options);
 
-    Task<int> ExecuteAsync(TOptions settings);
+    Task ExecuteAsync(TOptions settings);
 }

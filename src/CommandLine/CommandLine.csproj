@@ -34,10 +34,12 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="7.0.0"/>
     <PackageReference Include="Spectre.Console" Version="0.46.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\ext\commandline\src\CommandLine\CommandLine.csproj"/>
       <ProjectReference Include="..\Application\Application.csproj" />
       <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
     </ItemGroup>
@@ -54,12 +56,6 @@
 
   <ItemGroup>
     <Compile Remove="Wraps.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="CommandLine">
-      <HintPath>..\..\ext\commandline\src\CommandLine\bin\Debug\netstandard2.0\CommandLine.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>

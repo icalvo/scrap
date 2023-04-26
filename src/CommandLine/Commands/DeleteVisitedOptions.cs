@@ -7,5 +7,9 @@ namespace Scrap.CommandLine.Commands;
 [Verb("deletevisited", aliases: new[] { "dv" }, HelpText = "Searches and removes visited pages")]
 internal sealed class DeleteVisitedOptions : SearchOptions
 {
+    public DeleteVisitedOptions(string search, bool debug = false, bool verbose = false) : base(debug, verbose, search)
+    {
+    }
+
     public override bool ConsoleLog => false;
 }

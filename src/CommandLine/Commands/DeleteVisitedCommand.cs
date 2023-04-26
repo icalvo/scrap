@@ -13,9 +13,9 @@ internal sealed class DeleteVisitedCommand : ICommand<DeleteVisitedCommand, Dele
         _visitedPagesApplicationService = visitedPagesApplicationService;
     }
 
-    public async Task<int> ExecuteAsync(DeleteVisitedOptions options)
+    public async Task ExecuteAsync(DeleteVisitedOptions options)
     {
-        var search = options.search ?? ConsoleTools.ConsoleInput().First();
+        var search = options.Search ?? ConsoleTools.ConsoleInput().First();
         var result = await _visitedPagesApplicationService.SearchAsync(search);
         foreach (var line in result)
         {
@@ -26,6 +26,5 @@ internal sealed class DeleteVisitedCommand : ICommand<DeleteVisitedCommand, Dele
         Console.WriteLine("Deleting...");
         await _visitedPagesApplicationService.DeleteAsync(search);
         Console.WriteLine("Finished!");
-        return 0;
     }
 }

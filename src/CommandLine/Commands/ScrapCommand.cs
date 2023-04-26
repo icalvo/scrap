@@ -30,10 +30,8 @@ internal sealed class ScrapCommand : ICommand<ScrapCommand, ScrapOptions>
         _scrapApplicationService = scrapApplicationService;
     }
 
-    public async Task<int> ExecuteAsync(ScrapOptions settings)
+    public async Task ExecuteAsync(ScrapOptions settings)
     {
-        ConsoleTools.PrintHeader();
-
         await _checker.EnsureGlobalConfigurationAsync();
         var jobDef = await _jobDtoBuilder.GetJobDefinitionAsync(settings.Name, settings.RootUrl);
 
@@ -50,7 +48,5 @@ internal sealed class ScrapCommand : ICommand<ScrapCommand, ScrapOptions>
             settings.RootUrl,
             _configuration.JobDefRootUrl(),
             _scrapApplicationService);
-
-        return 0;
     }
 }

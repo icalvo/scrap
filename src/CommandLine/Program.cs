@@ -2,7 +2,7 @@
 using CommandLine.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Scrap.CommandLine;
 using Scrap.CommandLine.Commands;
 using Scrap.Domain;
@@ -43,7 +43,7 @@ static void DisplayHelp<T>(ParserResult<T> result)
             h.AdditionalNewLineAfterOption = false;
             h.Heading = HeadingInfo.Default;
             h.Copyright = CopyrightInfo.Default;
-            return HelpText.DefaultParsingErrorsHandler(result, h);
+            return h;
         });
     Console.WriteLine(helpText);
 }
@@ -54,24 +54,35 @@ CommandSetup<TCommand, TOptions> BuildCommandSetup<TCommand, TOptions>()
 
 async Task<(IConfiguration, IServiceCollection)> BuildServiceCollection()
 {
+
+    
     const string environmentVarPrefix = "Scrap_";
     IOAuthCodeGetter oAuthCodeGetter = new ConsoleOAuthCodeGetter();
-    var configuration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
-    var fileSystemType = configuration.FileSystemType()?.ToLowerInvariant() ?? "local";
+    var envConfiguration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
+
+
+    var loggerFactory = new ServiceCollection().AddLogging(c => c.AddDebug()).BuildServiceProvider()
+        .GetRequiredService<ILoggerFactory>();
+    var log = loggerFactory.CreateLogger("Initialization");
+
+    var fileSystemType = envConfiguration.FileSystemType()?.ToLowerInvariant() ?? "local";
+    log.LogInformation("FILE SYSTEM: {FileSystemType}", fileSystemType);
 
     var fileSystemFactory = new FileSystemFactory(
         oAuthCodeGetter,
         fileSystemType,
-        NullLogger<FileSystemFactory>.Instance);
+        loggerFactory.CreateLogger<FileSystemFactory>());
     var fileSystem = await fileSystemFactory.BuildAsync(false);
 
-    var globalUserConfigPath = configuration.GlobalUserConfigPath();
+    var globalUserConfigPath = envConfiguration.GlobalUserConfigPath();
+    log.LogInformation("ENV GLOBAL CONFIG PATH: {GlobalUserConfigPath}", globalUserConfigPath);
     string globalUserConfigFolder;
 
     if (globalUserConfigPath == null)
     {
         globalUserConfigPath = fileSystem.DefaultGlobalUserConfigFile;
         globalUserConfigFolder = fileSystem.Path.GetDirectoryName(globalUserConfigPath);
+        log.LogInformation("CREATING GLOBAL CONFIG PATH FOLDER: {GlobalUserConfigFolder}", globalUserConfigFolder);
         await fileSystem.Directory.CreateIfNotExistAsync(globalUserConfigFolder);
     }
     else
@@ -88,7 +99,7 @@ async Task<(IConfiguration, IServiceCollection)> BuildServiceCollection()
     configBuilder.AddEnvironmentVariables(environmentVarPrefix);
     configBuilder.AddInMemoryCollection(
         new KeyValuePair<string, string?>[] { new("GlobalUserConfigFolder", globalUserConfigFolder) });
-    configuration = configBuilder.Build();
+    var configuration = configBuilder.Build();
 
     var scb = new ServiceCollectionBuilder(configuration, oAuthCodeGetter);
 
@@ -109,4 +120,13 @@ async Task<(IConfiguration, IServiceCollection)> BuildServiceCollection()
         action(stream);
         return stream;
     }
+}
+
+internal class EmptyOptions : OptionsBase
+{
+    public EmptyOptions(bool debug, bool verbose) : base(debug, verbose)
+    {
+    }
+
+    public override bool ConsoleLog => false;
 }

@@ -13,7 +13,7 @@ internal sealed class MarkVisitedCommand : ICommand<MarkVisitedCommand, MarkVisi
         _visitedPagesApplicationService = visitedPagesApplicationService;
     }
 
-    public async Task<int> ExecuteAsync(MarkVisitedOptions options)
+    public async Task ExecuteAsync(MarkVisitedOptions options)
     {
         var inputLines = options.Url ?? ConsoleTools.ConsoleInput();
         foreach (var line in inputLines)
@@ -22,7 +22,5 @@ internal sealed class MarkVisitedCommand : ICommand<MarkVisitedCommand, MarkVisi
             await _visitedPagesApplicationService.MarkVisitedPageAsync(pageUrl);
             Console.WriteLine($"Visited {pageUrl}");
         }
-
-        return 0;
     }
 }

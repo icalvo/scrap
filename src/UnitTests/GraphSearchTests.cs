@@ -1,4 +1,6 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Scrap.Common.Graphs;
 using Xunit;
 
@@ -13,7 +15,7 @@ public class GraphSearchTests
         {
             { "a", new[] { "b", "c" } }, { "b", new[] { "a" } }, { "c", Array.Empty<string>() }
         };
-        var dfs = new DepthFirstGraphSearch();
+        var dfs = new DepthFirstGraphSearch(Mock.Of<ILogger<DepthFirstGraphSearch>>());
         var result = dfs.SearchAsync("a", Task.FromResult, s => adj[s].ToAsyncEnumerable()).ToEnumerable();
 
         result.Should().BeEquivalentTo("a", "b", "c");

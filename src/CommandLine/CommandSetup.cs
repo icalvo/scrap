@@ -18,6 +18,5 @@ internal class CommandSetup<TCommand, TOptions> : ICommandSetup where TCommand :
 
     public Type OptionsType => typeof(TOptions);
 
-    public Task<int> ExecuteAsync(object options) =>
-        ICommand<TCommand, TOptions>.ExecuteAsync(_cfg, _sc, (TOptions)options);
+    public Task ExecuteAsync(object options) => ICommand<TCommand, TOptions>.ExecuteAsync(_cfg, _sc, (TOptions)options);
 }

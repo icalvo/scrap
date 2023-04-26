@@ -50,7 +50,6 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
             pageIndex,
             resourceUrl,
             resourceIndex);
-        destinationPath = _fileSystem.Path.ReplaceForbiddenChars(destinationPath);
         var description = _fileSystem.Path.GetRelativePath(_destinationRootFolder, destinationPath);
 
         return new FileSystemResourceId(destinationPath, description);

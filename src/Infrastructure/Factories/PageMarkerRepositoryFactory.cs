@@ -8,6 +8,7 @@ namespace Scrap.Infrastructure.Factories;
 public class PageMarkerRepositoryFactory : IPageMarkerRepositoryFactory
 {
     private readonly DatabaseInfo _options;
+    private readonly ILogger<PageMarkerRepositoryFactory> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private static readonly Dictionary<string, IPageMarkerRepository> Store = new();
 
@@ -16,10 +17,9 @@ public class PageMarkerRepositoryFactory : IPageMarkerRepositoryFactory
         ILogger<PageMarkerRepositoryFactory> logger,
         ILoggerFactory loggerFactory)
     {
-        var typedConnectionString = options.Database ?? throw new ArgumentException("Database cannot be null", nameof(options));
         _options = options;
+        _logger = logger;
         _loggerFactory = loggerFactory;
-        logger.LogDebug("Scrap DB: {ConnectionString}", typedConnectionString);
     }
     
     public IPageMarkerRepository Build(Job job)
@@ -37,6 +37,7 @@ public class PageMarkerRepositoryFactory : IPageMarkerRepositoryFactory
         if (Store.TryGetValue(typedConnectionString, out var repo))
             return repo;
 
+        _logger.LogInformation("Page Marker DB: {FileSystemType}", options.Database);
         var (type, connectionString) = ParseTypedConnectionString(typedConnectionString);
 
         var instance = type.ToLowerInvariant() switch

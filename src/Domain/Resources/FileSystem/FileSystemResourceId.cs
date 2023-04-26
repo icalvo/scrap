@@ -11,7 +11,7 @@ public class FileSystemResourceId : IResourceId
     public string FullPath { get; }
     public string RelativePath { get; }
 
-    public string ToText() => RelativePath;
+    public string ToText() => FullPath;
 
     public override string ToString() => ToText();
 }

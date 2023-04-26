@@ -15,7 +15,7 @@ internal sealed class TraverseCommand : ICommand<TraverseCommand, TraverseOption
         _traversalApplicationService = traversalApplicationService;
     }
 
-    public async Task<int> ExecuteAsync(TraverseOptions options)
+    public async Task ExecuteAsync(TraverseOptions options)
     {
         var newJob = await _jobDtoBuilder.BuildJobDtoAsync(
             options.Name,
@@ -26,11 +26,9 @@ internal sealed class TraverseCommand : ICommand<TraverseCommand, TraverseOption
             true);
         if (newJob == null)
         {
-            return 0;
+            throw new CommandException(1, "Couldn't build a job definition with the provided arguments");
         }
 
         await _traversalApplicationService.TraverseAsync(newJob).ForEachAsync(x => Console.WriteLine(x));
-
-        return 0;
     }
 }

@@ -10,7 +10,7 @@ internal class ServiceProviderCommandBuilder<TCommand, TOptions> : ICommandBuild
     public TCommand BuildCommand(IConfiguration cfg, IServiceCollection sc, TOptions options)
     {
         sc.AddSingleton<TCommand>();
-        sc.AddLogging<TCommand, TOptions>(cfg, options);
+        sc.AddLogging(cfg, options);
         IServiceProvider sp = sc.BuildServiceProvider();
         return sp.GetRequiredService<TCommand>();
     }

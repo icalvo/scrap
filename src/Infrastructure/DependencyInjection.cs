@@ -47,9 +47,7 @@ public static class DependencyInjection
         container.AddSingleton(
             sp =>
             {
-                var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("InfrastructureServiceConfiguration");
                 var config = sp.GetRequiredService<IConfiguration>();
-                logger.LogDebug("Scrap DB: {ConnectionString}", config.Database());
                 return new ConnectionString(config.Database());
             });
         container.AddSingleton<ILiteDatabase, LiteDatabase>();

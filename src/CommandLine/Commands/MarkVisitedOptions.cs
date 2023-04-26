@@ -7,6 +7,11 @@ namespace Scrap.CommandLine.Commands;
 [Verb("markvisited", aliases: new[] { "m", "mv" }, HelpText = "Adds a visited page")]
 internal sealed class MarkVisitedOptions : OptionsBase
 {
+    public MarkVisitedOptions(bool debug, bool verbose, string[]? url) : base(debug, verbose)
+    {
+        Url = url;
+    }
+
     [Option('u', "url", Required = false, HelpText = "URL [bold][[pipeline]][/]")]
     public string[]? Url { get; }
 

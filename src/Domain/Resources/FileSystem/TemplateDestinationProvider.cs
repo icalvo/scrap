@@ -36,13 +36,16 @@ public class TemplateDestinationProvider: IDestinationProvider
         Uri resourceUrl,
         int resourceIndex)
     {
-        var x = new[]
+        var patternFragments = new[]
         {
-            ToArray(rootFolder),
             /* DestinationPattern */
         };
-            
-        return ToPath(x.Aggregate(Enumerable.Empty<string>(), Enumerable.Concat));
+
+        return ToPath(
+            patternFragments
+            .Aggregate(Enumerable.Empty<string>(), Enumerable.Concat)
+            .Select(x => _fileSystem.Path.ReplaceForbiddenChars(x))
+            .Prepend(rootFolder));
     }
 
     private string[] ToArray(string item)

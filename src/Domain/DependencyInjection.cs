@@ -27,7 +27,7 @@ public static class DependencyInjection
                     throw new Exception("No definitions file in the configuration!");
                 }
 
-                logger.LogDebug("Definitions file: {DefinitionsPath}", definitionsFilePath);
+                logger.LogTrace("Definitions file: {DefinitionsPath}", definitionsFilePath);
                 return new MemoryJobDefinitionRepository(
                     definitionsFilePath,
                     sp.GetRequiredService<IFileSystemFactory>(),

@@ -4,30 +4,74 @@ namespace Scrap.CommandLine.Commands;
 
 internal abstract class NameOrRootUrlOptions : OptionsBase
 {
-    [Value(0, HelpText = "Job definition name or root URL", MetaName = "Jobdef or root URL")]
-    public string? NameOrRootUrl
+    private readonly bool _isUri;
+
+    protected NameOrRootUrlOptions(
+        bool debug,
+        bool verbose,
+        string? nameOrRootUrlOption,
+        string? nameOption,
+        string? rootUrlOption) : base(debug, verbose)
     {
-        get => Name ?? RootUrl;
-        set
+        NameOption = nameOption;
+        RootUrlOption = rootUrlOption;
+        _isUri = Uri.TryCreate(nameOrRootUrlOption, UriKind.Absolute, out var uriResult) &&
+                 (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        NameOrRootUrlOption = nameOrRootUrlOption;
+
+        if ((NameOption != null) & (nameOrRootUrlOption != null) & !_isUri)
         {
-            var isUri = Uri.TryCreate(value, UriKind.Absolute, out var uriResult) &&
-                        (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
-            if (isUri)
-            {
-                Name = null;
-                RootUrl = value;
-            }
-            else
-            {
-                Name = value;
-                RootUrl = null;
-            }
+            throw new ArgumentException("Cannot provide a job def. name as value and as option", nameof(nameOption));
+        }
+
+        if ((RootUrlOption != null) & (nameOrRootUrlOption != null) & _isUri)
+        {
+            throw new ArgumentException("Cannot provide a root URL as value and as option", nameof(rootUrlOption));
         }
     }
 
+    [Value(0, HelpText = "Job definition name or root URL", MetaName = "Jobdef or root URL")]
+    public string? NameOrRootUrlOption { get; }
+
     [Option('n', "name", Required = false, HelpText = "Job definition name")]
-    public string? Name { get; set; }
+    public string? NameOption { get; }
 
     [Option('r', "rooturl", Required = false, HelpText = "Root URL")]
-    public string? RootUrl { get; set; }
+    public string? RootUrlOption { get; }
+
+    public string? Name
+    {
+        get
+        {
+            if (NameOption != null)
+            {
+                return NameOption;
+            }
+
+            if (!_isUri && NameOrRootUrlOption != null)
+            {
+                return NameOrRootUrlOption;
+            }
+
+            return null;
+        }
+    }
+
+    public string? RootUrl
+    {
+        get
+        {
+            if (RootUrlOption != null)
+            {
+                return RootUrlOption;
+            }
+
+            if (_isUri && NameOrRootUrlOption != null)
+            {
+                return NameOrRootUrlOption;
+            }
+
+            return null;
+        }
+    }    
 }

@@ -20,7 +20,7 @@ internal sealed class DownloadCommand : ICommand<DownloadCommand, DownloadOption
         _downloadApplicationService = downloadApplicationService;
     }
 
-    public async Task<int> ExecuteAsync(DownloadOptions settings)
+    public async Task ExecuteAsync(DownloadOptions settings)
     {
         await _checker.EnsureGlobalConfigurationAsync();
         var newJob = await _jobDtoBuilder.BuildJobDtoAsync(
@@ -32,7 +32,7 @@ internal sealed class DownloadCommand : ICommand<DownloadCommand, DownloadOption
             false);
         if (newJob == null)
         {
-            return 1;
+            throw new CommandException(1, "Couldn't build a job definition with the provided arguments");
         }
 
         var inputLines = settings.ResourceUrls ?? ConsoleTools.ConsoleInput();
@@ -46,7 +46,5 @@ internal sealed class DownloadCommand : ICommand<DownloadCommand, DownloadOption
             await _downloadApplicationService.DownloadAsync(newJob, pageUrl, pageIndex, resourceUrl, resourceIndex);
             Console.WriteLine($"Downloaded {resourceUrl}");
         }
-
-        return 0;
     }
 }

@@ -15,16 +15,16 @@ internal sealed class ResourcesCommand : ICommand<ResourcesCommand, ResourcesOpt
         _resourcesApplicationService = resourcesApplicationService;
     }
 
-    public async Task<int> ExecuteAsync(ResourcesOptions options)
+    public async Task ExecuteAsync(ResourcesOptions options)
     {
         var newJob = await _jobDtoBuilder.BuildJobDtoAsync(options.Name, options.RootUrl, false, false, true, true);
         if (newJob == null)
         {
-            return 1;
+            throw new CommandException(1, "Couldn't build a job definition with the provided arguments");
         }
 
         var pageIndex = 0;
-        var inputLines = options.PageUrls ?? ConsoleTools.ConsoleInput();
+        var inputLines = options.PageUrls.Length == 0 ? ConsoleTools.ConsoleInput() : options.PageUrls;
         foreach (var line in inputLines)
         {
             var pageUrl = new Uri(line);
@@ -36,7 +36,5 @@ internal sealed class ResourcesCommand : ICommand<ResourcesCommand, ResourcesOpt
                 });
             pageIndex++;
         }
-
-        return 0;
     }
 }

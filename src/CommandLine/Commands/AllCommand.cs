@@ -26,9 +26,8 @@ internal sealed class AllCommand : ICommand<AllCommand, AllOptions>
 
     public static bool WithConsoleLog => true;
 
-    public async Task<int> ExecuteAsync(AllOptions options)
+    public async Task ExecuteAsync(AllOptions options)
     {
-        ConsoleTools.PrintHeader();
         await _checker.EnsureGlobalConfigurationAsync();
         var jobDefs = await _jobDefinitionsApplicationService.GetAllAsync()
             .Where(x => x.RootUrl != null && x.HasResourceCapabilities()).ToListAsync();
@@ -44,7 +43,5 @@ internal sealed class AllCommand : ICommand<AllCommand, AllOptions>
             null,
             null,
             _scrapApplicationService);
-
-        return 0;
     }
 }

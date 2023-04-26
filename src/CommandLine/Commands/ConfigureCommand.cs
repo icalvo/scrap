@@ -22,7 +22,7 @@ internal sealed class ConfigureCommand : ICommand<ConfigureCommand, ConfigureOpt
         _fileSystemFactory = fileSystemFactory;
     }
 
-    public async Task<int> ExecuteAsync(ConfigureOptions settings)
+    public async Task ExecuteAsync(ConfigureOptions settings)
     {
         var fileSystem = await _fileSystemFactory.BuildAsync(null);
         if (settings.Key == null)
@@ -33,14 +33,10 @@ internal sealed class ConfigureCommand : ICommand<ConfigureCommand, ConfigureOpt
         {
             await ConfigureNonInteractiveAsync(fileSystem, settings.Key, settings.Value);
         }
-
-        return 0;
     }
 
     private async Task ConfigureInteractiveAsync(IFileSystem fileSystem)
     {
-        ConsoleTools.PrintHeader();
-
         Debug.Assert(_configuration != null, nameof(_configuration) + " != null");
         var globalUserConfigPath = _configuration.GlobalUserConfigPath() ?? fileSystem.DefaultGlobalUserConfigFile;
         var globalUserConfigFolder = fileSystem.Path.GetDirectoryName(globalUserConfigPath);

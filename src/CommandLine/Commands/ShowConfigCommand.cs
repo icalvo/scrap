@@ -14,12 +14,12 @@ internal sealed class ShowConfigCommand : ICommand<ShowConfigCommand, ShowConfig
         _configuration = configuration;
     }
 
-    public Task<int> ExecuteAsync(ShowConfigOptions options)
+    public Task ExecuteAsync(ShowConfigOptions options)
     {
         Debug.Assert(_configuration != null, nameof(_configuration) + " != null");
         var root = (IConfigurationRoot)_configuration;
         Console.WriteLine(root.GetDebugView());
 
-        return Task.FromResult(0);
+        return Task.CompletedTask;
     }
 }

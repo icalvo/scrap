@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -57,7 +56,8 @@ public class DownloadApplicationServiceTests
         pageMarkerRepoFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(pageMarkerRepoMock.Object);
         pageMarkerRepoFactoryMock.Setup(x => x.Build(It.IsAny<DatabaseInfo>())).Returns(pageMarkerRepoMock.Object);
         var fileSystemFactoryMock = new Mock<IFileSystemFactory>();
-        fileSystemFactoryMock.Setup(x => x.BuildAsync(It.IsAny<bool?>())).ReturnsAsync(new FileSystem(fileSystemMock.Object));
+        fileSystemFactoryMock.Setup(x => x.BuildAsync(It.IsAny<bool?>()))
+            .ReturnsAsync(new FileSystem(fileSystemMock.Object));
         var pageRetrieverFactoryMock = new Mock<IPageRetrieverFactory>();
         pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(pageRetrieverMock.Object);
         var downloadStreamProviderFactoryMock = new Mock<IDownloadStreamProviderFactory>();
@@ -65,42 +65,40 @@ public class DownloadApplicationServiceTests
             .Returns(downloadStreamProviderMock.Object);
 
         var sc = new ServiceCollection();
-        
-        var sl =
-            sc
-            .ConfigureDomainServices()
-            .ConfigureApplicationServices()
-            .ConfigureInfrastructureServices(
-                config,
-                Mock.Of<IOAuthCodeGetter>(),
-                pageMarkerRepoFactoryMock.Object,
-                fileSystemFactoryMock.Object,
-                pageRetrieverFactoryMock.Object,
-                downloadStreamProviderFactoryMock.Object)
-            .BuildServiceProvider();
+
+        var sl = sc.ConfigureDomainServices().ConfigureApplicationServices().ConfigureInfrastructureServices(
+            config,
+            Mock.Of<IOAuthCodeGetter>(),
+            pageMarkerRepoFactoryMock.Object,
+            fileSystemFactoryMock.Object,
+            pageRetrieverFactoryMock.Object,
+            downloadStreamProviderFactoryMock.Object).AddLogging().BuildServiceProvider();
 
         fileSystemMock.Setup(x => x.PathNormalizeFolderSeparator("Docs\\Example")).Returns("Docs/Example");
         fileSystemMock.Setup(x => x.PathCombine(It.IsAny<string>(), It.IsAny<string>())).Returns<string, string>(
             (baseDirectory, filePath) => $"{baseDirectory}/{filePath}");
+
+        fileSystemMock.Setup(x => x.PathReplaceForbiddenChars(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns<string, string>((path, _) => path);
         fileSystemMock
             .Setup(
                 x => x.PathGetRelativePath(
                     "./test-results/Docs/Example",
                     "./test-results/Docs/Example/firlollo/22.jpg")).Returns("/firlollo/22.jpg");
         fileSystemMock.Setup(x => x.FileExistsAsync("./test-results/Docs/Example/firlollo/22.jpg")).ReturnsAsync(false);
-        fileSystemMock.Setup(x =>
-            x.PathGetDirectoryName("./test-results/Docs/Example/firlollo/22.jpg")).Returns("./test-results/Docs/Example/firlollo");
+        fileSystemMock.Setup(x => x.PathGetDirectoryName("./test-results/Docs/Example/firlollo/22.jpg"))
+            .Returns("./test-results/Docs/Example/firlollo");
         fileSystemMock.Setup(x => x.IsReadOnly).Returns(false);
         fileSystemMock.Setup(x => x.DirectoryCreateAsync("./test-results/Docs/Example/firlollo"))
             .Returns(Task.CompletedTask);
         fileSystemMock.Setup(
-            x => x.FileWriteAsync(
-                "./test-results/Docs/Example/firlollo/22.jpg",
-                It.IsAny<MemoryStream>())).Returns(Task.CompletedTask);
+            x => x.FileWriteAsync("./test-results/Docs/Example/firlollo/22.jpg", It.IsAny<MemoryStream>()))
+        .Returns(Task.CompletedTask);
         pageMock.Setup(x => x.Content("//*[contains(@class, 'post-title ')]/text()")).Returns("firlollo");
-        pageRetrieverMock.Setup(x => x.GetPageAsync(new Uri("https://example.com/PageUrl"))).ReturnsAsync(pageMock.Object);
+        pageRetrieverMock.Setup(x => x.GetPageAsync(new Uri("https://example.com/PageUrl")))
+            .ReturnsAsync(pageMock.Object);
         downloadStreamProviderMock.Setup(x => x.GetStreamAsync(new Uri("https://example.com/ResUrl")))
-            .ReturnsAsync(new MemoryStream(Encoding.UTF8.GetBytes("download")));
+            .ReturnsAsync(new MemoryStream("download"u8.ToArray()));
         var svc = sl.GetRequiredService<IDownloadApplicationService>();
 
         var jobDefinitionDto = new JobDefinitionDto(
@@ -150,7 +148,7 @@ public class DownloadApplicationServiceTests
                     isTask = true;
                     rawReturnValue = t.Result();
                 }
-                
+
                 returnValue = rawReturnValue is null ? "null" : rawReturnValue.ToString();
 
                 if (isTask)
@@ -181,6 +179,6 @@ public static class TaskExtensions
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty,
             binder: null,
             target: t,
-            args: null);        
+            null);
     }
 }

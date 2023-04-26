@@ -31,7 +31,7 @@ public class FreshInstallIntegrationTests
         };
         var (_, standardOutput, standardError, _) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
 
-        standardError.Should().BeEmpty();
-        standardOutput.Should().ContainMatch("*The tool is not properly configured; call 'scrap config'*");
+        standardOutput.Should().Contain("The global config file [NotExisting] does not exist");
+        standardError.Should().ContainMatch("*The tool is not properly configured; call 'scrap config'*");
     }
 }

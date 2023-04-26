@@ -21,7 +21,7 @@ public class ConfiguredIntegrationTests
     public void CommandLine_Version()
     {
         var commandLineOutput = GetCommandLineOutput("version").ToArray();
-        commandLineOutput.Should().BeEquivalentTo("0.1.2-test1");
+        commandLineOutput.Should().BeEquivalentTo("scrap 0.1.2-test1");
     }
 
     [Fact]

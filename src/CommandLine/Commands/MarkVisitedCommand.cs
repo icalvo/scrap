@@ -15,10 +15,10 @@ internal sealed class MarkVisitedCommand : ICommand<MarkVisitedCommand, MarkVisi
 
     public async Task ExecuteAsync(MarkVisitedOptions options)
     {
-        var inputLines = options.Url ?? ConsoleTools.ConsoleInput();
-        foreach (var line in inputLines)
+        var urlLines = options.Url ?? ConsoleTools.ConsoleInput();
+        foreach (var urlLine in urlLines)
         {
-            var pageUrl = new Uri(line);
+            var pageUrl = new Uri(urlLine);
             await _visitedPagesApplicationService.MarkVisitedPageAsync(pageUrl);
             Console.WriteLine($"Visited {pageUrl}");
         }

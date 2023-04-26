@@ -17,12 +17,15 @@ sc.AddSingleton<IGlobalConfigurationChecker, GlobalConfigurationChecker>();
 
 var commandSetups = new ICommandSetup[]
 {
-    BuildCommandSetup<ScrapCommand, ScrapOptions>(), BuildCommandSetup<AllCommand, AllOptions>(),
+    BuildCommandSetup<ScrapCommand, ScrapOptions>(),
+    BuildCommandSetup<AllCommand, AllOptions>(),
     BuildCommandSetup<ConfigureCommand, ConfigureOptions>(),
     BuildCommandSetup<DeleteVisitedCommand, DeleteVisitedOptions>(),
-    BuildCommandSetup<DownloadCommand, DownloadOptions>(), BuildCommandSetup<ResourcesCommand, ResourcesOptions>(),
+    BuildCommandSetup<DownloadCommand, DownloadOptions>(),
+    BuildCommandSetup<ResourcesCommand, ResourcesOptions>(),
     BuildCommandSetup<SearchVisitedCommand, SearchVisitedOptions>(),
-    BuildCommandSetup<ShowConfigCommand, ShowConfigOptions>(), BuildCommandSetup<TraverseCommand, TraverseOptions>()
+    BuildCommandSetup<ShowConfigCommand, ShowConfigOptions>(),
+    BuildCommandSetup<TraverseCommand, TraverseOptions>()
 };
 
 var optionTypes = commandSetups.Select(x => x.OptionsType).ToArray();
@@ -49,17 +52,15 @@ static void DisplayHelp<T>(ParserResult<T> result)
 }
 
 CommandSetup<TCommand, TOptions> BuildCommandSetup<TCommand, TOptions>()
-    where TCommand : class, ICommand<TCommand, TOptions> where TOptions : OptionsBase =>
+    where TCommand : class, ICommand<TCommand, TOptions>
+    where TOptions : OptionsBase =>
     new(cfg, sc);
 
 async Task<(IConfiguration, IServiceCollection)> BuildServiceCollection()
 {
-
-    
     const string environmentVarPrefix = "Scrap_";
     IOAuthCodeGetter oAuthCodeGetter = new ConsoleOAuthCodeGetter();
     var envConfiguration = new ConfigurationBuilder().AddEnvironmentVariables(environmentVarPrefix).Build();
-
 
     var loggerFactory = new ServiceCollection().AddLogging(c => c.AddDebug()).BuildServiceProvider()
         .GetRequiredService<ILoggerFactory>();

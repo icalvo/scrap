@@ -25,6 +25,7 @@ public class ConfigureOptions : OptionsBase
 
     public override bool ConsoleLog => true;
 
+    public override bool CheckGlobalConfig => false;
 
     [Usage]
     [SuppressMessage("ReSharper", "UnusedMember.Global", Justification = "Called by CommandLineParser")]

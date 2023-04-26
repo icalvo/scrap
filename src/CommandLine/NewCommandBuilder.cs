@@ -7,5 +7,6 @@ namespace Scrap.CommandLine;
 internal class NewCommandBuilder<TCommand, TOptions> : ICommandBuilder<TCommand, TOptions>
     where TCommand : class, ICommand<TCommand, TOptions>, new() where TOptions : OptionsBase
 {
-    public TCommand BuildCommand(IConfiguration cfg, IServiceCollection sc, TOptions o) => new();
+    public Task<TCommand> BuildCommandAsync(IConfiguration cfg, IServiceCollection sc, TOptions o) =>
+        Task.FromResult(new TCommand());
 }

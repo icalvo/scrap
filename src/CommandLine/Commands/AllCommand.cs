@@ -24,8 +24,6 @@ internal sealed class AllCommand : ICommand<AllCommand, AllOptions>
         _scrapApplicationService = scrapApplicationService;
     }
 
-    public static bool WithConsoleLog => true;
-
     public async Task ExecuteAsync(AllOptions options)
     {
         await _checker.EnsureGlobalConfigurationAsync();

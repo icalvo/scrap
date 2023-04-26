@@ -17,4 +17,6 @@ public abstract class OptionsBase
     public bool Verbose { get; }
 
     public abstract bool ConsoleLog { get; }
+
+    public virtual bool CheckGlobalConfig => true;
 }

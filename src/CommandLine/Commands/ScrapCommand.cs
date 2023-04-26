@@ -10,20 +10,17 @@ namespace Scrap.CommandLine.Commands;
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
 internal sealed class ScrapCommand : ICommand<ScrapCommand, ScrapOptions>
 {
-    private readonly IGlobalConfigurationChecker _checker;
     private readonly IConfiguration _configuration;
     private readonly ILogger<ScrapCommand> _logger;
     private readonly IJobDtoBuilder _jobDtoBuilder;
     private readonly IScrapApplicationService _scrapApplicationService;
 
     public ScrapCommand(
-        IGlobalConfigurationChecker checker,
         IConfiguration configuration,
         ILogger<ScrapCommand> logger,
         IJobDtoBuilder jobDtoBuilder,
         IScrapApplicationService scrapApplicationService)
     {
-        _checker = checker;
         _configuration = configuration;
         _logger = logger;
         _jobDtoBuilder = jobDtoBuilder;
@@ -32,7 +29,6 @@ internal sealed class ScrapCommand : ICommand<ScrapCommand, ScrapOptions>
 
     public async Task ExecuteAsync(ScrapOptions settings)
     {
-        await _checker.EnsureGlobalConfigurationAsync();
         var jobDef = await _jobDtoBuilder.GetJobDefinitionAsync(settings.Name, settings.RootUrl);
 
         var jobDefs = jobDef == null ? Array.Empty<JobDefinitionDto>() : new[] { jobDef };

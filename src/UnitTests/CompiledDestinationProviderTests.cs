@@ -16,6 +16,8 @@ public class CompiledDestinationProviderTests
         var fsMock = new Mock<IRawFileSystem>();
         fsMock.Setup(x => x.PathCombine(It.IsAny<string>(), It.IsAny<string>()))
             .Returns<string, string>((baseDirectory, filePath) => baseDirectory + ":" + filePath);
+        fsMock.Setup(x => x.PathReplaceForbiddenChars(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns<string, string>((path, _) => "REP" + path);
         var p = new CompiledDestinationProvider(
             new FileSystemResourceRepositoryConfiguration(
                 new[]
@@ -44,6 +46,6 @@ public class CompiledDestinationProviderTests
             new Uri("https://example.com/resource.gif"),
             3);
 
-        result.Should().Be("destinationRootFolder:3.gif");
+        result.Should().Be("destinationRootFolder:REP3.gif");
     }
 }

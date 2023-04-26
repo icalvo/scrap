@@ -85,6 +85,7 @@
               "PullRequest",
               "Push",
               "Restore",
+              "SystemTests",
               "TagCommit",
               "UnitTests"
             ]
@@ -109,6 +110,7 @@
               "PullRequest",
               "Push",
               "Restore",
+              "SystemTests",
               "TagCommit",
               "UnitTests"
             ]

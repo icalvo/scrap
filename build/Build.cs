@@ -19,6 +19,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     nameof(PublishNuGet),
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
+    Submodules = GitHubActionsSubmodules.True,
     OnWorkflowDispatchRequiredInputs = new[] { nameof(Version) },
     InvokedTargets = new[] { nameof(PublishNuGet) },
     ImportSecrets = new[] { "NUGET_TOKEN", "GITHUB_TOKEN" })]

@@ -27,6 +27,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     nameof(PullRequest),
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
+    Submodules = GitHubActionsSubmodules.True,
     OnPullRequestBranches = new[] { "main" },
     InvokedTargets = new[] { nameof(PullRequest) },
     EnableGitHubToken = true,
@@ -60,6 +61,13 @@ class Build : NukeBuild
         }
     }
 
+    Target None =>
+        _ => _
+            .Description("✨ Recreate CI scripts")
+            .Executes(() =>
+            {
+            });
+    
     Target Clean => _ => _
         .Description("✨ Clean")
         .Before(Restore)

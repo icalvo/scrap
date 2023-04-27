@@ -23,7 +23,7 @@ internal sealed class DownloadOptions : NameOrRootUrlOptions
     [Option("downloadalways", Required = false, HelpText = "Download resources even if they are already downloaded")]
     public bool DownloadAlways { get; }
 
-    [Option('f', "fullscan", Required = false, HelpText = "Resource URLs to download [bold][[pipeline]][/]")]
+    [Option('u', "urls", Required = false, HelpText = "Resource URLs to download [PIPELINE]")]
     public string[]? ResourceUrls { get; }
 
     public override bool ConsoleLog => true;

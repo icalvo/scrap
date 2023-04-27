@@ -12,7 +12,7 @@ internal abstract class SearchOptions : OptionsBase
         Search = search;
     }
 
-    [Description("Search with Regular Expression [bold][[pipeline]][/]")]
-    [Value(0, Required = false, MetaName = "search")]
+    [Description("Search with Regular Expression [PIPELINE]")]
+    [Value(0, Required = false, MetaName = "SEARCH")]
     public string? Search { get; }
 }

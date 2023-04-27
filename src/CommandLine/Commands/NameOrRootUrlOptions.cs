@@ -30,7 +30,7 @@ internal abstract class NameOrRootUrlOptions : OptionsBase
         }
     }
 
-    [Value(0, HelpText = "Job definition name or root URL", MetaName = "Jobdef or root URL")]
+    [Value(0, HelpText = "Job definition name or root URL", MetaName = "JOBDEF_OR_ROOT_URL")]
     public string? NameOrRootUrlOption { get; }
 
     [Option('n', "name", Required = false, HelpText = "Job definition name")]

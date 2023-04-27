@@ -12,7 +12,7 @@ internal sealed class MarkVisitedOptions : OptionsBase
         Url = url;
     }
 
-    [Option('u', "url", Required = false, HelpText = "URL [bold][[pipeline]][/]")]
+    [Option('u', "url", Required = false, HelpText = "URL [PIPELINE]")]
     public string[]? Url { get; }
 
     public override bool ConsoleLog => true;

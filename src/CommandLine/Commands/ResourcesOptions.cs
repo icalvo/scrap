@@ -23,7 +23,7 @@ internal sealed class ResourcesOptions : NameOrRootUrlOptions
         OnlyResourceLink = onlyResourceLink;
     }
 
-    [Option("pageUrls", Required = false, HelpText = "Page URLs [bold][[pipeline]][/]")]
+    [Option('u', "urls", Required = false, HelpText = "Page URLs [PIPELINE]")]
     public string[] PageUrls { get; }
 
     [Option(

@@ -52,7 +52,7 @@ public class CompiledDestinationProvider : IDestinationProvider
 
         var destinationFolderPattern = _config.PathFragments;
         var sourceCode = await GenerateSourceCodeAsync(destinationFolderPattern);
-        _logger.LogTrace("Source: {SourceCode}", sourceCode);
+        _logger.LogTrace("Source: {SourceCode}", Environment.NewLine + sourceCode);
         var assembly = CompileSourceCode(sourceCode);
         _destinationProvider = CreateDestinationProviderInstance(assembly);
         return _destinationProvider;

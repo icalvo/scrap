@@ -34,7 +34,7 @@ public class ConfigureOptions : OptionsBase
         {
             new Example("Sets all config interactively", new ConfigureOptions()),
             new Example(
-                "Sets the base download path",
+                "Sets the base download path to 'C:\\downloads'",
                 new ConfigureOptions(ConfigKeys.BaseRootFolder, "C:\\downloads"))
         };
 }

@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using CommandLine;
+using CommandLine.Text;
 
 namespace Scrap.CommandLine.Commands;
 
@@ -11,13 +12,13 @@ namespace Scrap.CommandLine.Commands;
 internal sealed class ResourcesOptions : NameOrRootUrlOptions
 {
     public ResourcesOptions(
-        bool debug,
-        bool verbose,
-        string? nameOrRootUrlOption,
-        string? nameOption,
-        string? rootUrlOption,
         string[] pageUrls,
-        bool onlyResourceLink) : base(debug, verbose, nameOrRootUrlOption, nameOption, rootUrlOption)
+        string? nameOrRootUrlOption = null,
+        string? nameOption = null,
+        string? rootUrlOption = null,
+        bool onlyResourceLink = false,
+        bool debug = false,
+        bool verbose = false) : base(debug, verbose, nameOrRootUrlOption, nameOption, rootUrlOption)
     {
         PageUrls = pageUrls;
         OnlyResourceLink = onlyResourceLink;
@@ -33,4 +34,15 @@ internal sealed class ResourcesOptions : NameOrRootUrlOptions
     public bool OnlyResourceLink { get; }
 
     public override bool ConsoleLog => false;
+
+
+    [Usage]
+    [SuppressMessage("ReSharper", "UnusedMember.Global", Justification = "Called by CommandLineParser")]
+    public static IEnumerable<Example> Examples =>
+        new[]
+        {
+            new Example(
+                "Lists resource from page 'https://example.com/page/342', job def. 'example'",
+                new ResourcesOptions(new[] { "https://example.com/page/342" }, "example"))
+        };        
 }

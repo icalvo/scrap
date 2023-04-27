@@ -6,7 +6,7 @@ namespace Scrap.CommandLine.Commands;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global", Justification = "Instantiated by CommandLineParser")]
 [Verb("scrap", true, HelpText = "Executes a job definition")]
-internal sealed class ScrapOptions : NameOrRootUrlOptions, IScrapSettings
+internal sealed class ScrapOptions : NameOrRootUrlOptions, IScrapOptions
 {
     public ScrapOptions(
         bool debug = false,
@@ -25,24 +25,12 @@ internal sealed class ScrapOptions : NameOrRootUrlOptions, IScrapSettings
         DisableResourceWrites = disableResourceWrites;
     }
 
-    [Option('f', "fullscan", Required = false, HelpText = "Navigate through already visited pages")]
     public bool FullScan { get; }
 
-    [Option(
-        'a',
-        "downloadAlways",
-        Required = false,
-        HelpText = "Download resources even if they are already downloaded")]
     public bool DownloadAlways { get; }
 
-    [Option('m', new[] { "disableMarkingVisited", "dmv" }, Required = false, HelpText = "Disable mark as visited")]
     public bool DisableMarkingVisited { get; }
 
-    [Option(
-        'r',
-        new[] { "disableResourceWrite", "drw" },
-        Required = false,
-        HelpText = "Download resources even if they are already downloaded")]
     public bool DisableResourceWrites { get; }
 
     public override bool ConsoleLog => true;
@@ -53,11 +41,11 @@ internal sealed class ScrapOptions : NameOrRootUrlOptions, IScrapSettings
         new[]
         {
             new Example(
-                "Scrap a job definition",
+                "Scrap job definition 'example'",
                 new UnParserSettings { HideDefaultVerb = true },
-                new ScrapOptions(nameOrRootUrlOption: "myjobdefinition")),
+                new ScrapOptions(nameOrRootUrlOption: "example")),
             new Example(
-                "Find a job. def from a root URL and execute it",
+                "Find a job. def for the root URL 'https://example.com/page/41' and scraps it starting from that page",
                 new UnParserSettings { HideDefaultVerb = true },
                 new ScrapOptions(nameOrRootUrlOption: "https://example.com/page/41"))
         };

@@ -15,7 +15,7 @@ internal sealed class MarkVisitedCommand : ICommand<MarkVisitedCommand, MarkVisi
 
     public async Task ExecuteAsync(MarkVisitedOptions options)
     {
-        var urlLines = options.Url ?? ConsoleTools.ConsoleInput();
+        var urlLines = options.Urls ?? ConsoleTools.ConsoleInput();
         foreach (var urlLine in urlLines)
         {
             var pageUrl = new Uri(urlLine);

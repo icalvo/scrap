@@ -6,7 +6,7 @@ namespace Scrap.CommandLine.Commands;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
 [Verb("all", HelpText = "Executes all job definitions with a root URL")]
-internal class AllOptions : OptionsBase, IScrapSettings
+internal class AllOptions : OptionsBase, IScrapOptions
 {
     public AllOptions(
         bool fullScan = false,
@@ -22,24 +22,12 @@ internal class AllOptions : OptionsBase, IScrapSettings
         DisableResourceWrites = disableResourceWrites;
     }
 
-    [Option('f', "fullscan", Required = false, HelpText = "Navigate through already visited pages")]
     public bool FullScan { get; }
 
-    [Option(
-        'a',
-        "downloadAlways",
-        Required = false,
-        HelpText = "Download resources even if they are already downloaded")]
     public bool DownloadAlways { get; }
 
-    [Option('m', new[] { "disableMarkingVisited", "dmv" }, Required = false, HelpText = "Disable mark as visited")]
     public bool DisableMarkingVisited { get; }
 
-    [Option(
-        'w',
-        new[] { "disableResourceWrite", "drw" },
-        Required = false,
-        HelpText = "Download resources even if they are already downloaded")]
     public bool DisableResourceWrites { get; }
 
     public override bool ConsoleLog => true;

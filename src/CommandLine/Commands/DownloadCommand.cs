@@ -35,7 +35,7 @@ internal sealed class DownloadCommand : ICommand<DownloadCommand, DownloadOption
             throw new CommandException(1, "Couldn't build a job definition with the provided arguments");
         }
 
-        var inputLines = settings.ResourceUrls ?? ConsoleTools.ConsoleInput();
+        var inputLines = settings.ResourceLines ?? ConsoleTools.ConsoleInput();
         foreach (var line in inputLines)
         {
             var split = line.Split(" ");

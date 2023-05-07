@@ -44,10 +44,6 @@ await parserResult.WithNotParsed(errors => DisplayHelp(parserResult)).WithParsed
 
             var commandSetup = commandSetups.First(x => options.GetType() == x.OptionsType);
             await commandSetup.ExecuteAsync(options);
-            Console.WriteLine("FINISHED!!!");
-            Console.WriteLine("FINISHED!!!");
-            Console.WriteLine("FINISHED!!!");
-            Console.WriteLine("FINISHED!!!");
         }
         catch (Exception ex)
         {

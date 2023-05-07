@@ -37,7 +37,7 @@ internal sealed class DownloadOptions : NameOrRootUrlOptions, IDownloadAlwaysOpt
         new[]
         {
             new Example(
-                "Downloads the image 'https://example.com/page/342/icon.gif' (which is the 5th resource in the page) from the page 'https://example.com/page/342' (which is the 3rd scrapped), as a resource of the job def. 'example'",
+                "Downloads the image 'https://example.com/page/342/icon.gif' (which is the 5th resource in the page) from the page 'https://example.com/page/342' (which is the 3rd scrapped), as a resource of the site 'example'",
                 new DownloadOptions(
                     nameOption: "example",
                     lines: new[] { "2 https://example.com/page/342 4 https://example.com/page/342/icon.gif" }))

@@ -8,9 +8,9 @@ public static class GlobalConfigurations
         new[]
         {
             new GlobalConfig(
-                ConfigKeys.Definitions,
-                Path.Combine(globalUserConfigFolder, "jobDefinitions.json"),
-                "Path for job definitions JSON"),
+                ConfigKeys.Sites,
+                Path.Combine(globalUserConfigFolder, "sites.json"),
+                "Path for sites JSON"),
             new GlobalConfig(
                 ConfigKeys.Database,
                 $"Filename={Path.Combine(globalUserConfigFolder, "scrap.db")};Connection=shared",

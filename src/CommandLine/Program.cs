@@ -1,4 +1,5 @@
-﻿using CommandLine;
+﻿using System.Diagnostics;
+using CommandLine;
 using CommandLine.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,22 +18,51 @@ sc.AddSingleton<IGlobalConfigurationChecker, GlobalConfigurationChecker>();
 
 var commandSetups = new ICommandSetup[]
 {
-    BuildCommandSetup<ScrapCommand, ScrapOptions>(),
-    BuildCommandSetup<AllCommand, AllOptions>(),
-    BuildCommandSetup<ConfigureCommand, ConfigureOptions>(),
-    BuildCommandSetup<DeleteVisitedCommand, DeleteVisitedOptions>(),
-    BuildCommandSetup<DownloadCommand, DownloadOptions>(),
-    BuildCommandSetup<ResourcesCommand, ResourcesOptions>(),
-    BuildCommandSetup<SearchVisitedCommand, SearchVisitedOptions>(),
-    BuildCommandSetup<ShowConfigCommand, ShowConfigOptions>(),
-    BuildCommandSetup<TraverseCommand, TraverseOptions>()
+    BuildCommandSetup<ScrapVerb, ScrapOneOptions>(),
+    BuildCommandSetup<AllVerb, ScrapAllOptions>(),
+    BuildCommandSetup<ConfigureVerb, ConfigureOptions>(),
+    BuildCommandSetup<DeleteVisitedVerb, DeleteVisitedOptions>(),
+    BuildCommandSetup<DownloadVerb, DownloadOptions>(),
+    BuildCommandSetup<ResourcesVerb, ResourcesOptions>(),
+    BuildCommandSetup<SearchVisitedVerb, SearchVisitedOptions>(),
+    BuildCommandSetup<ShowConfigVerb, ShowConfigOptions>(),
+    BuildCommandSetup<TraverseVerb, TraverseOptions>()
 };
 
 var optionTypes = commandSetups.Select(x => x.OptionsType).ToArray();
 var parser = new Parser(settings => settings.HelpWriter = null);
 var parserResult = parser.ParseArguments(args, optionTypes);
 await parserResult.WithNotParsed(errors => DisplayHelp(parserResult)).WithParsedAsync(
-    options => commandSetups.First(x => options.GetType() == x.OptionsType).ExecuteAsync(options));
+    async options =>
+    {
+        try
+        {
+            if (options is OptionsBase { Debug: true })
+            {
+                Debugger.Launch();
+            }
+
+            var commandSetup = commandSetups.First(x => options.GetType() == x.OptionsType);
+            await commandSetup.ExecuteAsync(options);
+            Console.WriteLine("FINISHED!!!");
+            Console.WriteLine("FINISHED!!!");
+            Console.WriteLine("FINISHED!!!");
+            Console.WriteLine("FINISHED!!!");
+        }
+        catch (Exception ex)
+        {
+            sc.ConfigureLogging(cfg, true, false);
+            await using var sp = sc.BuildServiceProvider();
+            var logger = sp.GetService<ILogger<Program>>();
+            logger?.LogError("{ExceptionMessage}", ex.Message);
+            if (options is OptionsBase { Verbose: false, ConsoleLog: true })
+            {
+                logger?.LogError(
+                    "{Advice}",
+                    $"To get more details please try again with verbose option (-{OptionsBase.VerboseLetter})");
+            }
+        }
+    });
 
 return;
 
@@ -52,7 +82,7 @@ static void DisplayHelp<T>(ParserResult<T> result)
 }
 
 CommandSetup<TCommand, TOptions> BuildCommandSetup<TCommand, TOptions>()
-    where TCommand : class, ICommand<TCommand, TOptions>
+    where TCommand : class, IVerb<TCommand, TOptions>
     where TOptions : OptionsBase =>
     new(cfg, sc);
 
@@ -106,7 +136,6 @@ async Task<(IConfiguration, IServiceCollection)> BuildServiceCollection()
 
     var registrations = scb.Build();
     registrations.AddSingleton(registrations);
-    registrations.AddSingleton<IJobDtoBuilder, JobDtoBuilder>();
 
     return (configuration, registrations);
         
@@ -121,13 +150,4 @@ async Task<(IConfiguration, IServiceCollection)> BuildServiceCollection()
         action(stream);
         return stream;
     }
-}
-
-internal class EmptyOptions : OptionsBase
-{
-    public EmptyOptions(bool debug, bool verbose) : base(debug, verbose)
-    {
-    }
-
-    public override bool ConsoleLog => false;
 }

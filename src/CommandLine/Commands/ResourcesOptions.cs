@@ -42,7 +42,7 @@ internal sealed class ResourcesOptions : NameOrRootUrlOptions
         new[]
         {
             new Example(
-                "Lists resource from page 'https://example.com/page/342', job def. 'example'",
+                "Lists resource from page 'https://example.com/page/342', site 'example'",
                 new ResourcesOptions(new[] { "https://example.com/page/342" }, "example"))
         };        
 }

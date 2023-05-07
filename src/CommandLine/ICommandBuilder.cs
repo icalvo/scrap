@@ -4,7 +4,7 @@ using Scrap.CommandLine.Commands;
 
 namespace Scrap.CommandLine;
 
-internal interface ICommandBuilder<TCommand, TOptions> where TCommand : class, ICommand<TCommand, TOptions>
+internal interface ICommandBuilder<TCommand, TOptions> where TCommand : class, IVerb<TCommand, TOptions>
 {
     Task<TCommand> BuildCommandAsync(IConfiguration cfg, IServiceCollection sc, TOptions options);
 }

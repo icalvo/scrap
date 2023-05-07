@@ -1,4 +1,6 @@
 ﻿using CommandLine;
+using Scrap.Domain;
+using SharpX;
 
 namespace Scrap.CommandLine.Commands;
 
@@ -21,19 +23,21 @@ internal abstract class NameOrRootUrlOptions : OptionsBase
 
         if ((NameOption != null) & (nameOrRootUrlOption != null) & !_isUri)
         {
-            throw new ArgumentException("Cannot provide a job def. name as value and as option", nameof(nameOption));
+            throw new ArgumentException("Cannot provide a site name as value and as option", nameof(nameOption));
         }
 
         if ((RootUrlOption != null) & (nameOrRootUrlOption != null) & _isUri)
         {
             throw new ArgumentException("Cannot provide a root URL as value and as option", nameof(rootUrlOption));
         }
+
+        NameOrRootUrl = Domain.NameOrRootUrl.Create(Name, uriResult);
     }
 
-    [Value(0, HelpText = "Job definition name or root URL", MetaName = "JOBDEF_OR_ROOT_URL")]
+    [Value(0, HelpText = "Site name or root URL", MetaName = "SITE_OR_ROOT_URL")]
     public string? NameOrRootUrlOption { get; }
 
-    [Option('n', "name", Required = false, HelpText = "Job definition name")]
+    [Option('n', "name", Required = false, HelpText = "Site name")]
     public string? NameOption { get; }
 
     [Option('r', "rooturl", Required = false, HelpText = "Root URL")]
@@ -73,5 +77,7 @@ internal abstract class NameOrRootUrlOptions : OptionsBase
 
             return null;
         }
-    }    
+    }
+
+    public Maybe<NameOrRootUrl> NameOrRootUrl { get; }
 }

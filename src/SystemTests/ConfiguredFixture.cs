@@ -12,11 +12,11 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture
     public ConfiguredFixture(IMessageSink output) : base(output)
     {
         Console.WriteLine($"Setting up {nameof(ConfiguredFixture)} (configured tool)");
-        var jobDefsFullPath = Path.GetFullPath("./IntegrationTests/jobDefinitions.json");
+        var sitesFullPath = Path.GetFullPath("./SystemTests/sites.json");
         _dbFullPath = Path.GetFullPath("./scrap.db");
         RunAndCheck(
             $"{InstallFullPath}/scrap",
-            $"config {ConfigKeys.Definitions} {jobDefsFullPath}",
+            $"config {ConfigKeys.Sites} {sitesFullPath}",
             outputToConsole: true);
         RunAndCheck(
             $"{InstallFullPath}/scrap",
@@ -27,7 +27,7 @@ public sealed class ConfiguredFixture : FreshInstallSetupFixture
             process.Kill();
         }
 
-        RunAndCheck("dotnet", $"tool install dotnet-serve --tool-path \"{InstallFullPath}\"");
+        RunAndCheck("dotnet", $"tool install dotnet-serve --tool-path \"{InstallFullPath}\"", TimeSpan.FromSeconds(40));
         var wwwPath = Path.GetFullPath("./IntegrationTests/www/");
 
         var psi = new ProcessStartInfo

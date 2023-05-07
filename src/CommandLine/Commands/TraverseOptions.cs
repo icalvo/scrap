@@ -1,12 +1,13 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using CommandLine;
 using CommandLine.Text;
+using Scrap.Application.Traversal;
 
 namespace Scrap.CommandLine.Commands;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
 [Verb("traverse", aliases: new[] { "t" }, HelpText = "Lists all the pages reachable with the adjacency path")]
-internal sealed class TraverseOptions : NameOrRootUrlOptions, IFullScanOption
+internal sealed class TraverseOptions : NameOrRootUrlOptions, IFullScanOption, ITraverseCommand
 {
     public TraverseOptions(
         string? nameOrRootUrlOption = null,
@@ -30,10 +31,10 @@ internal sealed class TraverseOptions : NameOrRootUrlOptions, IFullScanOption
         new[]
         {
             new Example(
-                "Traverse job def. 'example' and outputs all traversed pages",
+                "Traverse site 'example' and outputs all traversed pages",
                 new TraverseOptions("example")),
             new Example(
-                "Traverse job def. 'example', without taking visited pages into account, and outputs all traversed pages",
+                "Traverse site 'example', without taking visited pages into account, and outputs all traversed pages",
                 new TraverseOptions("example", fullScan: true))
         };    
 }

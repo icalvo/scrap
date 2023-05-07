@@ -27,7 +27,7 @@ public class ConfiguredIntegrationTests
     [Fact]
     public async Task CommandLine_Scrap_Simple()
     {
-        _ = GetCommandLineOutput("testsite -v").ToList();
+        _ = GetCommandLineOutput("testsite -v -d").ToList();
         string? downloadedContent = null;
         if (File.Exists("./testsite-result/0.txt"))
         {
@@ -54,7 +54,9 @@ public class ConfiguredIntegrationTests
             }
         };
 
-        var (_, _, _, output) = psi.Run(outputWriter: new TestOutputHelperTextWriter(_output));
+        var (_, _, _, output) = psi.Run(
+            outputWriter: new TestOutputHelperTextWriter(_output),
+            timeout: TimeSpan.FromDays(2));
 
         return output;
     }

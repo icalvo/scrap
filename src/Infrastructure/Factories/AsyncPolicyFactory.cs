@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Caching;
+using Polly.Retry;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 
@@ -20,7 +21,20 @@ public class AsyncPolicyFactory : IAsyncPolicyFactory
         _loggerFactory = loggerFactory;
     }
 
-    public IAsyncPolicy Build(Job job, AsyncPolicyConfiguration config)
+    public IAsyncPolicy Build(Job job, AsyncPolicyConfiguration config) => Policy.WrapAsync(Policies(job, config).ToArray());
+
+    private IEnumerable<IAsyncPolicy> Policies(Job job, AsyncPolicyConfiguration config)
+    {
+        if (config == AsyncPolicyConfiguration.WithCache)
+        {
+            yield return BuildCachePolicy();
+        }
+
+        yield return BuildRetryPolicy(job.HttpRequestRetries);
+        yield return AsyncDelayPolicy.Create(job.HttpRequestDelayBetweenRetries);
+    }
+
+    private static AsyncRetryPolicy BuildRetryPolicy(int httpRequestRetries)
     {
         static bool IsClientError(Exception ex) =>
             ex is HttpRequestException
@@ -28,21 +42,16 @@ public class AsyncPolicyFactory : IAsyncPolicyFactory
                 StatusCode: >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError
             };
 
-        var httpRequestRetries = job.HttpRequestRetries;
-        var httpDelay = job.HttpRequestDelayBetweenRetries;
-        var retryPolicy = Policy.Handle<Exception>(ex => !IsClientError(ex)).WaitAndRetryAsync(
+        return Policy.Handle<Exception>(ex => !IsClientError(ex)).WaitAndRetryAsync(
             httpRequestRetries,
             _ => TimeSpan.Zero,
             (exception, _) => { Console.WriteLine(exception.Message); });
+    }
 
-
-        if (config == AsyncPolicyConfiguration.WithoutCache)
-        {
-            return Policy.WrapAsync(retryPolicy, AsyncDelayPolicy.Create(httpDelay));
-        }
-
+    private AsyncCachePolicy BuildCachePolicy()
+    {
         var cacheLogger = _loggerFactory.CreateLogger("Cache");
-        var cachePolicy = Policy.CacheAsync(
+        return Policy.CacheAsync(
             _cacheProvider,
             DefaultCacheTtl,
             (_, key) => { cacheLogger.LogRequest("CACHED", key); },
@@ -50,6 +59,5 @@ public class AsyncPolicyFactory : IAsyncPolicyFactory
             (_, _) => { },
             (_, _, _) => { },
             (_, _, _) => { });
-        return Policy.WrapAsync(cachePolicy, retryPolicy, AsyncDelayPolicy.Create(httpDelay));
     }
 }

@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Resources;
+using Scrap.Domain.Sites;
 
 namespace Scrap.Domain.Jobs;
 
@@ -10,20 +10,53 @@ public class Job
     public const int DefaultHttpRequestRetries = 5;
     public static readonly TimeSpan DefaultHttpRequestDelayBetweenRetries = TimeSpan.FromSeconds(1);
 
-    public Job(JobDto dto)
+    internal Job(
+        Site site,
+        Uri? rootUrl = null,
+        bool? fullScan = null,
+        IResourceRepositoryConfiguration? configuration = null,
+        bool? downloadAlways = null,
+        bool? disableMarkingVisited = null,
+        bool? disableResourceWrites = null) : this(
+        rootUrl ?? site.RootUrl ?? throw new ArgumentException("No root URL provided", nameof(site)),
+        site.ResourceType,
+        site.AdjacencyXPath,
+        site.ResourceXPath,
+        configuration ?? site.ResourceRepoArgs,
+        site.HttpRequestRetries,
+        site.HttpRequestDelayBetweenRetries,
+        fullScan,
+        downloadAlways,
+        disableMarkingVisited,
+        disableResourceWrites)
     {
-        AdjacencyXPath = dto.AdjacencyXPath == null ? null : new XPath(dto.AdjacencyXPath);
-        ResourceXPath = dto.ResourceXPath == null ? null : new XPath(dto.ResourceXPath);
-        ResourceRepoArgs = dto.ResourceRepository;
-        RootUrl = new Uri(dto.RootUrl ?? throw new ArgumentException("Root URL must not be null", nameof(dto)));
-        HttpRequestRetries = dto.HttpRequestRetries ?? DefaultHttpRequestRetries;
-        HttpRequestDelayBetweenRetries = dto.HttpRequestDelayBetweenRetries ?? DefaultHttpRequestDelayBetweenRetries;
-        DisableMarkingVisited = dto.DisableMarkingVisited ?? false;
-        DisableResourceWrites = dto.DisableResourceWrites ?? false;
-        FullScan = dto.FullScan ?? false;
-        DownloadAlways = dto.DownloadAlways ?? false;
-        ResourceType = dto.ResourceType;
     }
+
+    internal Job(
+        Uri rootUrl,
+        ResourceType resourceType,
+        XPath? adjacencyXPath = null,
+        XPath? resourceXPath = null,
+        IResourceRepositoryConfiguration? resourceRepository = null,
+        int? httpRequestRetries = null,
+        TimeSpan? httpRequestDelayBetweenRetries = null,
+        bool? fullScan = null,
+        bool? downloadAlways = null,
+        bool? disableMarkingVisited = null,
+        bool? disableResourceWrites = null)
+    {
+        AdjacencyXPath = adjacencyXPath;
+        ResourceType = resourceType;
+        DisableMarkingVisited = disableMarkingVisited ?? false;
+        DisableResourceWrites = disableResourceWrites ?? false;
+        ResourceXPath = resourceXPath;
+        ResourceRepoArgs = resourceRepository;
+        RootUrl = rootUrl;
+        HttpRequestRetries = httpRequestRetries ?? DefaultHttpRequestRetries;
+        HttpRequestDelayBetweenRetries = httpRequestDelayBetweenRetries ?? DefaultHttpRequestDelayBetweenRetries;
+        FullScan = fullScan ?? false;
+        DownloadAlways = downloadAlways ?? false;
+    }    
     public Uri RootUrl { get; }
     public XPath? AdjacencyXPath { get; }
     public XPath? ResourceXPath { get; }
@@ -34,7 +67,7 @@ public class Job
     public bool DisableResourceWrites { get; }
     public bool FullScan { get; }
     public bool DownloadAlways { get; }
-    public ResourceType ResourceType { get; }
+    public ResourceType? ResourceType { get; }
 
     public void Log(ILogger logger, LogLevel logLevel)
     {

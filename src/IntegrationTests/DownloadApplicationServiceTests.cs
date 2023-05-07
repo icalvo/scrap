@@ -1,15 +1,17 @@
 ﻿using System.Reflection;
+using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Scrap.Application;
+using Scrap.Application.Download;
 using Scrap.Domain;
 using Scrap.Domain.Downloads;
-using Scrap.Domain.JobDefinitions;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources.FileSystem;
 using Scrap.Infrastructure;
+using SharpX;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -34,27 +36,27 @@ public class DownloadApplicationServiceTests
                 new("Console:FormatterName", "CustomConsoleFormatter"),
                 new("Console:FormatterOptions:IncludeScopes", "true"),
                 new("Console:FormatterOptions:EnableColors", "false"),
-                new("Scrap:Definitions", "./jobDefinitions.json"),
+                new("Scrap:Sites", "./sites.json"),
                 new("Scrap:Database", "./scrap.db"),
                 new("Scrap:FileSystemType", "local"),
                 new("Scrap:BaseRootFolder", "./test-results"),
             }).Build();
 
         var pageMock = new Mock<IPage>();
-        var pageMarkerRepoMock = new Mock<IPageMarkerRepository>();
+        var visitedPageRepoMock = new Mock<IVisitedPageRepository>();
         var fileSystemMock = new Mock<IRawFileSystem>();
         var pageRetrieverMock = new Mock<IPageRetriever>();
         var downloadStreamProviderMock = new Mock<IDownloadStreamProvider>();
         var mocksToShowInvocations = new Mock[]
         {
-            pageMock, pageRetrieverMock, fileSystemMock, pageMarkerRepoMock, downloadStreamProviderMock
+            pageMock, pageRetrieverMock, fileSystemMock, visitedPageRepoMock, downloadStreamProviderMock
         };
 
         // Setup factories
-        var pageMarkerRepoFactoryMock = new Mock<IPageMarkerRepositoryFactory>();
-        pageMarkerRepoFactoryMock.Setup(x => x.Build()).Returns(pageMarkerRepoMock.Object);
-        pageMarkerRepoFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(pageMarkerRepoMock.Object);
-        pageMarkerRepoFactoryMock.Setup(x => x.Build(It.IsAny<DatabaseInfo>())).Returns(pageMarkerRepoMock.Object);
+        var visitedPageRepoFactoryMock = new Mock<IVisitedPageRepositoryFactory>();
+        visitedPageRepoFactoryMock.Setup(x => x.Build()).Returns(visitedPageRepoMock.Object);
+        visitedPageRepoFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(visitedPageRepoMock.Object);
+        visitedPageRepoFactoryMock.Setup(x => x.Build(It.IsAny<DatabaseInfo>())).Returns(visitedPageRepoMock.Object);
         var fileSystemFactoryMock = new Mock<IFileSystemFactory>();
         fileSystemFactoryMock.Setup(x => x.BuildAsync(It.IsAny<bool?>()))
             .ReturnsAsync(new FileSystem(fileSystemMock.Object));
@@ -69,7 +71,7 @@ public class DownloadApplicationServiceTests
         var sl = sc.ConfigureDomainServices().ConfigureApplicationServices().ConfigureInfrastructureServices(
             config,
             Mock.Of<IOAuthCodeGetter>(),
-            pageMarkerRepoFactoryMock.Object,
+            visitedPageRepoFactoryMock.Object,
             fileSystemFactoryMock.Object,
             pageRetrieverFactoryMock.Object,
             downloadStreamProviderFactoryMock.Object).AddLogging().BuildServiceProvider();
@@ -99,39 +101,39 @@ public class DownloadApplicationServiceTests
             .ReturnsAsync(pageMock.Object);
         downloadStreamProviderMock.Setup(x => x.GetStreamAsync(new Uri("https://example.com/ResUrl")))
             .ReturnsAsync(new MemoryStream("download"u8.ToArray()));
-        var svc = sl.GetRequiredService<IDownloadApplicationService>();
 
-        var jobDefinitionDto = new JobDefinitionDto(
-            "Example",
-            "example.com",
-            "(//*[contains(@class, 'post-body')]//a[contains(@href,'.jpg') or contains(@href,'.gif') or contains(@href,'/img/')])/@href",
-            new FileSystemResourceRepositoryConfiguration(
-                new[]
-                {
-                    "page.Content(\"//*[contains(@class, 'post-title ')]/text()\").Trim()",
-                    "resourceIndex + (String.IsNullOrEmpty(resourceUrl.Extension()) ? \".jpg\" : resourceUrl.Extension())"
-                },
-                "Docs\\Example"),
-            "https://example.com",
-            HttpRequestRetries: 3,
-            HttpRequestDelayBetweenRetries: TimeSpan.Zero,
-            UrlPattern: null,
-            ResourceType: ResourceType.DownloadLink);
+        const string definitions = """
+[
+  {
+    "name": "Example",
+    "rootUrl": "https://example.com",
+    "adjacencyXPath": "N/A",
+    "resourceXPath": "(//*[contains(@class, 'post-body')]//a[contains(@href,'.jpg') or contains(@href,'.gif') or contains(@href,'/img/')])/@href",
+    "resourceRepository": {
+      "type": "filesystem",
+      "rootFolder": "Docs\\Example",
+        "pathFragments": [
+            "page.Content(\"//*[contains(@class, 'post-title ')]/text()\").Trim()",
+            "resourceIndex + (String.IsNullOrEmpty(resourceUrl.Extension()) ? \".jpg\" : resourceUrl.Extension())"
+        ]
+    }
+  }
+]
+""";
+        fileSystemMock.Setup(x => x.FileOpenReadAsync("./sites.json"))
+            .ReturnsAsync(new MemoryStream(Encoding.UTF8.GetBytes(definitions)));
+
+        var svc = sl.GetRequiredService<IDownloadApplicationService>();
         try
         {
             await svc.DownloadAsync(
-                new JobDto(
-                    jobDefinitionDto,
-                    rootUrl: null,
-                    fullScan: null,
-                    configuration: null,
-                    downloadAlways: false,
-                    disableMarkingVisited: null,
-                    disableResourceWrites: null),
-                new Uri("https://example.com/PageUrl"),
-                pageIndex: 12,
-                resourceUrl: new Uri("https://example.com/ResUrl"),
-                resourceIndex: 22);
+                new DownloadCommand(
+                    new NameOrRootUrl("Example").ToJust(),
+                    false,
+                    new Uri("https://example.com/PageUrl"),
+                    12,
+                    new Uri("https://example.com/ResUrl"),
+                    22));
         }
         finally
         {
@@ -139,8 +141,6 @@ public class DownloadApplicationServiceTests
             _output.WriteLine("MOCK INVOCATIONS");
             foreach (var invocation in invocations)
             {
-                string? returnValue;
-
                 object? rawReturnValue = invocation.ReturnValue;
                 bool isTask = false;
                 if (invocation.ReturnValue is Task t)
@@ -149,7 +149,7 @@ public class DownloadApplicationServiceTests
                     rawReturnValue = t.Result();
                 }
 
-                returnValue = rawReturnValue is null ? "null" : rawReturnValue.ToString();
+                var returnValue = rawReturnValue is null ? "null" : rawReturnValue.ToString();
 
                 if (isTask)
                 {

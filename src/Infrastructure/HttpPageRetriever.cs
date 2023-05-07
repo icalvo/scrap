@@ -39,7 +39,7 @@ public class HttpPageRetriever : IPageRetriever
         return policy.ExecuteAsync<IPage>(
             async _ =>
             {
-                var stream = await _client.GetStreamAsync(uri);
+                await using var stream = await _client.GetStreamAsync(uri);
                 HtmlDocument document = new();
                 document.Load(stream);
                 return new Page(uri, document, this, _pageLogger);

@@ -24,6 +24,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
     <PackageReference Include="Polly" Version="7.2.3" />
+    <PackageReference Include="SharpX" Version="6.1.0"/>
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     <PackageReference Include="System.Text.Json" Version="7.0.2" />
   </ItemGroup>
@@ -32,11 +33,16 @@
     <EmbeddedResource Include="Resources\FileSystem\TemplateDestinationProvider.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <Compile Remove="Resources\FileSystem\TemplateDestinationProvider.cs" />
+    <Compile Remove="Resources\FileSystem\TemplateDestinationProvider.cs"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\Common\Common.csproj"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Scrap.Tests.Unit</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>

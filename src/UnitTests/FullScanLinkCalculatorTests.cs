@@ -11,7 +11,7 @@ public class FullScanLinkCalculatorTests
     [Fact]
     public async Task CalculateLinks()
     {
-        var mock = new Mock<IPageMarkerRepository>(MockBehavior.Strict);
+        var mock = new Mock<IVisitedPageRepository>(MockBehavior.Strict);
         mock.Setup(x => x.ExistsAsync(new Uri("https://example.com/1.txt"))).ReturnsAsync(false);
 
         var lc = new FullScanLinkCalculator(Mock.Of<ILogger<FullScanLinkCalculator>>());

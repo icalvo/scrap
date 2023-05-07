@@ -1,4 +1,4 @@
-﻿namespace Scrap.Domain.JobDefinitions;
+﻿namespace Scrap.Domain;
 
 public enum ResourceType
 {

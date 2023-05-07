@@ -1,8 +1,9 @@
 ﻿using Moq;
-using Scrap.Application;
+using Scrap.Application.Traversal;
 using Scrap.Common.Graphs;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
+using Scrap.Domain.Sites;
 
 namespace Scrap.Tests.Unit.ApplicationServices;
 
@@ -18,17 +19,17 @@ public class TraversalApplicationServiceMockBuilder
         _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
     }
 
-    public Mock<IJobFactory> JobFactoryMock { get; } = new();
     public Mock<IGraphSearch> GraphSearchMock { get; private set; } = new();
     public Mock<ILinkCalculator> LinkCalculatorMock { get; } = new();
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();
+    public Mock<ISiteService> SiteServiceMock { get; } = new();
 
     public ITraversalApplicationService Build() =>
         new TraversalApplicationService(
             GraphSearchMock.Object,
             _pageRetrieverFactoryMock.Object,
             _linkCalculatorFactoryMock.Object,
-            JobFactoryMock.Object);
+            SiteServiceMock.Object);
 
     public void SetupTraversal(params IPage[] pages)
     {

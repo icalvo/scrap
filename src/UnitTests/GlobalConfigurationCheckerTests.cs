@@ -39,7 +39,7 @@ public class GlobalConfigurationCheckerTests
         var rfsMock = new Mock<IRawFileSystem>();
 
         configMock.Setup(x => x[ConfigKeys.GlobalUserConfigPath]).Returns((string?)null);
-        configMock.Setup(x => x[ConfigKeys.Definitions]).Returns("/home/cfg/defs.json");
+        configMock.Setup(x => x[ConfigKeys.Sites]).Returns("/home/cfg/defs.json");
         configMock.Setup(x => x[ConfigKeys.Database]).Returns("/home/cfg/scrap.db");
         rfsMock.Setup(x => x.DefaultGlobalUserConfigFile).Returns("/def/scrap-user.json");
         rfsMock.Setup(x => x.FileExistsAsync("/def/scrap-user.json")).ReturnsAsync(true);
@@ -62,7 +62,7 @@ public class GlobalConfigurationCheckerTests
         var rfsMock = new Mock<IRawFileSystem>();
 
         configMock.Setup(x => x[ConfigKeys.GlobalUserConfigPath]).Returns((string?)null);
-        configMock.Setup(x => x[ConfigKeys.Definitions]).Returns("/home/cfg/defs.json");
+        configMock.Setup(x => x[ConfigKeys.Sites]).Returns("/home/cfg/defs.json");
         configMock.Setup(x => x[ConfigKeys.Database]).Returns((string?)null);
         rfsMock.Setup(x => x.DefaultGlobalUserConfigFile).Returns("/def/scrap-user.json");
         rfsMock.Setup(x => x.FileExistsAsync("/def/scrap-user.json")).ReturnsAsync(true);
@@ -87,7 +87,7 @@ public class GlobalConfigurationCheckerTests
         var rfsMock = new Mock<IRawFileSystem>();
 
         configMock.Setup(x => x[ConfigKeys.GlobalUserConfigPath]).Returns("/home/cfg/scrap.json");
-        configMock.Setup(x => x[ConfigKeys.Definitions]).Returns("/home/cfg/defs.json");
+        configMock.Setup(x => x[ConfigKeys.Sites]).Returns("/home/cfg/defs.json");
         configMock.Setup(x => x[ConfigKeys.Database]).Returns("/home/cfg/scrap.db");
         rfsMock.Setup(x => x.DefaultGlobalUserConfigFile).Returns("/home/cfg/scrap.json");
         rfsMock.Setup(x => x.FileExistsAsync("/home/cfg/scrap.json")).ReturnsAsync(true);

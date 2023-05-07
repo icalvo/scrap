@@ -106,25 +106,38 @@ public class CompiledDestinationProvider : IDestinationProvider
         {
             // handle exceptions
             var failures = result.Diagnostics.Where(
-                diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error);
+                diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error).ToArray();
 
             foreach (var diagnostic in failures)
             {
-                _logger.LogError(
-                    "{Id}: {Message} at {Location}",
-                    diagnostic.Id,
-                    diagnostic.GetMessage(),
-                    diagnostic.Location);
-                _logger.LogDebug("{SourceCode}", sourceCode);
+                _logger.LogTrace("{Message} at {Location}", diagnostic, LocationText(diagnostic));
             }
 
-            throw new Exception("Compilation error");
+            _logger.LogTrace("SOURCE CODE: {SourceCode}", sourceCode);
+
+            throw new Exception($"Compilation error: {failures[0]} at {LocationText(failures[0])}.");
         }
 
         // load this 'virtual' DLL so that we can use
         ms.Seek(0, SeekOrigin.Begin);
         var assembly = Assembly.Load(ms.ToArray());
         return assembly;
+
+        string LocationText(Diagnostic diagnostic)
+        {
+            var locationText = diagnostic.GetType().Name;
+            var loc = diagnostic.Location;
+            var pos = loc.GetLineSpan();
+            locationText += $"({pos.Path}@{pos.StartLinePosition.Line + 1}:{pos.StartLinePosition.Character + 1})";
+
+            if (loc.SourceTree != null)
+            {
+                locationText +=
+                    $" near \"{loc.SourceTree.ToString().Substring(loc.SourceSpan.Start, loc.SourceSpan.Length)}\"";
+            }
+
+            return locationText;
+        }
     }
 
     private IDestinationProvider CreateDestinationProviderInstance(Assembly assembly)

@@ -1,7 +1,8 @@
 ﻿using Moq;
-using Scrap.Application;
+using Scrap.Application.Resources;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
+using Scrap.Domain.Sites;
 
 namespace Scrap.Tests.Unit.ApplicationServices;
 
@@ -15,11 +16,11 @@ public class ResourcesApplicationServiceMockBuilder
         _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
     }
 
-    public Mock<IJobFactory> JobFactoryMock { get; } = new();
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();
+    public Mock<ISiteService> SiteServiceMock { get; } = new();
 
     public IResourcesApplicationService Build() =>
-        new ResourcesApplicationService(JobFactoryMock.Object, _pageRetrieverFactoryMock.Object);
+        new ResourcesApplicationService(_pageRetrieverFactoryMock.Object, SiteServiceMock.Object);
 
     public void SetupTraversal(params IPage[] pages)
     {

@@ -7,14 +7,14 @@ namespace Scrap.Infrastructure.Factories;
 public class LinkCalculatorFactory : ILinkCalculatorFactory
 {
     private readonly ILoggerFactory _loggerFactory;
-    private readonly IPageMarkerRepositoryFactory _pageMarkerRepositoryFactory;
+    private readonly IVisitedPageRepositoryFactory _visitedPageRepositoryFactory;
 
     public LinkCalculatorFactory(
         ILoggerFactory loggerFactory,
-        IPageMarkerRepositoryFactory pageMarkerRepositoryFactory)
+        IVisitedPageRepositoryFactory visitedPageRepositoryFactory)
     {
         _loggerFactory = loggerFactory;
-        _pageMarkerRepositoryFactory = pageMarkerRepositoryFactory;
+        _visitedPageRepositoryFactory = visitedPageRepositoryFactory;
     }
 
     public ILinkCalculator Build(Job job) =>
@@ -22,5 +22,5 @@ public class LinkCalculatorFactory : ILinkCalculatorFactory
             ? new FullScanLinkCalculator(_loggerFactory.CreateLogger<FullScanLinkCalculator>())
             : new LinkCalculator(
                 _loggerFactory.CreateLogger<LinkCalculator>(),
-                _pageMarkerRepositoryFactory.Build(job));
+                _visitedPageRepositoryFactory.Build(job));
 }

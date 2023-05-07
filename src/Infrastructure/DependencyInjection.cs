@@ -11,7 +11,9 @@ using Scrap.Domain;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
 using Scrap.Domain.Resources.FileSystem;
+using Scrap.Domain.Sites;
 using Scrap.Infrastructure.Factories;
+using Scrap.Infrastructure.Repositories;
 
 namespace Scrap.Infrastructure;
 
@@ -31,7 +33,7 @@ public static class DependencyInjection
         this IServiceCollection container,
         IConfiguration cfg,
         IOAuthCodeGetter oAuthCodeGetter,
-        IPageMarkerRepositoryFactory? pageMarkerRepoFactory = null,
+        IVisitedPageRepositoryFactory? visitedPageRepositoryFactory = null,
         IFileSystemFactory? fileSystemFactory = null,
         IPageRetrieverFactory? pageRetrieverFactory = null,
         IDownloadStreamProviderFactory? downloadStreamProviderFactory = null)
@@ -102,16 +104,35 @@ public static class DependencyInjection
         container.AddSingleton<ILinkCalculatorFactory, LinkCalculatorFactory>();
         container.AddSingleton<IResourceRepositoryConfigurationValidator, ResourceRepositoryConfigurationValidator>();
 
-        if (pageMarkerRepoFactory != null)
+        if (visitedPageRepositoryFactory != null)
         {
-            container.AddSingleton(pageMarkerRepoFactory);
+            container.AddSingleton(visitedPageRepositoryFactory);
         }
         else
         {
-            container.AddSingleton<IPageMarkerRepositoryFactory, PageMarkerRepositoryFactory>();
+            container.AddSingleton<IVisitedPageRepositoryFactory, VisitedPageRepositoryFactory>();
         }
 
         container.AddSingleton<IDestinationProviderFactory, DestinationProviderFactory>();
+
+        container.AddSingleton<ISiteRepository>(
+            sp =>
+            {
+                var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("InfrastructureServiceConfiguration");
+                var config = sp.GetRequiredService<IConfiguration>();
+                var sitesFilePath = config.Sites();
+                if (sitesFilePath == null)
+                {
+                    throw new Exception("No definitions file in the configuration!");
+                }
+
+                logger.LogTrace("Definitions file: {DefinitionsPath}", sitesFilePath);
+                return new MemorySiteRepository(
+                    sitesFilePath,
+                    sp.GetRequiredService<IFileSystemFactory>(),
+                    sp.GetRequiredService<ILogger<MemorySiteRepository>>());
+            });        
+        
         return container;
     }
 

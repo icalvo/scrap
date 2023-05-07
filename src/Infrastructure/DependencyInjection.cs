@@ -154,7 +154,3 @@ public static class DependencyInjection
     }
     
 }
-
-public static class Global
-{
-}

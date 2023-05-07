@@ -21,6 +21,5 @@ public class ScrapOneApplicationService : IScrapOneApplicationService
                 oneCommand.FullScan,
                 oneCommand.DownloadAlways,
                 oneCommand.DisableMarkingVisited,
-                oneCommand.DisableResourceWrites)
-            .DoWithAsync(x => _singleScrapService.ExecuteJobAsync(x.siteName, x.job));
+                oneCommand.DisableResourceWrites).DoAsync(x => _singleScrapService.ExecuteJobAsync(x.siteName, x.job));
 }

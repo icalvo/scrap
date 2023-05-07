@@ -42,37 +42,15 @@ public static class MaybeExtensions
         return await f(result);
     }
 
-    public static async Task ContinueAsync<TIn, TOut>(this Task<TIn> task, Action<TIn> f)
+    public static async Task ContinueAsync<TIn>(this Task<TIn> task, Action<TIn> f)
     {
         var result = await task;
         f(result);
     }
 
-    public static async Task ContinueWithAsync<TIn, TOut>(this Task<TIn> task, Func<TIn, Task> f)
+    public static async Task ContinueWithAsync<TIn>(this Task<TIn> task, Func<TIn, Task> f)
     {
         var result = await task;
         await f(result);
     }
-
-    public static Task DoWithAsync<TIn>(this Task<Maybe<TIn>> task, Func<TIn, Task> f) =>
-        task.ContinueWithAsync(x => x.DoAsync(y => Unit.DoAsync(() => f(y))));
-
-    public static Task<Maybe<TOut>> MapWithAsync<TIn, TOut>(this Task<Maybe<TIn>> task, Func<TIn, Task<TOut>> f) =>
-        task.ContinueWithAsync(
-            x => x.Map(y => f(y).ContinueAsync(z => z.ToJust()), () => Task.FromResult(Maybe.Nothing<TOut>())));
-
-    public static async IAsyncEnumerable<TOut> MapWithAsync<TIn, TOut>(
-        this Task<Maybe<TIn>> task,
-        Func<TIn, IAsyncEnumerable<TOut>> f)
-    {
-        var x = await task;
-        var a = x.Map(f, AsyncEnumerable.Empty<TOut>);
-        await foreach (var item in a)
-        {
-            yield return item;
-        }
-    }
-
-    public static Task<Maybe<T>> DoIfNothingAsync<T>(this Task<Maybe<T>> task, Action ifNone) =>
-        task.ContinueAsync(maybe => maybe.DoIfNothing(ifNone));
 }

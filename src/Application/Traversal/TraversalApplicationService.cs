@@ -26,8 +26,7 @@ public class TraversalApplicationService : ITraversalApplicationService
     }
 
     public IAsyncEnumerable<string> TraverseAsync(ITraverseCommand command) =>
-        _siteService.BuildJobAsync(command.NameOrRootUrl, command.FullScan, false, true, true)
-            .MapWithAsync(
+        _siteService.BuildJobAsync(command.NameOrRootUrl, command.FullScan, false, true, true).MapAsync(
                 x => PagesAsync(x.job));
 
     private async IAsyncEnumerable<string> PagesAsync(Job job)

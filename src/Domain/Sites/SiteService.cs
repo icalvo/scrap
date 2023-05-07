@@ -42,7 +42,7 @@ public class SiteService : ISiteService
             .FromJust();
         return GetSiteAsync(
             argNameOrRootUrl,
-            NameOrRootUrl.Create(envName, envRootUrl == null ? null : new Uri(envRootUrl))).MapWithAsync(
+            NameOrRootUrl.Create(envName, envRootUrl == null ? null : new Uri(envRootUrl))).MapAsync(
             async site =>
             {
                 _logger.LogInformation("Site: {Site}", site.Name);

@@ -21,7 +21,7 @@ public class ResourcesApplicationService : IResourcesApplicationService
     public IAsyncEnumerable<string> GetResourcesAsync(IResourceCommand oneCommand) =>
         _sitesApplicationService
             .BuildJobAsync(oneCommand.NameOrRootUrl, oneCommand.FullScan, oneCommand.DownloadAlways, oneCommand.DisableMarkingVisited, oneCommand.DisableResourceWrites)
-            .MapWithAsync(x => GetResourcesAsync(x.job, oneCommand.PageUrl, oneCommand.PageIndex));
+            .MapAsync(x => GetResourcesAsync(x.job, oneCommand.PageUrl, oneCommand.PageIndex));
 
     private async IAsyncEnumerable<string> GetResourcesAsync(Job job, Uri pageUrl, int pageIndex)
     {

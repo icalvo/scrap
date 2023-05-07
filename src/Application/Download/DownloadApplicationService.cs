@@ -32,7 +32,7 @@ public class DownloadApplicationService : IDownloadApplicationService
 
     public Task DownloadAsync(IDownloadCommand command) =>
         _siteService.BuildJobAsync(command.NameOrRootUrl, false, command.DownloadAlways, true, false)
-            .DoWithAsync(x => DownloadAsync(x.job, command));
+            .DoAsync(x => DownloadAsync(x.job, command));
 
     private async Task DownloadAsync(Job job, IDownloadCommand command)
     {

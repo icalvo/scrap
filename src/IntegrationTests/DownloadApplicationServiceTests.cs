@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using System.Text;
+﻿using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -166,19 +165,5 @@ public class DownloadApplicationServiceTests
                 }
             }
         }
-    }
-}
-
-public static class TaskExtensions
-{
-    public static object? Result(this Task t)
-    {
-        var type = t.GetType();
-        return type.InvokeMember(
-            nameof(Task<object>.Result),
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty,
-            binder: null,
-            target: t,
-            null);
     }
 }

@@ -2,14 +2,6 @@
 
 namespace Scrap.Infrastructure.FileSystems;
 
-public static class TaskExtensions
-{
-    public static Task CompletedTask(Action action)
-    {
-        action();
-        return Task.CompletedTask;
-    }
-}
 public class LocalFileSystem : IRawFileSystem
 {
     public Task DirectoryCreateAsync(string path) => TaskExtensions.CompletedTask(() => Directory.CreateDirectory(path));

@@ -42,7 +42,14 @@ public class ScrapAllApplicationService : IScrapAllApplicationService
                 command.DownloadAlways,
                 command.DisableMarkingVisited,
                 command.DisableResourceWrites);
-            await _singleScrapService.ExecuteJobAsync(site.Name, job);
+            try
+            {
+                await _singleScrapService.ExecuteJobAsync(site.Name, job);
+            }
+            catch (Exception)
+            {
+                _logger.LogWarning("Could not scrap site {Site}", site.Name);
+            }
         }
     }
 }

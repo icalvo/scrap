@@ -26,14 +26,14 @@ public class GlobalConfigurationChecker : IGlobalConfigurationChecker
         }
 
         var globalUserConfigFolder = fileSystem.Path.GetDirectoryName(globalUserConfigPath);
-        var unsetKeys = GlobalConfigurations.GetGlobalConfigs(globalUserConfigFolder)
-            .Where(config => !config.Optional && _configuration[config.Key] == null).ToArray();
+        var unsetKeys = GlobalConfigurations.GetGlobalConfigs(globalUserConfigFolder).Where(
+            config => !config.Optional && config.Keys.All(key => _configuration[key] == null)).ToArray();
         if (!unsetKeys.Any())
         {
             return;
         }
 
-        var keyList = string.Join(", ", unsetKeys.Select(x => x.Key));
+        var keyList = string.Join(", ", unsetKeys.Select(x => x.Keys[0]));
         Console.WriteLine($"Unset configuration keys: {keyList}");
         throw new ScrapException("The tool is not properly configured; call 'scrap config'");
     }

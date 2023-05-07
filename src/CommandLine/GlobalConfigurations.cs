@@ -8,7 +8,7 @@ public static class GlobalConfigurations
         new[]
         {
             new GlobalConfig(
-                ConfigKeys.Sites,
+                new[] { ConfigKeys.Sites, ConfigKeys.Definitions },
                 Path.Combine(globalUserConfigFolder, "sites.json"),
                 "Path for sites JSON"),
             new GlobalConfig(

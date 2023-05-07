@@ -78,8 +78,9 @@ internal sealed class ConfigureVerb : IVerb<ConfigureVerb, ConfigureOptions>
 
         KeyValuePair<string, object?>? AskGlobalConfigValue(GlobalConfig globalConfig)
         {
-            var (key, defaultValue, prompt, _) = globalConfig;
-            var promptDefaultValue = cfg[key] ?? defaultValue;
+            var (keys, defaultValue, prompt, _) = globalConfig;
+            var currentValue = keys.Aggregate((string?)null, (ac, key) => ac ?? cfg[key]);
+            var promptDefaultValue = currentValue ?? defaultValue;
 
             Console.Write($"{prompt} [{promptDefaultValue}]: ");
             var value = Console.ReadLine();
@@ -89,12 +90,12 @@ internal sealed class ConfigureVerb : IVerb<ConfigureVerb, ConfigureOptions>
                 value = promptDefaultValue;
             }
 
-            if (value == cfg[key])
+            if (value == currentValue)
             {
                 return null;
             }
 
-            return new KeyValuePair<string, object?>(key, value);
+            return new KeyValuePair<string, object?>(keys[0], value);
         }
     }
 
@@ -123,7 +124,8 @@ internal sealed class ConfigureVerb : IVerb<ConfigureVerb, ConfigureOptions>
         Debug.Assert(key != null, $"{nameof(key)} != null");
         await CreateGlobalConfigFileAsync(fileSystem, globalUserConfigFolder, globalUserConfigPath);
 
-        var update = GlobalConfigurations.GetGlobalConfigs(globalUserConfigFolder).SingleOrDefault(x => x.Key == key);
+        var update = GlobalConfigurations.GetGlobalConfigs(globalUserConfigFolder)
+            .SingleOrDefault(x => x.Keys.Any(k => k == key));
         if (update == null)
         {
             await Console.Error.WriteLineAsync("Key not found!");

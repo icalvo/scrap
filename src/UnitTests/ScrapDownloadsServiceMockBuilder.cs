@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
+using NSubstitute;
 using Scrap.Common.Graphs;
 using Scrap.Domain;
 using Scrap.Domain.Downloads;
@@ -20,9 +21,8 @@ public class ScrapDownloadsServiceMockBuilder
 
     private readonly Mock<IPageRetrieverFactory> _pageRetrieverFactoryMock = new();
     private readonly Mock<IResourceRepositoryFactory> _resourceRepositoryFactoryMock = new();
-
     private readonly Mock<IDownloadStreamProviderFactory> _streamProviderFactoryMock = new();
-    private readonly Mock<IDownloadStreamProvider> _streamProviderMock = new();
+    private readonly IDownloadStreamProvider _streamProviderMock = Substitute.For<IDownloadStreamProvider>();
 
     public ScrapDownloadsServiceMockBuilder(ITestOutputHelper output)
     {
@@ -32,7 +32,7 @@ public class ScrapDownloadsServiceMockBuilder
             .Returns(VisitedPageRepositoryMock.Object);
         _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
         _resourceRepositoryFactoryMock.Setup(x => x.BuildAsync(It.IsAny<Job>())).ReturnsAsync(ResourceRepositoryMock.Object);
-        _streamProviderFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(_streamProviderMock.Object);
+        _streamProviderFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(_streamProviderMock);
 
         _streamProviderMock.SetupWithString();
 

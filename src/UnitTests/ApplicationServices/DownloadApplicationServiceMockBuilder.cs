@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
+using NSubstitute;
 using Scrap.Application.Download;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;
@@ -12,19 +13,24 @@ namespace Scrap.Tests.Unit.ApplicationServices;
 public class DownloadApplicationServiceMockBuilder
 {
     private readonly ITestOutputHelper _output;
-    private readonly Mock<IPageRetrieverFactory> _pageRetrieverFactoryMock = new();
-    private readonly Mock<IResourceRepositoryFactory> _resourceRepositoryFactoryMock = new();
-    private readonly Mock<IDownloadStreamProviderFactory> _streamProviderFactoryMock = new();
-    private readonly Mock<IDownloadStreamProvider> _streamProviderMock = new();
+    private readonly IPageRetrieverFactory _pageRetrieverFactory = Substitute.For<IPageRetrieverFactory>();
+
+    private readonly IResourceRepositoryFactory _resourceRepositoryFactory =
+        Substitute.For<IResourceRepositoryFactory>();
+
+    private readonly IDownloadStreamProviderFactory _streamProviderFactory =
+        Substitute.For<IDownloadStreamProviderFactory>();
+
+    private readonly IDownloadStreamProvider _streamProvider = Substitute.For<IDownloadStreamProvider>();
 
     public DownloadApplicationServiceMockBuilder(ITestOutputHelper output)
     {
         _output = output;
 
-        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
-        _resourceRepositoryFactoryMock.Setup(x => x.BuildAsync(It.IsAny<Job>())).ReturnsAsync(ResourceRepositoryMock.Object);
-        _streamProviderFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(_streamProviderMock.Object);
-        _streamProviderMock.SetupWithString();
+        _pageRetrieverFactory.Build(Arg.Any<Job>()).Returns(PageRetrieverMock.Object);
+        _resourceRepositoryFactory.BuildAsync(Arg.Any<Job>()).Returns(ResourceRepositoryMock.Object);
+        _streamProviderFactory.Build(Arg.Any<Job>()).Returns(_streamProvider);
+        _streamProvider.SetupWithString();
         LoggerMock.SetupWithOutput(output);
     }
 
@@ -35,9 +41,9 @@ public class DownloadApplicationServiceMockBuilder
 
     public IDownloadApplicationService Build() =>
         new DownloadApplicationService(
-            _pageRetrieverFactoryMock.Object,
-            _resourceRepositoryFactoryMock.Object,
-            _streamProviderFactoryMock.Object,
+            _pageRetrieverFactory,
+            _resourceRepositoryFactory,
+            _streamProviderFactory,
             JobServiceMock.Object,
             LoggerMock.Object.ToGeneric<DownloadApplicationService>());
 

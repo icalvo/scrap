@@ -1,6 +1,6 @@
-﻿using System.Text;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Moq;
+using NSubstitute;
 using Scrap.Domain.Downloads;
 using Xunit.Abstractions;
 
@@ -8,9 +8,8 @@ namespace Scrap.Tests.Unit;
 
 public static class MockExtensions
 {
-    public static void SetupWithString(this Mock<IDownloadStreamProvider> s) =>
-        s.Setup(y => y.GetStreamAsync(It.IsAny<Uri>()))
-            .ReturnsAsync(new MemoryStream(Encoding.UTF8.GetBytes("some text goes here!..")));
+    public static void SetupWithString(this IDownloadStreamProvider s) =>
+        s.GetStreamAsync(It.IsAny<Uri>()).Returns(new MemoryStream("some text goes here!.."u8.ToArray()));
 
     public static void SetupWithOutput(this Mock<ILogger> loggerMock, ITestOutputHelper output) =>
         loggerMock.Setup(

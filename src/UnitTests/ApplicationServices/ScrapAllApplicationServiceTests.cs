@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 using Scrap.Application.Scrap;
 using Scrap.Application.Scrap.All;
 using Scrap.Domain;
@@ -7,62 +7,53 @@ using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 using Scrap.Domain.Sites;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Scrap.Tests.Unit.ApplicationServices;
 
 public class ScrapAllApplicationServiceTests
 {
-    private readonly ITestOutputHelper _output;
-
-    public ScrapAllApplicationServiceTests(ITestOutputHelper output)
-    {
-        _output = output;
-    }
-
     [Fact]
     public async Task ScrapAllAsync()
     {
         var job = JobBuilder.Build(ResourceType.DownloadLink);
 
-        var jobServiceMock = new Mock<IJobService>();
-        var siteRepositoryMock = new Mock<ISiteRepository>();
-        siteRepositoryMock.Setup(x => x.GetScrappableAsync()).Returns(
+        var jobService = Substitute.For<IJobService>();
+        var siteRepository = Substitute.For<ISiteRepository>();
+        siteRepository.GetScrappableAsync().Returns(
             new[]
             {
                 new Site(
                     "C",
-                    rootUrl: new Uri("http://C.com"),
+                    rootUrl: new Uri("https://C.com"),
                     resourceXPath: "xp",
-                    resourceRepoArgs: Mock.Of<IResourceRepositoryConfiguration?>()),
+                    resourceRepoArgs: Substitute.For<IResourceRepositoryConfiguration?>()),
                 new Site(
                     "D",
-                    rootUrl: new Uri("http://D.com"),
+                    rootUrl: new Uri("https://D.com"),
                     resourceXPath: "xp",
-                    resourceRepoArgs: Mock.Of<IResourceRepositoryConfiguration?>())
+                    resourceRepoArgs: Substitute.For<IResourceRepositoryConfiguration?>())
             }.ToAsyncEnumerable());
 
-        jobServiceMock.Setup(
-            x => x.BuildJobAsync(
-                It.Is<Site>(y => y.Name == "C" || y.Name == "D"),
+        jobService.BuildJobAsync(
+            Arg.Is<Site>(y => y.Name == "C" || y.Name == "D"),
                 null,
                 null,
                 false,
                 false,
                 false,
-                false)).ReturnsAsync(job);
-        var singleScrapServiceMock = new Mock<ISingleScrapService>();
+            false).Returns(job);
+        var singleScrapService = Substitute.For<ISingleScrapService>();
 
         var service = new ScrapAllApplicationService(
-            jobServiceMock.Object,
-            Mock.Of<ILogger<ScrapAllApplicationService>>(),
-            singleScrapServiceMock.Object,
-            siteRepositoryMock.Object);
+            jobService,
+            Substitute.For<ILogger<ScrapAllApplicationService>>(),
+            singleScrapService,
+            siteRepository);
 
-        await service.ScrapAllAsync(Mock.Of<IScrapAllCommand>());
+        await service.ScrapAllAsync(Substitute.For<IScrapAllCommand>());
 
-        singleScrapServiceMock.Verify(x => x.ExecuteJobAsync("C", job));
-        singleScrapServiceMock.Verify(x => x.ExecuteJobAsync("D", job));
-        singleScrapServiceMock.VerifyNoOtherCalls();
+        await singleScrapService.Received(2).ExecuteJobAsync(Arg.Any<string>(), Arg.Any<Job>());
+        await singleScrapService.Received().ExecuteJobAsync("C", job);
+        await singleScrapService.Received().ExecuteJobAsync("D", job);
     }
 }

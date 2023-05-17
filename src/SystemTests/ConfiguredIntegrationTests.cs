@@ -27,7 +27,7 @@ public class ConfiguredIntegrationTests
     [Fact]
     public async Task CommandLine_Scrap_Simple()
     {
-        _ = GetCommandLineOutput("testsite -v -d").ToList();
+        _ = GetCommandLineOutput("testsite -v").ToList();
         string? downloadedContent = null;
         if (File.Exists("./testsite-result/0.txt"))
         {

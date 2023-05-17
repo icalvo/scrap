@@ -1,28 +1,31 @@
 ﻿using Microsoft.Extensions.Logging;
+using Scrap.Domain.Jobs;
 using Scrap.Domain.Sites;
 
 namespace Scrap.Application.Scrap.All;
 
 public class ScrapAllApplicationService : IScrapAllApplicationService
 {
-    private readonly ISiteService _sitesService;
+    private readonly IJobService _siteService;
+    private readonly ISiteRepository _siteRepository;
     private readonly ILogger<ScrapAllApplicationService> _logger;
     private readonly ISingleScrapService _singleScrapService;
 
     public ScrapAllApplicationService(
-        ISiteService sitesService,
+        IJobService siteService,
         ILogger<ScrapAllApplicationService> logger,
-        ISingleScrapService singleScrapService)
+        ISingleScrapService singleScrapService,
+        ISiteRepository siteRepository)
     {
-        _sitesService = sitesService;
+        _siteService = siteService;
         _logger = logger;
         _singleScrapService = singleScrapService;
+        _siteRepository = siteRepository;
     }
 
     public async Task ScrapAllAsync(IScrapAllCommand command)
     {
-        var sites = await _sitesService.GetAllAsync().Where(x => x.RootUrl != null && x.HasResourceCapabilities())
-            .ToArrayAsync();
+        var sites = await _siteRepository.GetScrappableAsync().ToArrayAsync();
         if (!sites.Any())
         {
             _logger.LogWarning("No site found, nothing will be done");
@@ -34,7 +37,7 @@ public class ScrapAllApplicationService : IScrapAllApplicationService
             string.Join(", ", sites.Select(x => x.Name)));
         foreach (var site in sites)
         {
-            var job = await _sitesService.BuildJobAsync(
+            var job = await _siteService.BuildJobAsync(
                 site,
                 null,
                 null,

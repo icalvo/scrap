@@ -22,7 +22,7 @@ public class TraversalApplicationServiceTests
         var builder = new TraversalApplicationServiceMockBuilder();
         builder.SetupTraversal(new PageMock("https://example.com/a"), new PageMock("https://example.com/b"));
         var job = JobBuilder.Build(ResourceType.DownloadLink);
-        builder.SiteServiceMock.SetupWithJob(job, "x");
+        builder.JobServiceMock.SetupWithJob(job, "x");
         var service = builder.Build();
 
         var actual = await service.TraverseAsync(Mock.Of<ITraverseCommand>()).ToArrayAsync();

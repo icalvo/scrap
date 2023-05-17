@@ -30,7 +30,7 @@ public class ResourcesApplicationServiceTests
                 "https://example.com/3.txt",
                 "https://example.com/4.txt"));
         var job = JobBuilder.Build(ResourceType.DownloadLink);
-        builder.SiteServiceMock.SetupWithJob(job, "x");
+        builder.JobServiceMock.SetupWithJob(job, "x");
         var service = builder.Build();
         ResourceCommand cmd = new(
             false,

@@ -4,7 +4,6 @@ using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
-using Scrap.Domain.Sites;
 
 namespace Scrap.Application.Download;
 
@@ -13,14 +12,14 @@ public class DownloadApplicationService : IDownloadApplicationService
     private readonly IDownloadStreamProviderFactory _downloadStreamProviderFactory;
     private readonly IPageRetrieverFactory _pageRetrieverFactory;
     private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
-    private readonly ISiteService _siteService;
+    private readonly IJobService _siteService;
     private readonly ILogger<DownloadApplicationService> _logger;
 
     public DownloadApplicationService(
         IPageRetrieverFactory pageRetrieverFactory,
         IResourceRepositoryFactory resourceRepositoryFactory,
         IDownloadStreamProviderFactory downloadStreamProviderFactory,
-        ISiteService siteService,
+        IJobService siteService,
         ILogger<DownloadApplicationService> logger)
     {
         _pageRetrieverFactory = pageRetrieverFactory;

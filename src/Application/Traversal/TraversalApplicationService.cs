@@ -3,7 +3,6 @@ using Scrap.Common.Graphs;
 using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
-using Scrap.Domain.Sites;
 
 namespace Scrap.Application.Traversal;
 
@@ -12,12 +11,12 @@ public class TraversalApplicationService : ITraversalApplicationService
     private readonly IGraphSearch _graphSearch;
     private readonly ILinkCalculatorFactory _linkCalculatorFactory;
     private readonly IPageRetrieverFactory _pageRetrieverFactory;
-    private readonly ISiteService _siteService;
+    private readonly IJobService _siteService;
     public TraversalApplicationService(
         IGraphSearch graphSearch,
         IPageRetrieverFactory pageRetrieverFactory,
         ILinkCalculatorFactory linkCalculatorFactory,
-        ISiteService siteService)
+        IJobService siteService)
     {
         _graphSearch = graphSearch;
         _pageRetrieverFactory = pageRetrieverFactory;

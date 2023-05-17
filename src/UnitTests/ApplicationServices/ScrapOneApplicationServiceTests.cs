@@ -2,7 +2,7 @@
 using Scrap.Application.Scrap;
 using Scrap.Application.Scrap.One;
 using Scrap.Domain;
-using Scrap.Domain.Sites;
+using Scrap.Domain.Jobs;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -22,10 +22,10 @@ public class ScrapOneApplicationServiceTests
     {
         var job = JobBuilder.Build(ResourceType.DownloadLink);
 
-        var siteServiceMock = new Mock<ISiteService>();
-        siteServiceMock.SetupWithJob(job, "asdf");
+        var jobServiceMock = new Mock<IJobService>();
+        jobServiceMock.SetupWithJob(job, "asdf");
         var singleScrapServiceMock = new Mock<ISingleScrapService>();
-        var service = new ScrapOneApplicationService(siteServiceMock.Object, singleScrapServiceMock.Object);
+        var service = new ScrapOneApplicationService(jobServiceMock.Object, singleScrapServiceMock.Object);
 
         await service.ScrapAsync(Mock.Of<IScrapOneCommand>());
 

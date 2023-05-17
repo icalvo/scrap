@@ -5,7 +5,6 @@ using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
-using Scrap.Domain.Sites;
 using Xunit.Abstractions;
 
 namespace Scrap.Tests.Unit.ApplicationServices;
@@ -32,14 +31,14 @@ public class DownloadApplicationServiceMockBuilder
     public Mock<ILogger> LoggerMock { get; } = new();
     public Mock<IResourceRepository> ResourceRepositoryMock { get; } = new();
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();
-    public Mock<ISiteService> SiteServiceMock { get; } = new();
+    public Mock<IJobService> JobServiceMock { get; } = new();
 
     public IDownloadApplicationService Build() =>
         new DownloadApplicationService(
             _pageRetrieverFactoryMock.Object,
             _resourceRepositoryFactoryMock.Object,
             _streamProviderFactoryMock.Object,
-            SiteServiceMock.Object,
+            JobServiceMock.Object,
             LoggerMock.Object.ToGeneric<DownloadApplicationService>());
 
     public void SetupTraversal(params IPage[] pages)

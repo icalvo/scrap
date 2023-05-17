@@ -2,24 +2,24 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Scrap.Common;
-using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
+using Scrap.Domain.Sites;
 using SharpX;
 
-namespace Scrap.Domain.Sites;
+namespace Scrap.Domain.Jobs;
 
-public class SiteService : ISiteService
+public class JobService : IJobService
 {
     private readonly ISiteRepository _sitesRepository;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<SiteService> _logger;
+    private readonly ILogger<JobService> _logger;
     private readonly IResourceRepositoryConfigurationValidator _repositoryConfigurationValidator;
 
-    public SiteService(
+    public JobService(
         ISiteRepository sitesRepository,
         IConfiguration configuration,
         IResourceRepositoryConfigurationValidator repositoryConfigurationValidator,
-        ILogger<SiteService> logger)
+        ILogger<JobService> logger)
     {
         _sitesRepository = sitesRepository;
         _configuration = configuration;
@@ -78,22 +78,6 @@ public class SiteService : ISiteService
             downloadAlways,
             disableMarkingVisited,
             disableResourceWrites);
-    }
-
-    public IAsyncEnumerable<Site> GetAllAsync()
-    {
-        _logger.LogDebug("Getting all sites");
-        return _sitesRepository.ListAsync();
-    }
-
-    public async Task<Maybe<Site>> GetSiteAsync(Maybe<NameOrRootUrl> nameOrRootUrl)
-    {
-        var envRootUrl = _configuration.SiteRootUrl();
-        var envName = _configuration.SiteName();
-
-        return await GetSiteAsync(
-            nameOrRootUrl,
-            NameOrRootUrl.Create(envName, envRootUrl == null ? null : new Uri(envRootUrl)));
     }
 
     private Task<Maybe<Site>> GetSiteAsync(Maybe<NameOrRootUrl> argNameOrRootUrl, Maybe<NameOrRootUrl> envNameOrRootUrl)

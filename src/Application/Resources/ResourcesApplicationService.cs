@@ -3,16 +3,15 @@ using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
-using Scrap.Domain.Sites;
 
 namespace Scrap.Application.Resources;
 
 public class ResourcesApplicationService : IResourcesApplicationService
 {
     private readonly IPageRetrieverFactory _pageRetrieverFactory;
-    private readonly ISiteService _sitesApplicationService;
+    private readonly IJobService _sitesApplicationService;
 
-    public ResourcesApplicationService(IPageRetrieverFactory pageRetrieverFactory, ISiteService sitesApplicationService)
+    public ResourcesApplicationService(IPageRetrieverFactory pageRetrieverFactory, IJobService sitesApplicationService)
     {
         _pageRetrieverFactory = pageRetrieverFactory;
         _sitesApplicationService = sitesApplicationService;

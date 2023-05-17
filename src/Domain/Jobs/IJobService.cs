@@ -1,9 +1,9 @@
-﻿using Scrap.Domain.Jobs;
+﻿using Scrap.Domain.Sites;
 using SharpX;
 
-namespace Scrap.Domain.Sites;
+namespace Scrap.Domain.Jobs;
 
-public interface ISiteService
+public interface IJobService
 {
     Task<Maybe<(Job job, string siteName)>> BuildJobAsync(
         Maybe<NameOrRootUrl> argNameOrRootUrl,
@@ -11,8 +11,6 @@ public interface ISiteService
         bool? downloadAlways,
         bool? disableMarkingVisited,
         bool? disableResourceWrites);
-
-    IAsyncEnumerable<Site> GetAllAsync();
 
     Task<Job> BuildJobAsync(
         Site site,

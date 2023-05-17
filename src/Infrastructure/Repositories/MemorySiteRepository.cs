@@ -90,4 +90,7 @@ public class MemorySiteRepository : ISiteRepository
             yield return definition;
         }
     }
+
+    public IAsyncEnumerable<Site> GetScrappableAsync() =>
+        ListAsync().Where(x => x.RootUrl != null && x.HasResourceCapabilities());
 }

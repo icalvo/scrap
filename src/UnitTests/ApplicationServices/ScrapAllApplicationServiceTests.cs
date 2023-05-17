@@ -3,6 +3,7 @@ using Moq;
 using Scrap.Application.Scrap;
 using Scrap.Application.Scrap.All;
 using Scrap.Domain;
+using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 using Scrap.Domain.Sites;
 using Xunit;
@@ -24,12 +25,11 @@ public class ScrapAllApplicationServiceTests
     {
         var job = JobBuilder.Build(ResourceType.DownloadLink);
 
-        var sitesServiceMock = new Mock<ISiteService>();
-        sitesServiceMock.Setup(x => x.GetAllAsync()).Returns(
+        var jobServiceMock = new Mock<IJobService>();
+        var siteRepositoryMock = new Mock<ISiteRepository>();
+        siteRepositoryMock.Setup(x => x.GetScrappableAsync()).Returns(
             new[]
             {
-                new Site("A"),
-                new Site("B", rootUrl: new Uri("http://B.com")),
                 new Site(
                     "C",
                     rootUrl: new Uri("http://C.com"),
@@ -39,14 +39,10 @@ public class ScrapAllApplicationServiceTests
                     "D",
                     rootUrl: new Uri("http://D.com"),
                     resourceXPath: "xp",
-                    resourceRepoArgs: Mock.Of<IResourceRepositoryConfiguration?>()),
-                new Site(
-                    "E",
-                    rootUrl: new Uri("http://E.com"),
                     resourceRepoArgs: Mock.Of<IResourceRepositoryConfiguration?>())
             }.ToAsyncEnumerable());
 
-        sitesServiceMock.Setup(
+        jobServiceMock.Setup(
             x => x.BuildJobAsync(
                 It.Is<Site>(y => y.Name == "C" || y.Name == "D"),
                 null,
@@ -58,9 +54,10 @@ public class ScrapAllApplicationServiceTests
         var singleScrapServiceMock = new Mock<ISingleScrapService>();
 
         var service = new ScrapAllApplicationService(
-            sitesServiceMock.Object,
+            jobServiceMock.Object,
             Mock.Of<ILogger<ScrapAllApplicationService>>(),
-            singleScrapServiceMock.Object);
+            singleScrapServiceMock.Object,
+            siteRepositoryMock.Object);
 
         await service.ScrapAllAsync(Mock.Of<IScrapAllCommand>());
 

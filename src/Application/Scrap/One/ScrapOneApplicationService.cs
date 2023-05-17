@@ -1,21 +1,21 @@
 using Scrap.Common;
-using Scrap.Domain.Sites;
+using Scrap.Domain.Jobs;
 
 namespace Scrap.Application.Scrap.One;
 
 public class ScrapOneApplicationService : IScrapOneApplicationService
 {
-    private readonly ISiteService _sitesService;
+    private readonly IJobService _siteService;
     private readonly ISingleScrapService _singleScrapService;
 
-    public ScrapOneApplicationService(ISiteService sitesService, ISingleScrapService singleScrapService)
+    public ScrapOneApplicationService(IJobService siteService, ISingleScrapService singleScrapService)
     {
-        _sitesService = sitesService;
+        _siteService = siteService;
         _singleScrapService = singleScrapService;
     }
 
     public Task ScrapAsync(IScrapOneCommand oneCommand) =>
-        _sitesService
+        _siteService
             .BuildJobAsync(
                 oneCommand.NameOrRootUrl,
                 oneCommand.FullScan,

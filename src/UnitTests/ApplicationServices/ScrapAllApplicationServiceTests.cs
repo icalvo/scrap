@@ -17,7 +17,7 @@ public class ScrapAllApplicationServiceTests
     {
         var job = JobBuilder.Build(ResourceType.DownloadLink);
 
-        var jobService = Substitute.For<IJobService>();
+        var jobService = Substitute.For<IJobBuilder>();
         var siteRepository = Substitute.For<ISiteRepository>();
         siteRepository.GetScrappableAsync().Returns(
             new[]

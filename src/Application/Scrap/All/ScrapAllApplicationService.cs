@@ -6,18 +6,18 @@ namespace Scrap.Application.Scrap.All;
 
 public class ScrapAllApplicationService : IScrapAllApplicationService
 {
-    private readonly IJobService _siteService;
+    private readonly IJobBuilder _jobBuilder;
     private readonly ISiteRepository _siteRepository;
     private readonly ILogger<ScrapAllApplicationService> _logger;
     private readonly ISingleScrapService _singleScrapService;
 
     public ScrapAllApplicationService(
-        IJobService siteService,
+        IJobBuilder jobBuilder,
         ILogger<ScrapAllApplicationService> logger,
         ISingleScrapService singleScrapService,
         ISiteRepository siteRepository)
     {
-        _siteService = siteService;
+        _jobBuilder = jobBuilder;
         _logger = logger;
         _singleScrapService = singleScrapService;
         _siteRepository = siteRepository;
@@ -37,7 +37,7 @@ public class ScrapAllApplicationService : IScrapAllApplicationService
             string.Join(", ", sites.Select(x => x.Name)));
         foreach (var site in sites)
         {
-            var job = await _siteService.BuildJobAsync(
+            var job = await _jobBuilder.BuildJobAsync(
                 site,
                 null,
                 null,

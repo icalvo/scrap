@@ -11,21 +11,21 @@ public class TraversalApplicationService : ITraversalApplicationService
     private readonly IGraphSearch _graphSearch;
     private readonly ILinkCalculatorFactory _linkCalculatorFactory;
     private readonly IPageRetrieverFactory _pageRetrieverFactory;
-    private readonly IJobService _siteService;
+    private readonly IJobBuilder _jobBuilder;
     public TraversalApplicationService(
         IGraphSearch graphSearch,
         IPageRetrieverFactory pageRetrieverFactory,
         ILinkCalculatorFactory linkCalculatorFactory,
-        IJobService siteService)
+        IJobBuilder jobBuilder)
     {
         _graphSearch = graphSearch;
         _pageRetrieverFactory = pageRetrieverFactory;
         _linkCalculatorFactory = linkCalculatorFactory;
-        _siteService = siteService;
+        _jobBuilder = jobBuilder;
     }
 
     public IAsyncEnumerable<string> TraverseAsync(ITraverseCommand command) =>
-        _siteService.BuildJobAsync(command.NameOrRootUrl, command.FullScan, false, true, true).MapAsync(
+        _jobBuilder.BuildJobAsync(command.NameOrRootUrl, command.FullScan, false, true, true).MapAsync(
                 x => PagesAsync(x.job));
 
     private async IAsyncEnumerable<string> PagesAsync(Job job)

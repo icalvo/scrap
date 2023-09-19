@@ -16,7 +16,7 @@ public class ResourcesApplicationServiceMockBuilder
     }
 
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();
-    public Mock<IJobService> JobServiceMock { get; } = new();
+    public Mock<IJobBuilder> JobServiceMock { get; } = new();
 
     public IResourcesApplicationService Build() =>
         new ResourcesApplicationService(_pageRetrieverFactoryMock.Object, JobServiceMock.Object);

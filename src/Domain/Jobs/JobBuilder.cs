@@ -8,18 +8,18 @@ using SharpX;
 
 namespace Scrap.Domain.Jobs;
 
-public class JobService : IJobService
+public class JobBuilder : IJobBuilder
 {
     private readonly ISiteRepository _sitesRepository;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<JobService> _logger;
+    private readonly ILogger<JobBuilder> _logger;
     private readonly IResourceRepositoryConfigurationValidator _repositoryConfigurationValidator;
 
-    public JobService(
+    public JobBuilder(
         ISiteRepository sitesRepository,
         IConfiguration configuration,
         IResourceRepositoryConfigurationValidator repositoryConfigurationValidator,
-        ILogger<JobService> logger)
+        ILogger<JobBuilder> logger)
     {
         _sitesRepository = sitesRepository;
         _configuration = configuration;

@@ -37,7 +37,7 @@ public class DownloadApplicationServiceMockBuilder
     public Mock<ILogger> LoggerMock { get; } = new();
     public Mock<IResourceRepository> ResourceRepositoryMock { get; } = new();
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();
-    public Mock<IJobService> JobServiceMock { get; } = new();
+    public Mock<IJobBuilder> JobServiceMock { get; } = new();
 
     public IDownloadApplicationService Build() =>
         new DownloadApplicationService(

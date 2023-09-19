@@ -9,16 +9,16 @@ namespace Scrap.Application.Resources;
 public class ResourcesApplicationService : IResourcesApplicationService
 {
     private readonly IPageRetrieverFactory _pageRetrieverFactory;
-    private readonly IJobService _sitesApplicationService;
+    private readonly IJobBuilder _sitesApplicationBuilder;
 
-    public ResourcesApplicationService(IPageRetrieverFactory pageRetrieverFactory, IJobService sitesApplicationService)
+    public ResourcesApplicationService(IPageRetrieverFactory pageRetrieverFactory, IJobBuilder sitesApplicationBuilder)
     {
         _pageRetrieverFactory = pageRetrieverFactory;
-        _sitesApplicationService = sitesApplicationService;
+        _sitesApplicationBuilder = sitesApplicationBuilder;
     }
 
     public IAsyncEnumerable<string> GetResourcesAsync(IResourceCommand oneCommand) =>
-        _sitesApplicationService
+        _sitesApplicationBuilder
             .BuildJobAsync(oneCommand.NameOrRootUrl, oneCommand.FullScan, oneCommand.DownloadAlways, oneCommand.DisableMarkingVisited, oneCommand.DisableResourceWrites)
             .MapAsync(x => GetResourcesAsync(x.job, oneCommand.PageUrl, oneCommand.PageIndex));
 

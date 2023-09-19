@@ -7,7 +7,7 @@ namespace Scrap.Tests.Unit.ApplicationServices;
 
 public static class MockExtensions
 {
-    public static void SetupWithJob(this Mock<IJobService> mock, Job job, string siteName) =>
+    public static void SetupWithJob(this Mock<IJobBuilder> mock, Job job, string siteName) =>
         mock.Setup(
             x => x.BuildJobAsync(
                 It.IsAny<Maybe<NameOrRootUrl>>(),

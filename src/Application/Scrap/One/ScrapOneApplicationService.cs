@@ -5,21 +5,20 @@ namespace Scrap.Application.Scrap.One;
 
 public class ScrapOneApplicationService : IScrapOneApplicationService
 {
-    private readonly IJobService _siteService;
+    private readonly IJobBuilder _jobBuilder;
     private readonly ISingleScrapService _singleScrapService;
 
-    public ScrapOneApplicationService(IJobService siteService, ISingleScrapService singleScrapService)
+    public ScrapOneApplicationService(IJobBuilder jobBuilder, ISingleScrapService singleScrapService)
     {
-        _siteService = siteService;
+        _jobBuilder = jobBuilder;
         _singleScrapService = singleScrapService;
     }
 
     public Task ScrapAsync(IScrapOneCommand oneCommand) =>
-        _siteService
-            .BuildJobAsync(
-                oneCommand.NameOrRootUrl,
-                oneCommand.FullScan,
-                oneCommand.DownloadAlways,
-                oneCommand.DisableMarkingVisited,
-                oneCommand.DisableResourceWrites).DoAsync(x => _singleScrapService.ExecuteJobAsync(x.siteName, x.job));
+        _jobBuilder.BuildJobAsync(
+            oneCommand.NameOrRootUrl,
+            oneCommand.FullScan,
+            oneCommand.DownloadAlways,
+            oneCommand.DisableMarkingVisited,
+            oneCommand.DisableResourceWrites).DoAsync(x => _singleScrapService.ExecuteJobAsync(x.siteName, x.job));
 }

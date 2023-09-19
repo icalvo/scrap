@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Scrap.CommandLine.Commands;
 using Scrap.Infrastructure;
 
@@ -15,4 +16,6 @@ internal static class ServiceCollectionExtensions
             configuration,
             settings is OptionsBase { ConsoleLog: true },
             settings is OptionsBase { Verbose: true });
+
+    public static IServiceCollection Copy(this IServiceCollection sc) => new ServiceCollection { sc };
 }

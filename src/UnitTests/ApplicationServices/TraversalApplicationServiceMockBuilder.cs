@@ -21,7 +21,7 @@ public class TraversalApplicationServiceMockBuilder
     public Mock<IGraphSearch> GraphSearchMock { get; private set; } = new();
     public Mock<ILinkCalculator> LinkCalculatorMock { get; } = new();
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();
-    public Mock<IJobService> JobServiceMock { get; } = new();
+    public Mock<IJobBuilder> JobServiceMock { get; } = new();
 
     public ITraversalApplicationService Build() =>
         new TraversalApplicationService(

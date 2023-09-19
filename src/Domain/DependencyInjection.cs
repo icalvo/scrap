@@ -10,7 +10,7 @@ public static class DependencyInjection
     {
         container.AddSingleton<IGraphSearch, DepthFirstGraphSearch>();
 
-        container.AddSingleton<IJobService, JobService>();
+        container.AddSingleton<IJobBuilder, JobBuilder>();
         container.AddTransient<IScrapDownloadsService, ScrapDownloadsService>();
         container.AddTransient<IScrapTextService, ScrapTextService>();
         

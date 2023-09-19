@@ -3,7 +3,7 @@ using SharpX;
 
 namespace Scrap.Domain.Jobs;
 
-public interface IJobService
+public interface IJobBuilder
 {
     Task<Maybe<(Job job, string siteName)>> BuildJobAsync(
         Maybe<NameOrRootUrl> argNameOrRootUrl,

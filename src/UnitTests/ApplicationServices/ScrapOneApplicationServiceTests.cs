@@ -22,7 +22,7 @@ public class ScrapOneApplicationServiceTests
     {
         var job = JobBuilder.Build(ResourceType.DownloadLink);
 
-        var jobServiceMock = new Mock<IJobService>();
+        var jobServiceMock = new Mock<IJobBuilder>();
         jobServiceMock.SetupWithJob(job, "asdf");
         var singleScrapServiceMock = new Mock<ISingleScrapService>();
         var service = new ScrapOneApplicationService(jobServiceMock.Object, singleScrapServiceMock.Object);

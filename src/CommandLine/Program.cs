@@ -42,7 +42,8 @@ await parserResult.WithNotParsed(errors => DisplayHelp(parserResult)).WithParsed
                 Debugger.Launch();
             }
 
-            var commandSetup = commandSetups.First(x => options.GetType() == x.OptionsType);
+            var optionsType = options.GetType();
+            var commandSetup = commandSetups.First(commandSetup => optionsType == commandSetup.OptionsType);
             await commandSetup.ExecuteAsync(options);
         }
         catch (Exception ex)

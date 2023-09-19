@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Scrap.CommandLine.Commands;
 
 namespace Scrap.CommandLine;
@@ -9,12 +8,12 @@ internal class CommandSetup<TCommand, TOptions> : ICommandSetup where TCommand :
     where TOptions : OptionsBase
 {
     private readonly IConfiguration _cfg;
-    private readonly IServiceCollection _sc;
+    private readonly IServiceCollection _baseServiceCollection;
 
-    public CommandSetup(IConfiguration cfg, IServiceCollection sc)
+    public CommandSetup(IConfiguration cfg, IServiceCollection baseServiceCollection)
     {
         _cfg = cfg;
-        _sc = sc;
+        _baseServiceCollection = baseServiceCollection;
     }
 
     public Type OptionsType => typeof(TOptions);
@@ -22,10 +21,10 @@ internal class CommandSetup<TCommand, TOptions> : ICommandSetup where TCommand :
     public async Task ExecuteAsync(object options)
     {
         var typedOptions = (TOptions)options;
-        var sc = new ServiceCollection { _sc };
-        sc.AddSingleton<TCommand>();
-        sc.AddLogging(_cfg, options);
-        await using var sp = sc.BuildServiceProvider();
+        var commandServiceCollection = _baseServiceCollection.Copy();
+        commandServiceCollection.AddSingleton<TCommand>();
+        commandServiceCollection.AddLogging(_cfg, options);
+        await using var sp = commandServiceCollection.BuildServiceProvider();
         if (options is OptionsBase { CheckGlobalConfig: true })
         {
             var checker = sp.GetRequiredService<IGlobalConfigurationChecker>();

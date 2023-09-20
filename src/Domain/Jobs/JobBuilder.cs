@@ -41,9 +41,7 @@ public class JobBuilder : IJobBuilder
         var argRootUrl = argNameOrRootUrl.Map(nr => nr.MatchRootUrl(x => x.AbsoluteUri), Maybe.Nothing<string>)
             .FromJust();
 
-        return GetSiteAsync(
-            argNameOrRootUrl,
-            NameOrRootUrl.Create(envName, TryUrl(envRootUrl))).MapAsync(
+        return GetSiteAsync(argNameOrRootUrl, NameOrRootUrl.Create(envName, envRootUrl.TryBuildUri())).MapAsync(
             site =>
             {
                 _logger.LogInformation("Site: {Site}", site.Name);
@@ -60,8 +58,6 @@ public class JobBuilder : IJobBuilder
             });
     }
 
-    private static Uri? TryUrl(string? url) => url == null ? null : new Uri(url);
-
     public Job BuildJob(
         Site site,
         string? argRootUrl,
@@ -71,7 +67,7 @@ public class JobBuilder : IJobBuilder
         bool? disableMarkingVisited = null,
         bool? disableResourceWrites = null) =>
         new(
-            TryUrl(argRootUrl) ?? TryUrl(argRootUrl) ??
+            argRootUrl.TryBuildUri() ?? argRootUrl.TryBuildUri() ??
             site.RootUrl ?? throw new ArgumentException("No root URL provided", nameof(site)),
             site.ResourceType,
             AsyncLazy.Create(

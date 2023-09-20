@@ -1,4 +1,5 @@
-﻿using Scrap.Domain;
+﻿using Scrap.Common;
+using Scrap.Domain;
 using Scrap.Domain.Sites;
 
 namespace Scrap.Application;
@@ -9,14 +10,16 @@ internal static class SiteExtensions
         new(
             dto.Name,
             dto.ResourceType,
-            dto.RootUrl == null ? null : new Uri(dto.RootUrl),
-            dto.AdjacencyXPath == null ? null : new XPath(dto.AdjacencyXPath),
-            dto.ResourceXPath == null ? null : new XPath(dto.ResourceXPath),
+            dto.RootUrl.TryBuildUri(),
+            dto.AdjacencyXPath.TryBuildXPath(),
+            dto.ResourceXPath.TryBuildXPath(),
             dto.ResourceRepository,
             dto.HttpRequestRetries,
             dto.HttpRequestDelayBetweenRetries,
             dto.UrlPattern);
 
+    private static XPath? TryBuildXPath(this string? xpath) => xpath == null ? null : new XPath(xpath);
+    
     public static SiteDto ToDto(this Site site) =>
         new(
             site.Name,

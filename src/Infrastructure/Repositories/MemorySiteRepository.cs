@@ -54,7 +54,7 @@ public class MemorySiteRepository : ISiteRepository
                     x => new Site(
                         x.Name,
                         x.ResourceType,
-                        x.RootUrl == null ? null : new Uri(x.RootUrl),
+                        x.RootUrl.TryBuildUri(),
                         x.AdjacencyXPath ?? (XPath?)null,
                         x.ResourceXPath ?? (XPath?)null,
                         x.ResourceRepository,

@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dropbox support (for resource download)
 - Postgresql support (for visited pages database)
+- Now parsing command line with a fork of [CommandLineParser](https://github.com/icalvo/commandline)
+- UNIX Syntax (-f, --fullScan)
+- Leaner syntax with positional arguments for site name/root URL
 
 ## Changed
 

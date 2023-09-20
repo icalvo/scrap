@@ -30,7 +30,7 @@ public class ResourceRepositoryFactory : IResourceRepositoryFactory
     public async Task<IResourceRepository> BuildAsync(Job job)
     {
         _logger.LogInformation("Resource File System: {FileSystemType}", _fileSystemFactory.FileSystemType);
-        return job.ResourceRepoArgs switch
+        return await job.ResourceRepoArgs.ValueAsync() switch
         {
             FileSystemResourceRepositoryConfiguration cfg => (IResourceRepository)await FileSystemResourceRepository.BuildAsync(
                 await _destinationProviderFactory.BuildAsync(cfg),

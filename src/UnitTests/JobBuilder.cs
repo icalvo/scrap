@@ -1,4 +1,5 @@
 ﻿using Moq;
+using Scrap.Common;
 using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
@@ -18,6 +19,6 @@ public static class JobBuilder
             new Uri("https://example.com"),
             resourceType,
             resourceXPath: ResourceXPath,
-            resourceRepository: resourceRepoConfig);
+            resourceRepository: AsyncLazy.Create(resourceRepoConfig));
     }
 }

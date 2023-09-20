@@ -34,7 +34,7 @@ public class ScrapAllApplicationServiceTests
                     resourceRepoArgs: Substitute.For<IResourceRepositoryConfiguration?>())
             }.ToAsyncEnumerable());
 
-        jobService.BuildJobAsync(
+        jobService.BuildJob(
             Arg.Is<Site>(y => y.Name == "C" || y.Name == "D"),
                 null,
                 null,

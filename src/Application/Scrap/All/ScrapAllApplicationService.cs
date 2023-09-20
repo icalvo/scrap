@@ -37,7 +37,7 @@ public class ScrapAllApplicationService : IScrapAllApplicationService
             string.Join(", ", sites.Select(x => x.Name)));
         foreach (var site in sites)
         {
-            var job = await _jobBuilder.BuildJobAsync(
+            var job = _jobBuilder.BuildJob(
                 site,
                 null,
                 null,

@@ -24,6 +24,8 @@ public sealed class AsyncLazy<T>
         _value = instance;
     }
 
+    public bool IsEvaluated => _value != null;
+
     public async Task<T> ValueAsync()
     {
         if (_value != null)
@@ -36,4 +38,6 @@ public sealed class AsyncLazy<T>
 
         return _value;
     }
+
+    public static implicit operator AsyncLazy<T>(T instance) => new(instance);
 }

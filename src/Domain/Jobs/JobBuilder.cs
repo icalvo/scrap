@@ -40,14 +40,15 @@ public class JobBuilder : IJobBuilder
 
         var argRootUrl = argNameOrRootUrl.Map(nr => nr.MatchRootUrl(x => x.AbsoluteUri), Maybe.Nothing<string>)
             .FromJust();
+
         return GetSiteAsync(
             argNameOrRootUrl,
-            NameOrRootUrl.Create(envName, envRootUrl == null ? null : new Uri(envRootUrl))).MapAsync(
-            async site =>
+            NameOrRootUrl.Create(envName, TryUrl(envRootUrl))).MapAsync(
+            site =>
             {
                 _logger.LogInformation("Site: {Site}", site.Name);
 
-                var jobDto = await BuildJobAsync(
+                var jobDto = BuildJob(
                     site,
                     argRootUrl,
                     envRootUrl,
@@ -55,30 +56,38 @@ public class JobBuilder : IJobBuilder
                     downloadAlways,
                     disableMarkingVisited,
                     disableResourceWrites);
-                return (jobDto, site.Name);
+                return Task.FromResult((jobDto, site.Name));
             });
     }
 
+    private static Uri? TryUrl(string? url) => url == null ? null : new Uri(url);
 
-    public async Task<Job> BuildJobAsync(
+    public Job BuildJob(
         Site site,
         string? argRootUrl,
         string? envRootUrl = null,
         bool? fullScan = null,
         bool? downloadAlways = null,
         bool? disableMarkingVisited = null,
-        bool? disableResourceWrites = null)
-    {
-        await _repositoryConfigurationValidator.ValidateAsync(site.ResourceRepoArgs);
-        return new Job(
-            site,
-            (argRootUrl == null ? null : new Uri(argRootUrl)) ?? (envRootUrl == null ? null : new Uri(envRootUrl)),
+        bool? disableResourceWrites = null) =>
+        new(
+            TryUrl(argRootUrl) ?? TryUrl(argRootUrl) ??
+            site.RootUrl ?? throw new ArgumentException("No root URL provided", nameof(site)),
+            site.ResourceType,
+            AsyncLazy.Create(
+                async () =>
+                {
+                    await _repositoryConfigurationValidator.ValidateAsync(site.ResourceRepoArgs);
+                    return site.ResourceRepoArgs ?? throw new ArgumentNullException();
+                }),
+            site.AdjacencyXPath,
+            site.ResourceXPath,
+            site.HttpRequestRetries,
+            site.HttpRequestDelayBetweenRetries,
             fullScan,
-            null,
             downloadAlways,
             disableMarkingVisited,
             disableResourceWrites);
-    }
 
     private Task<Maybe<Site>> GetSiteAsync(Maybe<NameOrRootUrl> argNameOrRootUrl, Maybe<NameOrRootUrl> envNameOrRootUrl)
     {

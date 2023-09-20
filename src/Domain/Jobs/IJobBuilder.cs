@@ -12,7 +12,7 @@ public interface IJobBuilder
         bool? disableMarkingVisited,
         bool? disableResourceWrites);
 
-    Task<Job> BuildJobAsync(
+    Job BuildJob(
         Site site,
         string? argRootUrl = null,
         string? envRootUrl = null,

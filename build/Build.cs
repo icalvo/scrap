@@ -191,8 +191,12 @@ class Build : NukeBuild
             
             var lines = changelog.ReadAllLines().ToList();
             
-            var versionTitle = $"## [{MainVersion}] {DateTime.UtcNow:YYYY-MM-dd}";
-            var versionTitleLineIndex = lines.IndexOf(versionTitle);
+            var versionTitlePrefix = $"## [{MainVersion}]";
+            var versionTitleLineIndex = lines.IndexOf(versionTitlePrefix);
+            Assert.True(
+                versionTitleLineIndex != -1,
+                $"There is no entry for version {Version} in {ChangelogFileName}. Add a paragraph with the title '{versionTitlePrefix}'");
+            var versionTitle = $"{versionTitlePrefix} {DateTime.UtcNow:YYYY-MM-dd}";
             Log.Information("New version title: {NewVersionTitle}", versionTitle);
             Log.Information("Current version title: {CurrentVersionTitle}", lines[versionTitleLineIndex]);
             if (lines[versionTitleLineIndex] == versionTitle) return;

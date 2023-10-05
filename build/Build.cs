@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Nuke.Common;
 using Nuke.Common.CI;
@@ -41,7 +40,8 @@ class Build : NukeBuild
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     [CI] readonly GitHubActions GitHubActions;
-    [GitRepository] readonly GitRepository GitRepository;
+
+    [PathVariable] readonly Tool Git;
 
     [Parameter] [Secret] readonly string NugetToken;
 

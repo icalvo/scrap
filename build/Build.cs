@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using Nuke.Common;
 using Nuke.Common.CI;
@@ -7,12 +6,14 @@ using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
+using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Utilities.Collections;
 using Octokit;
 using Serilog;
-using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
+
+// ReSharper disable AllUnderscoreLocalParameterName
 
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions(
@@ -22,7 +23,8 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     Submodules = GitHubActionsSubmodules.True,
     OnWorkflowDispatchRequiredInputs = new[] { nameof(Version) },
     InvokedTargets = new[] { nameof(PublishNuGet) },
-    ImportSecrets = new[] { "NUGET_TOKEN", "GITHUB_TOKEN" })]
+    ImportSecrets = new[] { "NUGET_TOKEN", "GITHUB_TOKEN" },
+    WritePermissions = new [] { GitHubActionsPermissions.Contents, GitHubActionsPermissions.PullRequests })]
 [GitHubActions(
     nameof(PullRequest),
     GitHubActionsImage.UbuntuLatest,
@@ -30,8 +32,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     Submodules = GitHubActionsSubmodules.True,
     OnPullRequestBranches = new[] { "main" },
     InvokedTargets = new[] { nameof(PullRequest) },
-    EnableGitHubToken = true,
-    ImportSecrets = new[] { nameof(NugetToken) })]
+    EnableGitHubToken = true)]
 class Build : NukeBuild
 {
     const string ChangelogFileName = "CHANGELOG.md";
@@ -40,8 +41,9 @@ class Build : NukeBuild
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     [CI] readonly GitHubActions GitHubActions;
-    [GitRepository] readonly GitRepository GitRepository;
 
+    [PathVariable] readonly Tool Git;
+    [GitRepository] readonly GitRepository GitRepository;
     [Parameter] [Secret] readonly string NugetToken;
 
     [Solution(SuppressBuildProjectCheck = true)] readonly Solution Solution;
@@ -73,7 +75,7 @@ class Build : NukeBuild
         .Before(Restore)
         .Executes(() =>
         {
-            SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
+            SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(x => x.DeleteDirectory());
         });
 
     Target Restore => _ => _
@@ -144,7 +146,7 @@ class Build : NukeBuild
         .Produces(PackageDirectory / "*.nupkg")
         .Executes(() =>
         {
-            EnsureCleanDirectory(PackageDirectory);
+            PackageDirectory.CreateOrCleanDirectory();
             DotNetPack(s => s
                 .SetProject(TargetProjectDirectory)
                 .SetConfiguration(Configuration)
@@ -153,20 +155,9 @@ class Build : NukeBuild
                 .SetOutputDirectory(PackageDirectory));
         });
 
-    Target ChangelogVerification => _ => _
-        .Description("👀 Changelog Verification")
-        .Requires(() => Version)
-        .Executes(() =>
-        {
-            Assert.FileExists(RootDirectory / ChangelogFileName);
-            Assert.True(
-                File.ReadLines(RootDirectory / ChangelogFileName).Any(line => line.StartsWith($"## [{MainVersion}")),
-                $"There is no entry for version {Version} in {ChangelogFileName}");
-        });
-
     public Target Push => _ => _
         .Description("📢 NuGet Push")
-        .DependsOn(Pack, UnitTests, IntegrationTests, SystemTests, ChangelogVerification)
+        .DependsOn(Pack, UnitTests, IntegrationTests, SystemTests, BumpChangelogVersionDate)
         .Consumes(Pack)
         .Triggers(TagCommit)
         .Executes(() =>
@@ -181,33 +172,38 @@ class Build : NukeBuild
         .Description("🏷 Tag commit and push")
         .Requires(() => GitHubActions)
         .Requires(() => Version)
-        .Executes(async () =>
+        .Executes(() =>
         {
-            var tokenAuth = new Credentials(GitHubActions.Token);
-            var github = new GitHubClient(new ProductHeaderValue("build-script"))
-            {
-                Credentials = tokenAuth
-            };
-            var split = GitHubActions.Repository.Split("/");
-            var owner = split[0];
-            var name = split[1];
-            GitTag tag = await github.Git.Tag.Create(
-                owner,
-                name,
-                new NewTag
-                {
-                    Tag = $"v{Version}",
-                    Object = GitHubActions.Sha,
-                    Type = TaggedType.Commit,
-                    Tagger = new Committer(GitHubActions.Actor, $"{GitHubActions.Actor}@users.noreply.github.com",
-                        DateTimeOffset.UtcNow),
-                    Message = "Package published in NuGet.org"
-                });
+            Git($"config --global user.email \"{GitHubActions.Actor}@users.noreply.github.com\"");
+            Git($"config --global user.name \"{GitHubActions.Actor}\"");
 
-            await github.Git.Reference.Create(
-                owner,
-                name,
-                new NewReference($"refs/tags/v{Version}", tag.Object.Sha));
+            Git($"tag v{Version} -a -m \"Package published in NuGet.org\"");
+            Git($"push --tags");
+        });
+
+    Target BumpChangelogVersionDate => _ => _
+        .Description("👀 Verify CHANGELOG and bump version date")
+        .Requires(() => GitHubActions)
+        .Requires(() => Version)
+        .Executes(() =>
+        {
+            AbsolutePath changelog = RootDirectory / ChangelogFileName;
+            Assert.FileExists(changelog);
+            
+            var lines = changelog.ReadAllLines().ToList();
+            
+            var versionTitle = $"## [{MainVersion}] {DateTime.UtcNow:YYYY-MM-dd}";
+            var versionTitleLineIndex = lines.IndexOf(versionTitle);
+            Log.Information("New version title: {NewVersionTitle}", versionTitle);
+            Log.Information("Current version title: {CurrentVersionTitle}", lines[versionTitleLineIndex]);
+            if (lines[versionTitleLineIndex] == versionTitle) return;
+            lines[versionTitleLineIndex] = versionTitle;
+            changelog.WriteAllLines(lines);
+            Git($"config --global user.email \"{GitHubActions.Actor}@users.noreply.github.com\"");
+            Git($"config --global user.name \"{GitHubActions.Actor}\"");
+
+            Git($"commit -am \"Bump CHANGELOG date\"");
+            Git($"push");
         });
 
     Target PullRequest => _ => _

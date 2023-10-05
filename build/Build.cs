@@ -1,9 +1,9 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Nuke.Common;
 using Nuke.Common.CI;
 using Nuke.Common.CI.GitHubActions;
-using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
@@ -41,9 +41,8 @@ class Build : NukeBuild
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     [CI] readonly GitHubActions GitHubActions;
-
-    [PathVariable] readonly Tool Git;
     [GitRepository] readonly GitRepository GitRepository;
+
     [Parameter] [Secret] readonly string NugetToken;
 
     [Solution(SuppressBuildProjectCheck = true)] readonly Solution Solution;
@@ -75,7 +74,7 @@ class Build : NukeBuild
         .Before(Restore)
         .Executes(() =>
         {
-            SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(x => x.DeleteDirectory());
+            SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(dir => dir.DeleteDirectory());
         });
 
     Target Restore => _ => _

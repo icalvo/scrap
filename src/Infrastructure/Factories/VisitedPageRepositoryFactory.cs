@@ -22,9 +22,10 @@ public class VisitedPageRepositoryFactory : IVisitedPageRepositoryFactory
         _loggerFactory = loggerFactory;
     }
 
-    public IVisitedPageRepository Build(Job job) => Build(_options, job.DisableMarkingVisited);
+    public IVisitedPageRepository Build(IVisitedPageRepositoryOptions options) =>
+        Build(_options, options.DisableMarkingVisited);
 
-    public IVisitedPageRepository Build(DatabaseInfo param) => Build(param, false);
+    public IVisitedPageRepository Build(DatabaseInfo options) => Build(options, false);
 
     public IVisitedPageRepository Build() => Build(_options, false);
 

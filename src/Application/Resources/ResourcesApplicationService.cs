@@ -22,13 +22,8 @@ public class ResourcesApplicationService : IResourcesApplicationService
             .BuildJobAsync(oneCommand.NameOrRootUrl, oneCommand.FullScan, oneCommand.DownloadAlways, oneCommand.DisableMarkingVisited, oneCommand.DisableResourceWrites)
             .MapAsync(x => GetResourcesAsync(x.job, oneCommand.PageUrl, oneCommand.PageIndex));
 
-    private async IAsyncEnumerable<string> GetResourcesAsync(Job job, Uri pageUrl, int pageIndex)
+    private async IAsyncEnumerable<string> GetResourcesAsync(IResourcesJob job, Uri pageUrl, int pageIndex)
     {
-        if (job.ResourceType != ResourceType.DownloadLink)
-        {
-            throw new ArgumentException("Job resource type must be DownloadLink", nameof(job));
-        }
-
         job.ValidateResourceCapabilities();
         var pageRetriever = _pageRetrieverFactory.Build(job);
         var page = await pageRetriever.GetPageAsync(pageUrl);

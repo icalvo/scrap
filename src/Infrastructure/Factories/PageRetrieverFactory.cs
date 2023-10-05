@@ -20,11 +20,11 @@ public class PageRetrieverFactory : IPageRetrieverFactory
         _loggerFactory = loggerFactory;
     }
 
-    public IPageRetriever Build(Job job) =>
+    public IPageRetriever Build(IPageRetrieverOptions options) =>
         new HttpPageRetriever(
-            _downloadStreamProviderFactory.Build(job),
-            _asyncPolicyFactory.Build(job, AsyncPolicyConfiguration.WithCache),
-            _asyncPolicyFactory.Build(job, AsyncPolicyConfiguration.WithoutCache),
+            _downloadStreamProviderFactory.Build(options),
+            _asyncPolicyFactory.Build(options, AsyncPolicyConfiguration.WithCache),
+            _asyncPolicyFactory.Build(options, AsyncPolicyConfiguration.WithoutCache),
             _loggerFactory.CreateLogger<HttpPageRetriever>(),
             _loggerFactory);
 }

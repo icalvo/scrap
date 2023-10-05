@@ -38,7 +38,7 @@ public class ScrapDownloadsService : IScrapDownloadsService
         _downloadStreamProviderFactory = downloadStreamProviderFactory;
     }
 
-    public async Task DownloadLinksAsync(Job job)
+    public async Task DownloadLinksAsync(ISingleScrapJob job)
     {
         var resourceRepository = await _resourceRepositoryFactory.BuildAsync(job);
         var rootUri = job.RootUrl;

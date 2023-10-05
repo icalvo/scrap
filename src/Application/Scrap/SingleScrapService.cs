@@ -20,7 +20,7 @@ public class SingleScrapService : ISingleScrapService
         _logger = logger;
     }
 
-    public async Task ExecuteJobAsync(string siteName, Job job)
+    public async Task ExecuteJobAsync(string siteName, ISingleScrapJob job)
     {
         _logger.LogInformation("Starting {Site}...", siteName);
         await (job.ResourceType switch

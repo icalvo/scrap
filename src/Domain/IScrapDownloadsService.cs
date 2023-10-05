@@ -4,5 +4,5 @@ namespace Scrap.Domain;
 
 public interface IScrapDownloadsService
 {
-    Task DownloadLinksAsync(Job job);
+    Task DownloadLinksAsync(ISingleScrapJob job);
 }

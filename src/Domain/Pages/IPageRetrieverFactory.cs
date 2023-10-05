@@ -1,6 +1,8 @@
-﻿using Scrap.Common;
-using Scrap.Domain.Jobs;
+﻿using Scrap.Domain.Jobs;
 
 namespace Scrap.Domain.Pages;
 
-public interface IPageRetrieverFactory : IFactory<Job, IPageRetriever> {}
+public interface IPageRetrieverFactory
+{
+    public IPageRetriever Build(IPageRetrieverOptions options);
+}

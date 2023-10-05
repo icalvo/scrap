@@ -21,9 +21,10 @@ public class AsyncPolicyFactory : IAsyncPolicyFactory
         _loggerFactory = loggerFactory;
     }
 
-    public IAsyncPolicy Build(Job job, AsyncPolicyConfiguration config) => Policy.WrapAsync(Policies(job, config).ToArray());
+    public IAsyncPolicy Build(IAsyncPolicyOptions options, AsyncPolicyConfiguration config) =>
+        Policy.WrapAsync(Policies(options, config).ToArray());
 
-    private IEnumerable<IAsyncPolicy> Policies(Job job, AsyncPolicyConfiguration config)
+    private IEnumerable<IAsyncPolicy> Policies(IAsyncPolicyOptions job, AsyncPolicyConfiguration config)
     {
         if (config == AsyncPolicyConfiguration.WithCache)
         {

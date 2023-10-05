@@ -1,6 +1,8 @@
-﻿using Scrap.Common;
-using Scrap.Domain.Jobs;
+﻿using Scrap.Domain.Jobs;
 
 namespace Scrap.Domain.Resources;
 
-public interface IResourceRepositoryFactory : IAsyncFactory<Job, IResourceRepository> { }
+public interface IResourceRepositoryFactory
+{
+    public Task<IResourceRepository> BuildAsync(IResourceRepositoryOptions options);
+}

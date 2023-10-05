@@ -6,6 +6,7 @@ using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 using Scrap.Domain.Sites;
+using SharpX;
 using Xunit;
 
 namespace Scrap.Tests.Unit.ApplicationServices;
@@ -40,8 +41,7 @@ public class ScrapAllApplicationServiceTests
                 null,
                 false,
                 false,
-                false,
-            false).Returns(job);
+            false).Returns(job.ToJust());
         var singleScrapService = Substitute.For<ISingleScrapService>();
 
         var service = new ScrapAllApplicationService(

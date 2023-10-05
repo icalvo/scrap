@@ -1,8 +1,7 @@
-﻿using Scrap.Common;
+﻿namespace Scrap.Domain.Resources.FileSystem;
 
-namespace Scrap.Domain.Resources.FileSystem;
-
-public interface IFileSystemFactory : IAsyncFactory<bool?, IFileSystem>
+public interface IFileSystemFactory
 {
+    public Task<IFileSystem> BuildAsync(bool? readOnly = false);
     string FileSystemType { get; }
 }

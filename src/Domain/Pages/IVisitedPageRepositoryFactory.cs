@@ -1,9 +1,10 @@
-﻿using Scrap.Common;
-using Scrap.Domain.Jobs;
+﻿using Scrap.Domain.Jobs;
 
 namespace Scrap.Domain.Pages;
 
 public interface IVisitedPageRepositoryFactory
-    : IOptionalParameterFactory<Job, IVisitedPageRepository>, IFactory<DatabaseInfo, IVisitedPageRepository>
 {
+    public IVisitedPageRepository Build();
+    public IVisitedPageRepository Build(IVisitedPageRepositoryOptions options);
+    public IVisitedPageRepository Build(DatabaseInfo options);
 }

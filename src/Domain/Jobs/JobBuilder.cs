@@ -45,30 +45,91 @@ public class JobBuilder : IJobBuilder
             site =>
             {
                 _logger.LogInformation("Site: {Site}", site.Name);
-
-                var jobDto = BuildJob(
+                return site.ToTaskResult();
+            }).BindAsync(
+            site => BuildJob(
                     site,
                     argRootUrl,
-                    envRootUrl,
                     fullScan,
                     downloadAlways,
                     disableMarkingVisited,
-                    disableResourceWrites);
-                return Task.FromResult((jobDto, site.Name));
-            });
+                    disableResourceWrites).Map(j => (jobDto: j, site.Name)).ToTaskResult());
     }
 
-    public Job BuildJob(
+    public Task<Maybe<(IDownloadJob, string)>> BuildDownloadJob(
+        Maybe<NameOrRootUrl> argNameOrRootUrl,
+        bool downloadAlways,
+        bool disableResourceWrites)
+    {
+        Debug.Assert(_configuration != null, nameof(_configuration) + " != null");
+        var envName = _configuration.SiteName();
+        var envRootUrl = _configuration.SiteRootUrl();
+
+        var argRootUrl = argNameOrRootUrl.Map(nr => nr.MatchRootUrl(x => x.AbsoluteUri), Maybe.Nothing<string>)
+            .FromJust();
+
+        return GetSiteAsync(argNameOrRootUrl, NameOrRootUrl.Create(envName, envRootUrl.TryBuildUri())).MapAsync(
+            site =>
+            {
+                _logger.LogInformation("Site: {Site}", site.Name);
+                return site.ToTaskResult();
+            }).BindAsync(
+            site => BuildDownloadJob(site, argRootUrl, downloadAlways, disableResourceWrites)
+                .Map(j => (job: j, site.Name)).ToTaskResult());
+    }
+
+    public Maybe<IDownloadJob> BuildDownloadJob(
         Site site,
         string? argRootUrl,
-        string? envRootUrl = null,
+        bool downloadAlways,
+        bool disableResourceWrites)
+    {
+        var rootUrl = argRootUrl.TryBuildUri() ?? argRootUrl.TryBuildUri() ?? site.RootUrl;
+        if (rootUrl == null)
+        {
+            return Maybe.Nothing<IDownloadJob>();
+        }
+
+        if (site.HttpRequestRetries == null)
+        {
+            return Maybe.Nothing<IDownloadJob>();
+        }
+
+        if (site.HttpRequestDelayBetweenRetries == null)
+        {
+            return Maybe.Nothing<IDownloadJob>();
+        }
+
+        var job = new DownloadJob(
+            AsyncLazy.Create(
+                async () =>
+                {
+                    await _repositoryConfigurationValidator.ValidateAsync(site.ResourceRepoArgs);
+                    return site.ResourceRepoArgs ?? throw new ArgumentNullException();
+                }),
+            disableResourceWrites,
+            site.HttpRequestRetries.Value,
+            site.HttpRequestDelayBetweenRetries.Value,
+            downloadAlways);
+        return Maybe.Just<IDownloadJob>(job);
+    }
+
+    public Maybe<Job> BuildJob(
+        Site site,
+        string? argRootUrl,
         bool? fullScan = null,
         bool? downloadAlways = null,
         bool? disableMarkingVisited = null,
-        bool? disableResourceWrites = null) =>
-        new(
-            argRootUrl.TryBuildUri() ?? argRootUrl.TryBuildUri() ??
-            site.RootUrl ?? throw new ArgumentException("No root URL provided", nameof(site)),
+        bool? disableResourceWrites = null)
+    {
+        var rootUrl = argRootUrl.TryBuildUri() ?? argRootUrl.TryBuildUri() ?? site.RootUrl;
+        if (rootUrl == null)
+        {
+            return Maybe.Nothing<Job>();
+        }
+
+        var job = new Job(
+            rootUrl,
             site.ResourceType,
             AsyncLazy.Create(
                 async () =>
@@ -84,6 +145,8 @@ public class JobBuilder : IJobBuilder
             downloadAlways,
             disableMarkingVisited,
             disableResourceWrites);
+        return Maybe.Just(job);
+    }
 
     private Task<Maybe<Site>> GetSiteAsync(Maybe<NameOrRootUrl> argNameOrRootUrl, Maybe<NameOrRootUrl> envNameOrRootUrl)
     {

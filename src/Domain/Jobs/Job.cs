@@ -4,7 +4,79 @@ using Scrap.Domain.Resources;
 
 namespace Scrap.Domain.Jobs;
 
-public class Job
+public interface IResourceRepositoryOptions
+{
+    AsyncLazy<IResourceRepositoryConfiguration> ResourceRepoArgs { get; }
+    bool DisableResourceWrites { get; }
+}
+
+public interface IDownloadStreamProviderOptions : IAsyncPolicyOptions
+{
+}
+
+public interface IAsyncPolicyOptions
+{
+    public int HttpRequestRetries { get; }
+    public TimeSpan HttpRequestDelayBetweenRetries { get; }
+}
+
+public interface IPageRetrieverOptions : IDownloadStreamProviderOptions
+{
+}
+
+public interface IVisitedPageRepositoryOptions
+{
+    public bool DisableMarkingVisited { get; }
+}
+
+public interface ILinkCalculatorOptions : IVisitedPageRepositoryOptions
+{
+    public bool FullScan { get; }
+}
+
+public interface IDownloadJob : IResourceRepositoryOptions, IPageRetrieverOptions
+{
+    public bool DownloadAlways { get; }
+}
+
+public class DownloadJob : IDownloadJob
+{
+    public DownloadJob(
+        AsyncLazy<IResourceRepositoryConfiguration> resourceRepoArgs,
+        bool disableResourceWrites,
+        int httpRequestRetries,
+        TimeSpan httpRequestDelayBetweenRetries,
+        bool downloadAlways)
+    {
+        ResourceRepoArgs = resourceRepoArgs;
+        DisableResourceWrites = disableResourceWrites;
+        HttpRequestRetries = httpRequestRetries;
+        HttpRequestDelayBetweenRetries = httpRequestDelayBetweenRetries;
+        DownloadAlways = downloadAlways;
+    }
+
+    public AsyncLazy<IResourceRepositoryConfiguration> ResourceRepoArgs { get; }
+    public bool DisableResourceWrites { get; }
+    public int HttpRequestRetries { get; }
+    public TimeSpan HttpRequestDelayBetweenRetries { get; }
+    public bool DownloadAlways { get; }
+}
+
+public interface IResourcesJob : IPageRetrieverOptions
+{
+    public XPath ResourceXPath { get; }
+    void ValidateResourceCapabilities();
+}
+
+public interface ISingleScrapJob : IResourceRepositoryOptions, ILinkCalculatorOptions, IResourcesJob
+{
+    public ResourceType? ResourceType { get; }
+    public Uri RootUrl { get; }
+    public XPath? AdjacencyXPath { get; }
+    public bool DownloadAlways { get; }
+}
+
+public class Job : IDownloadJob, ISingleScrapJob
 {
     public const int DefaultHttpRequestRetries = 5;
     public static readonly TimeSpan DefaultHttpRequestDelayBetweenRetries = TimeSpan.FromSeconds(1);
@@ -26,7 +98,7 @@ public class Job
         ResourceType = resourceType;
         DisableMarkingVisited = disableMarkingVisited ?? false;
         DisableResourceWrites = disableResourceWrites ?? false;
-        ResourceXPath = resourceXPath;
+        _resourceXPath = resourceXPath;
         ResourceRepoArgs = resourceRepository;
         RootUrl = rootUrl;
         HttpRequestRetries = httpRequestRetries ?? DefaultHttpRequestRetries;
@@ -37,7 +109,9 @@ public class Job
 
     public Uri RootUrl { get; }
     public XPath? AdjacencyXPath { get; }
-    public XPath? ResourceXPath { get; }
+    private XPath? _resourceXPath;
+
+    public XPath ResourceXPath => _resourceXPath ?? throw new InvalidOperationException("The job has no Resource XPath");
     public AsyncLazy<IResourceRepositoryConfiguration> ResourceRepoArgs { get; }
     public int HttpRequestRetries { get; }
     public TimeSpan HttpRequestDelayBetweenRetries { get; }
@@ -47,10 +121,10 @@ public class Job
     public bool DownloadAlways { get; }
     public ResourceType? ResourceType { get; }
 
-    [MemberNotNull(nameof(ResourceXPath), nameof(ResourceRepoArgs))]
+    [MemberNotNull(nameof(_resourceXPath), nameof(ResourceRepoArgs))]
     public void ValidateResourceCapabilities()
     {
-        if (ResourceXPath == null)
+        if (_resourceXPath == null)
         {
             throw new InvalidOperationException("The job has no Resource XPath");
         }

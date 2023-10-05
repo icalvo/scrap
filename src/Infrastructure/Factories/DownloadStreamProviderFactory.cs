@@ -19,7 +19,7 @@ public class DownloadStreamProviderFactory : IDownloadStreamProviderFactory
         _loggerFactory = loggerFactory;
     }
 
-    public IDownloadStreamProvider Build(Job job)
+    public IDownloadStreamProvider Build(IDownloadStreamProviderOptions job)
     {
         const string protocol = "http";
         var logger = _loggerFactory.CreateLogger<HttpClientDownloadStreamProvider>();

@@ -4,5 +4,5 @@ namespace Scrap.Application.Scrap;
 
 public interface ISingleScrapService
 {
-    Task ExecuteJobAsync(string siteName, Job job);
+    Task ExecuteJobAsync(string siteName, ISingleScrapJob job);
 }

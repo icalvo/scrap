@@ -27,10 +27,10 @@ public class ResourceRepositoryFactory : IResourceRepositoryFactory
         _logger = logger;
     }
 
-    public async Task<IResourceRepository> BuildAsync(Job job)
+    public async Task<IResourceRepository> BuildAsync(IResourceRepositoryOptions options)
     {
         _logger.LogInformation("Resource File System: {FileSystemType}", _fileSystemFactory.FileSystemType);
-        return await job.ResourceRepoArgs.ValueAsync() switch
+        return await options.ResourceRepoArgs.ValueAsync() switch
         {
             FileSystemResourceRepositoryConfiguration cfg => (IResourceRepository)await FileSystemResourceRepository.BuildAsync(
                 await _destinationProviderFactory.BuildAsync(cfg),
@@ -38,11 +38,11 @@ public class ResourceRepositoryFactory : IResourceRepositoryFactory
                 _loggerFactory.CreateLogger<FileSystemResourceRepository>(),
                 _baseRootFolder,
                 _fileSystemFactory,
-                job.DisableResourceWrites),
-            null => throw new ArgumentException("No Resource Repository found", nameof(job)),
+                options.DisableResourceWrites),
+            null => throw new ArgumentException("No Resource Repository found", nameof(options)),
             _ => throw new ArgumentException(
-                $"Unknown resource processor config type: {job.ResourceRepoArgs.GetType().Name}",
-                nameof(job))
+                $"Unknown resource processor config type: {options.ResourceRepoArgs.GetType().Name}",
+                nameof(options))
         };
     }
 }

@@ -17,10 +17,10 @@ public class LinkCalculatorFactory : ILinkCalculatorFactory
         _visitedPageRepositoryFactory = visitedPageRepositoryFactory;
     }
 
-    public ILinkCalculator Build(Job job) =>
-        job.FullScan
+    public ILinkCalculator Build(ILinkCalculatorOptions options) =>
+        options.FullScan
             ? new FullScanLinkCalculator(_loggerFactory.CreateLogger<FullScanLinkCalculator>())
             : new LinkCalculator(
                 _loggerFactory.CreateLogger<LinkCalculator>(),
-                _visitedPageRepositoryFactory.Build(job));
+                _visitedPageRepositoryFactory.Build(options));
 }

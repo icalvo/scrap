@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Sites;
+using SharpX;
 
 namespace Scrap.Application.Scrap.All;
 
@@ -37,22 +38,26 @@ public class ScrapAllApplicationService : IScrapAllApplicationService
             string.Join(", ", sites.Select(x => x.Name)));
         foreach (var site in sites)
         {
-            var job = _jobBuilder.BuildJob(
+            await _jobBuilder.BuildJob(
                 site,
-                null,
                 null,
                 command.FullScan,
                 command.DownloadAlways,
                 command.DisableMarkingVisited,
-                command.DisableResourceWrites);
-            try
-            {
-                await _singleScrapService.ExecuteJobAsync(site.Name, job);
-            }
-            catch (Exception)
-            {
-                _logger.LogWarning("Could not scrap site {Site}", site.Name);
-            }
+                command.DisableResourceWrites).DoAsync(
+                async job =>
+                {
+                    try
+                    {
+                        await _singleScrapService.ExecuteJobAsync(site.Name, job);
+                    }
+                    catch (Exception)
+                    {
+                        _logger.LogWarning("Could not scrap site {Site}", site.Name);
+                    }
+
+                    return Unit.Default;
+                });
         }
     }
 }

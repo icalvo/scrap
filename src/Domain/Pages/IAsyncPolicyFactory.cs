@@ -1,7 +1,9 @@
 ﻿using Polly;
-using Scrap.Common;
 using Scrap.Domain.Jobs;
 
 namespace Scrap.Domain.Pages;
 
-public interface IAsyncPolicyFactory : IFactory<Job, AsyncPolicyConfiguration, IAsyncPolicy> {}
+public interface IAsyncPolicyFactory
+{
+    public IAsyncPolicy Build(IAsyncPolicyOptions options, AsyncPolicyConfiguration config);
+}

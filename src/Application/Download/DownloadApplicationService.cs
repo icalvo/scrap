@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Scrap.Common;
-using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
@@ -30,16 +29,11 @@ public class DownloadApplicationService : IDownloadApplicationService
     }
 
     public Task DownloadAsync(IDownloadCommand command) =>
-        _jobBuilder.BuildJobAsync(command.NameOrRootUrl, false, command.DownloadAlways, true, false)
-            .DoAsync(x => DownloadAsync(x.job, command));
+        _jobBuilder.BuildDownloadJob(command.NameOrRootUrl, command.DownloadAlways, false)
+            .DoAsync(x => DownloadAsync(x.Item1, command));
 
-    private async Task DownloadAsync(Job job, IDownloadCommand command)
+    private async Task DownloadAsync(IDownloadJob job, IDownloadCommand command)
     {
-        if (job.ResourceType != ResourceType.DownloadLink)
-        {
-            throw new Exception();
-        } 
-        
         var resourceRepository = await _resourceRepositoryFactory.BuildAsync(job);
         var pageRetriever = _pageRetrieverFactory.Build(job);
         var page = await pageRetriever.GetPageAsync(command.PageUrl);

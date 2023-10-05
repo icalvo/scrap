@@ -33,13 +33,8 @@ public class ScrapTextService : IScrapTextService
         _linkCalculatorFactory = linkCalculatorFactory;
     }
 
-    public async Task ScrapTextAsync(Job job)
+    public async Task ScrapTextAsync(ISingleScrapJob job)
     {
-        if (job.ResourceType != ResourceType.Text)
-        {
-            throw new InvalidOperationException($"Invalid resource type (should be {nameof(ResourceType.Text)})");
-        }
-
         var resourceRepository = await _resourceRepositoryFactory.BuildAsync(job);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;

@@ -12,12 +12,16 @@ public interface IJobBuilder
         bool? disableMarkingVisited,
         bool? disableResourceWrites);
 
-    Job BuildJob(
+    Maybe<Job> BuildJob(
         Site site,
         string? argRootUrl = null,
-        string? envRootUrl = null,
         bool? fullScan = null,
         bool? downloadAlways = null,
         bool? disableMarkingVisited = null,
         bool? disableResourceWrites = null);
+
+    Task<Maybe<(IDownloadJob, string)>> BuildDownloadJob(
+        Maybe<NameOrRootUrl> argNameOrRootUrl,
+        bool downloadAlways,
+        bool disableResourceWrites);
 }

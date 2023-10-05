@@ -4,27 +4,43 @@ namespace Scrap.Domain.Resources.FileSystem;
 
 public class FileSystemResourceRepository : BaseResourceRepository<FileSystemResourceId>
 {
-    private readonly string? _baseRootFolder;
     private readonly IDestinationProvider _destinationProvider;
     private readonly string _destinationRootFolder;
-    private readonly bool _disableWrites;
     private readonly ILogger<FileSystemResourceRepository> _logger;
+    private readonly IFileSystem _fileSystem;
 
-    public FileSystemResourceRepository(
+    private FileSystemResourceRepository(
         IDestinationProvider destinationProvider,
         FileSystemResourceRepositoryConfiguration config,
         ILogger<FileSystemResourceRepository> logger,
-        bool disableWrites,
-        string? baseRootFolder)
+        string? baseRootFolder,
+        IFileSystem fileSystem)
     {
         _destinationProvider = destinationProvider;
+        var rootFolder = fileSystem.Path.NormalizeFolderSeparator(config.RootFolder);
         _destinationRootFolder =
-            baseRootFolder != null ? Path.Combine(baseRootFolder, config.RootFolder) : config.RootFolder;
+            baseRootFolder != null ? fileSystem.Path.Combine(baseRootFolder, rootFolder) : rootFolder;
         _logger = logger;
-        _disableWrites = disableWrites;
-        _baseRootFolder = baseRootFolder;
+        _fileSystem = fileSystem;
+        
+        _logger.LogInformation("Resource Repo Base Folder: {BaseFolder}", _destinationRootFolder);
     }
 
+    public static async Task<FileSystemResourceRepository> BuildAsync(
+        IDestinationProvider destinationProvider,
+        FileSystemResourceRepositoryConfiguration config,
+        ILogger<FileSystemResourceRepository> logger,
+        string? baseRootFolder,
+        IFileSystemFactory fileSystemFactory,
+        bool isReadOnly)
+    {
+        return new FileSystemResourceRepository(
+            destinationProvider,
+            config,
+            logger,
+            baseRootFolder,
+            await fileSystemFactory.BuildAsync(isReadOnly));
+    }
     public override async Task<FileSystemResourceId> GetIdAsync(ResourceInfo resourceInfo)
     {
         var (page, pageIndex, resourceUrl, resourceIndex) = resourceInfo;
@@ -34,7 +50,7 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
             pageIndex,
             resourceUrl,
             resourceIndex);
-        var description = Path.GetRelativePath(_destinationRootFolder, destinationPath);
+        var description = _fileSystem.Path.GetRelativePath(_destinationRootFolder, destinationPath);
 
         return new FileSystemResourceId(destinationPath, description);
     }
@@ -42,28 +58,27 @@ public class FileSystemResourceRepository : BaseResourceRepository<FileSystemRes
     public override Task<bool> ExistsAsync(FileSystemResourceId id)
     {
         var destinationPath = id.FullPath;
-        return Task.FromResult(File.Exists(destinationPath));
+        return _fileSystem.File.ExistsAsync(destinationPath);
     }
 
     public override async Task UpsertAsync(FileSystemResourceId id, Stream resourceStream)
     {
         var destinationPath = id.FullPath;
-        var directoryName = Path.GetDirectoryName(destinationPath) ??
+        var directoryName = _fileSystem.Path.GetDirectoryName(destinationPath) ??
                             throw new InvalidOperationException(
                                 $"Could not get directory name from destination path {destinationPath}");
 
-        if (!_disableWrites)
+        var relativePath = _fileSystem.Path.GetRelativePath(_destinationRootFolder, destinationPath);
+        if (_fileSystem.IsReadOnly)
         {
-            _logger.LogTrace("WRITE {RelativePath}", Path.GetRelativePath(_destinationRootFolder, destinationPath));
-            Directory.CreateDirectory(directoryName);
-            await using var outputStream = File.Open(destinationPath, FileMode.Create);
-            await resourceStream.CopyToAsync(outputStream);
+            _logger.LogTrace("FAKE. WRITE {RelativePath}", relativePath);
         }
         else
         {
-            _logger.LogTrace(
-                "FAKE. WRITE {RelativePath}",
-                Path.GetRelativePath(_destinationRootFolder, destinationPath));
+            _logger.LogTrace("WRITE {RelativePath}", relativePath);
+            
+            await _fileSystem.Directory.CreateIfNotExistAsync(directoryName);
+            await _fileSystem.File.WriteAsync(destinationPath, resourceStream);
         }
     }
 }

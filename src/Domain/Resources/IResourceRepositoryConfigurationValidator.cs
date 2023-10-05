@@ -1,7 +1,6 @@
-﻿namespace Scrap.Domain.Resources;
+namespace Scrap.Domain.Resources;
 
 public interface IResourceRepositoryConfigurationValidator
 {
-    string RepositoryType { get; }
-    Task ValidateAsync(IResourceRepositoryConfiguration config);
+    Task ValidateAsync(IResourceRepositoryConfiguration? configuration);
 }

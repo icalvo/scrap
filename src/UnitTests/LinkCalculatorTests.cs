@@ -11,7 +11,7 @@ public class LinkCalculatorTests
     [Fact]
     public async Task CalculateLinks_LinkIsNotMarked()
     {
-        var mock = new Mock<IPageMarkerRepository>(MockBehavior.Strict);
+        var mock = new Mock<IVisitedPageRepository>(MockBehavior.Strict);
         mock.Setup(x => x.ExistsAsync(new Uri("https://example.com/1.txt"))).ReturnsAsync(false);
         mock.Setup(x => x.ExistsAsync(new Uri("https://example.com/2.txt"))).ReturnsAsync(false);
 
@@ -29,7 +29,7 @@ public class LinkCalculatorTests
     [Fact]
     public async Task CalculateLinks_LinkIsMarked()
     {
-        var mock = new Mock<IPageMarkerRepository>(MockBehavior.Strict);
+        var mock = new Mock<IVisitedPageRepository>(MockBehavior.Strict);
         mock.Setup(x => x.ExistsAsync(new Uri("https://example.com/1.txt"))).ReturnsAsync(true);
         mock.Setup(x => x.ExistsAsync(new Uri("https://example.com/2.txt"))).ReturnsAsync(false);
 

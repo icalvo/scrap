@@ -14,10 +14,17 @@ using Scrap.Domain.Resources.FileSystem.Extensions;
 
 namespace Scrap.Resources.FileSystem;
 
-// ReSharper disable once UnusedType.Global
+// ReSharper disable once UnusedType.Global -- Used when compiling expressions
 public class TemplateDestinationProvider: IDestinationProvider
 {
-    public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config)
+    private readonly IFileSystem _fileSystem;
+
+    public TemplateDestinationProvider(IFileSystem fileSystem)
+    {
+        _fileSystem = fileSystem;
+    }
+    
+    public Task ValidateAsync()
     {
         return Task.CompletedTask;
     }
@@ -29,13 +36,16 @@ public class TemplateDestinationProvider: IDestinationProvider
         Uri resourceUrl,
         int resourceIndex)
     {
-        var x = new[]
+        var patternFragments = new[]
         {
-            ToArray(rootFolder),
             /* DestinationPattern */
         };
-            
-        return ToPath(x.Aggregate(Enumerable.Empty<string>(), Enumerable.Concat));
+
+        return ToPath(
+            patternFragments
+            .Aggregate(Enumerable.Empty<string>(), Enumerable.Concat)
+            .Select(x => _fileSystem.Path.ReplaceForbiddenChars(x))
+            .Prepend(rootFolder));
     }
 
     private string[] ToArray(string item)
@@ -48,8 +58,8 @@ public class TemplateDestinationProvider: IDestinationProvider
         return items.ToArray();
     }
 
-    private static string ToPath(IEnumerable<string> parts)
+    private string ToPath(IEnumerable<string> parts)
     {
-        return Path.Combine(parts.ToArray());
+        return _fileSystem.Path.Combine(parts.ToArray());
     }
 }

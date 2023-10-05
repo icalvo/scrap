@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Build Schema",
   "$ref": "#/definitions/build",
+  "title": "Build Schema",
   "definitions": {
     "build": {
       "type": "object",
@@ -76,15 +76,17 @@
           "items": {
             "type": "string",
             "enum": [
-              "ChangelogVerification",
+              "BumpChangelogVersionDate",
               "Clean",
               "Compile",
               "IntegrationTests",
+              "None",
               "Pack",
               "PublishNuGet",
               "PullRequest",
               "Push",
               "Restore",
+              "SystemTests",
               "TagCommit",
               "UnitTests"
             ]
@@ -100,15 +102,17 @@
           "items": {
             "type": "string",
             "enum": [
-              "ChangelogVerification",
+              "BumpChangelogVersionDate",
               "Clean",
               "Compile",
               "IntegrationTests",
+              "None",
               "Pack",
               "PublishNuGet",
               "PullRequest",
               "Push",
               "Restore",
+              "SystemTests",
               "TagCommit",
               "UnitTests"
             ]

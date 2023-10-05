@@ -1,0 +1,6 @@
+{
+  "$schema": "https://xunit.net/schema/current/xunit.runner.schema.json",
+  "methodDisplayOptions": "useOperatorMonikers",
+  "longRunningTestSeconds": 30,
+  "parallelizeTestCollections": false
+}

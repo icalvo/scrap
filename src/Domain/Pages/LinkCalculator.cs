@@ -5,12 +5,12 @@ namespace Scrap.Domain.Pages;
 public class LinkCalculator : ILinkCalculator
 {
     private readonly ILogger<LinkCalculator> _logger;
-    private readonly IPageMarkerRepository _pageMarkerRepository;
+    private readonly IVisitedPageRepository _visitedPageRepository;
 
-    public LinkCalculator(ILogger<LinkCalculator> logger, IPageMarkerRepository pageMarkerRepository)
+    public LinkCalculator(ILogger<LinkCalculator> logger, IVisitedPageRepository visitedPageRepository)
     {
         _logger = logger;
-        _pageMarkerRepository = pageMarkerRepository;
+        _visitedPageRepository = visitedPageRepository;
     }
 
     public async IAsyncEnumerable<Uri> CalculateLinks(IPage page, XPath? adjacencyXPath)
@@ -29,9 +29,9 @@ public class LinkCalculator : ILinkCalculator
 
         foreach (var link in links)
         {
-            if (await _pageMarkerRepository.ExistsAsync(link))
+            if (await _visitedPageRepository.ExistsAsync(link))
             {
-                _logger.LogTrace("Page {Link} already visited", link);
+                _logger.LogDebug("Page {Link} already visited", link);
                 continue;
             }
 

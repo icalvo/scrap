@@ -12,14 +12,17 @@ public class CompiledDestinationProvider : IDestinationProvider
 {
     private readonly FileSystemResourceRepositoryConfiguration _config;
     private readonly ILogger<CompiledDestinationProvider> _logger;
-    private IDestinationProvider? _destinationProvider;
+    private static IDestinationProvider? _destinationProvider;
+    private readonly IFileSystem _fileSystem;
 
     public CompiledDestinationProvider(
         FileSystemResourceRepositoryConfiguration config,
+        IFileSystem fileSystem,
         ILogger<CompiledDestinationProvider> logger)
     {
         _config = config;
         _logger = logger;
+        _fileSystem = fileSystem;
     }
 
     public async Task<string> GetDestinationAsync(
@@ -29,7 +32,7 @@ public class CompiledDestinationProvider : IDestinationProvider
         Uri resourceUrl,
         int resourceIndex)
     {
-        var compiledDestinationProvider = await CompileAsync(_config);
+        var compiledDestinationProvider = await CompileAsync();
         return await compiledDestinationProvider.GetDestinationAsync(
             destinationRootFolder,
             page,
@@ -38,42 +41,39 @@ public class CompiledDestinationProvider : IDestinationProvider
             resourceIndex);
     }
 
-    public Task ValidateAsync(FileSystemResourceRepositoryConfiguration config) => CompileAsync(config);
+    public Task ValidateAsync() => CompileAsync();
 
-    private async Task<IDestinationProvider> CompileAsync(FileSystemResourceRepositoryConfiguration config)
+    private async Task<IDestinationProvider> CompileAsync()
     {
         if (_destinationProvider != null)
         {
             return _destinationProvider;
         }
 
-        var destinationFolderPattern = config.PathFragments;
+        var destinationFolderPattern = _config.PathFragments;
         var sourceCode = await GenerateSourceCodeAsync(destinationFolderPattern);
-        try
-        {
-            var assembly = CompileSourceCode(sourceCode);
-            _destinationProvider = CreateDestinationProviderInstance(assembly);
-            return _destinationProvider;
-        }
-        catch (Exception)
-        {
-            _logger.LogTrace("Source: {SourceCode}", sourceCode);
-            throw;
-        }
+        _logger.LogTrace("Source: {SourceCode}", Environment.NewLine + sourceCode);
+        var assembly = CompileSourceCode(sourceCode);
+        _destinationProvider = CreateDestinationProviderInstance(assembly);
+        return _destinationProvider;
     }
 
     private static async Task<string> GenerateSourceCodeAsync(string[] destinationFolderPattern)
+    {
+        var sourceCode = await ReadTemplateAsync();
+        var callChain = string.Join("", destinationFolderPattern.Select(p => $"ToArray({p}),\n"));
+        sourceCode = sourceCode.Replace("/* DestinationPattern */", callChain);
+        return sourceCode;
+    }
+
+    private static async Task<string> ReadTemplateAsync()
     {
         await using var stream =
             typeof(CompiledDestinationProvider).Assembly.GetManifestResourceStream(
                 "Scrap.Domain.Resources.FileSystem.TemplateDestinationProvider.cs") ??
             throw new Exception("TemplateDestinationProvider resource not found");
         using var reader = new StreamReader(stream);
-
-        var sourceCode = await reader.ReadToEndAsync();
-        var callChain = string.Join("", destinationFolderPattern.Select(p => $"ToArray({p}),\n"));
-        sourceCode = sourceCode.Replace("/* DestinationPattern */", callChain);
-        return sourceCode;
+        return await reader.ReadToEndAsync();
     }
 
     private Assembly CompileSourceCode(string sourceCode)
@@ -84,7 +84,7 @@ public class CompiledDestinationProvider : IDestinationProvider
         // define other necessary objects for compilation
         var assemblyName = Path.GetRandomFileName();
 
-        var references = ReferenceAssemblies.Net60.Concat(
+        var references = Net70.References.All.Concat(
             new[]
             {
                 MetadataReference.CreateFromFile(typeof(IDestinationProvider).Assembly.Location),
@@ -106,32 +106,45 @@ public class CompiledDestinationProvider : IDestinationProvider
         {
             // handle exceptions
             var failures = result.Diagnostics.Where(
-                diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error);
+                diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error).ToArray();
 
             foreach (var diagnostic in failures)
             {
-                _logger.LogError(
-                    "{Id}: {Message} at {Location}",
-                    diagnostic.Id,
-                    diagnostic.GetMessage(),
-                    diagnostic.Location);
-                _logger.LogDebug("{SourceCode}", sourceCode);
+                _logger.LogTrace("{Message} at {Location}", diagnostic, LocationText(diagnostic));
             }
 
-            throw new Exception("Compilation error");
+            _logger.LogTrace("SOURCE CODE: {SourceCode}", sourceCode);
+
+            throw new Exception($"Compilation error: {failures[0]} at {LocationText(failures[0])}.");
         }
 
         // load this 'virtual' DLL so that we can use
         ms.Seek(0, SeekOrigin.Begin);
         var assembly = Assembly.Load(ms.ToArray());
         return assembly;
+
+        string LocationText(Diagnostic diagnostic)
+        {
+            var locationText = diagnostic.GetType().Name;
+            var loc = diagnostic.Location;
+            var pos = loc.GetLineSpan();
+            locationText += $"({pos.Path}@{pos.StartLinePosition.Line + 1}:{pos.StartLinePosition.Character + 1})";
+
+            if (loc.SourceTree != null)
+            {
+                locationText +=
+                    $" near \"{loc.SourceTree.ToString().Substring(loc.SourceSpan.Start, loc.SourceSpan.Length)}\"";
+            }
+
+            return locationText;
+        }
     }
 
-    private static IDestinationProvider CreateDestinationProviderInstance(Assembly assembly)
+    private IDestinationProvider CreateDestinationProviderInstance(Assembly assembly)
     {
         var typeName = "Scrap.Resources.FileSystem.TemplateDestinationProvider";
         var type = assembly.GetType(typeName) ?? throw new Exception($"Type {typeName} not found");
-        var obj = Activator.CreateInstance(type) ?? throw new Exception("Could not activate instance");
+        var obj = Activator.CreateInstance(type, _fileSystem) ?? throw new Exception("Could not activate instance");
 
         return (IDestinationProvider)obj;
     }

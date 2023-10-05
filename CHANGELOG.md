@@ -1,15 +1,33 @@
 # Changelog
+
 All notable changes to this project are be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] 2023-10-05
+
+## Added
+
+- Dropbox support (for resource download)
+- Postgresql support (for visited pages database)
+- Now parsing command line with a fork of [CommandLineParser](https://github.com/icalvo/commandline)
+- UNIX Syntax (`-f`, `--fullScan`)
+- Leaner syntax with positional arguments for site name/root URL
+
+## Changed
+
+- Config key for sites JSON file is now `Scrap:Sites`, although the old `Scrap:Definitions` key is still supported.
+
 ## [2.3.0] - 2023-03-14
+
 ### Changed
+
 - `database` verb split into `searchvisited` and `deletevisited`.
 - `scrap /all` replaced by `all` verb.
 
 ### Added
+
 - Job definitions without resource configurations for `traverse`, `markvisited` and `visited`.
 - `showconfig` verb for showing all the current configuration values.
 - `Scrap:BaseRootFolder` global option

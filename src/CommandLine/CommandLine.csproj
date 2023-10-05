@@ -1,61 +1,60 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <WarningsAsErrors>Nullable</WarningsAsErrors>
-    <AssemblyName>scrap</AssemblyName>
-    <RootNamespace>Scrap.CommandLine</RootNamespace>
-    <ImplicitUsings>true</ImplicitUsings>
-    <PackAsTool>true</PackAsTool>
-    <IsPackable>true</IsPackable>
-    <ToolCommandName>scrap</ToolCommandName>
-    <PackageOutputPath>./nupkg</PackageOutputPath>
-    <Description>Scrap is a web scrapping command line tool.</Description>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/icalvo/scrap</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/icalvo/scrap.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <Authors>Ignacio Calvo</Authors>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <InformationalVersion>0.0.0-dev</InformationalVersion>
-  </PropertyGroup>
+    <PropertyGroup>
+      <OutputType>Exe</OutputType>
+      <TargetFramework>net7.0</TargetFramework>
+      <Nullable>enable</Nullable>
+      <WarningsAsErrors>Nullable</WarningsAsErrors>
+      <AssemblyName>scrap</AssemblyName>
+      <RootNamespace>Scrap.CommandLine</RootNamespace>
+      <ImplicitUsings>true</ImplicitUsings>
+      <PackAsTool>true</PackAsTool>
+      <IsPackable>true</IsPackable>
+      <ToolCommandName>scrap</ToolCommandName>
+      <PackageOutputPath>./nupkg</PackageOutputPath>
+      <Description>Scrap is a web scrapping command line tool.</Description>
+      <PackageReadmeFile>README.md</PackageReadmeFile>
+      <PackageProjectUrl>https://github.com/icalvo/scrap</PackageProjectUrl>
+      <RepositoryUrl>https://github.com/icalvo/scrap.git</RepositoryUrl>
+      <RepositoryType>git</RepositoryType>
+      <Authors>Ignacio Calvo</Authors>
+      <PackageLicenseExpression>MIT</PackageLicenseExpression>
+      <InformationalVersion>0.0.0-dev</InformationalVersion>
+
+    </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ben.demystifier" Version="0.4.1" />
-    <PackageReference Include="CLAP-DotNetCore" Version="4.6.4" />
-    <PackageReference Include="Figgle" Version="0.5.1" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.4.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="Polly" Version="7.2.3" />
-    <PackageReference Include="Polly.Caching.Memory" Version="3.0.2" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Scrap.Tests.Unit</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Application\Application.csproj" />
-    <ProjectReference Include="..\DependencyInjection\DependencyInjection.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="7.0.0"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0"/>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0"/>
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="7.0.0"/>
+    <PackageReference Include="Spectre.Console" Version="0.47.0"/>
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ext\commandline\src\CommandLine\CommandLine.csproj"/>
+      <ProjectReference Include="..\Application\Application.csproj" />
+      <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+    </ItemGroup>
 
   <ItemGroup>
     <None Update="scrap.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Remove="nupkg\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="nupkg\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="nupkg\**" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Wraps.cs" />
+  </ItemGroup>
+
 </Project>

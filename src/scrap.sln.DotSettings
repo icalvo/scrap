@@ -1,6 +1,14 @@
-﻿<wpf:ResourceDictionary xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xml:space="preserve">
+﻿<wpf:ResourceDictionary xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                        xmlns:s="clr-namespace:System;assembly=mscorlib"
+                        xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xml:space="preserve">
 	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpCodeStyle/CONSTRUCTOR_OR_DESTRUCTOR_BODY/@EntryValue">ExpressionBody</s:String>
-	<s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpCodeStyle/METHOD_OR_OPERATOR_BODY/@EntryValue">ExpressionBody</s:String>
-	<s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=CommandLine_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">False</s:Boolean>
-    <s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=CommandLine_003B_002A_003B_002A_003B_002A/@EntryIndexRemoved">True</s:Boolean>
-    <s:Boolean x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=Scrap_002ETests_002E_002A_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>
+    <s:String x:Key="/Default/CodeStyle/CodeFormatting/CSharpCodeStyle/METHOD_OR_OPERATOR_BODY/@EntryValue">ExpressionBody</s:String>
+    <s:Boolean
+            x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=CommandLine_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">False</s:Boolean>
+    <s:Boolean
+            x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=CommandLine_003B_002A_003B_002A_003B_002A/@EntryIndexRemoved">True</s:Boolean>
+    <s:Boolean
+            x:Key="/Default/Environment/Filtering/ExcludeCoverageFilters/=Scrap_002ETests_002E_002A_003B_002A_003B_002A_003B_002A/@EntryIndexedValue">True</s:Boolean>
+    <s:Boolean x:Key="/Default/UserDictionary/Words/=Getopt/@EntryIndexedValue">True</s:Boolean>
+    <s:Boolean x:Key="/Default/UserDictionary/Words/=posixly/@EntryIndexedValue">True</s:Boolean>
+    <s:Boolean x:Key="/Default/UserDictionary/Words/=Stelluti/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>

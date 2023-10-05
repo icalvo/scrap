@@ -1,6 +1,5 @@
 ﻿using Moq;
-using Scrap.Application;
-using Scrap.Domain;
+using Scrap.Application.Resources;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 
@@ -8,18 +7,19 @@ namespace Scrap.Tests.Unit.ApplicationServices;
 
 public class ResourcesApplicationServiceMockBuilder
 {
-    private readonly Mock<IFactory<Job, IPageRetriever>> _pageRetrieverFactoryMock = new();
+    private readonly Mock<IPageRetrieverFactory> _pageRetrieverFactoryMock = new();
 
     public ResourcesApplicationServiceMockBuilder()
     {
-        _pageRetrieverFactoryMock.SetupFactory(PageRetrieverMock.Object);
+        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
+        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
     }
 
-    public Mock<IAsyncFactory<JobDto, Job>> JobFactoryMock { get; } = new();
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();
+    public Mock<IJobBuilder> JobServiceMock { get; } = new();
 
     public IResourcesApplicationService Build() =>
-        new ResourcesApplicationService(JobFactoryMock.Object, _pageRetrieverFactoryMock.Object);
+        new ResourcesApplicationService(_pageRetrieverFactoryMock.Object, JobServiceMock.Object);
 
     public void SetupTraversal(params IPage[] pages)
     {

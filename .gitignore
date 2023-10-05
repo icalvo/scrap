@@ -396,3 +396,7 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Project
+/src/install/
+/src/CommandLine/scrap.Development.json

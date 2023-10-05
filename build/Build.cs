@@ -192,7 +192,7 @@ class Build : NukeBuild
             var lines = changelog.ReadAllLines().ToList();
             
             var versionTitlePrefix = $"## [{MainVersion}]";
-            var versionTitleLineIndex = lines.IndexOf(versionTitlePrefix);
+            var versionTitleLineIndex = lines.FindIndex(line => line.StartsWith(versionTitlePrefix));
             Assert.True(
                 versionTitleLineIndex != -1,
                 $"There is no entry for version {Version} in {ChangelogFileName}. Add a paragraph with the title '{versionTitlePrefix}'");

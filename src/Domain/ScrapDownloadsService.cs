@@ -43,33 +43,30 @@ public class ScrapDownloadsService : IScrapDownloadsService
         var resourceRepository = await _resourceRepositoryFactory.BuildAsync(job);
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
-        job.ValidateResourceCapabilities();
-
-        async Task Download((ResourceInfo info, Stream stream) x)
-        {
-            var (info, stream) = x;
-            await resourceRepository.UpsertAsync(info, stream);
-            _logger.LogInformation("Downloading {Url}", info.ResourceUrl);
-            var key = await resourceRepository.GetKeyAsync(info);
-            _logger.LogInformation("Downloaded to {Key}", key);
-        }
-
-        ValueTask<bool> IsNotDownloaded(ResourceInfo info) =>
-            IsNotDownloadedAsync(info, resourceRepository, job.DownloadAlways);
 
         var downloadStreamProvider = _downloadStreamProviderFactory.Build(job);
+
+        var pageRetriever = _pageRetrieverFactory.Build(job);
+        var linkCalculator = _linkCalculatorFactory.Build(job);
+        var visitedPageRepository = _visitedPageRepositoryFactory.Build(job);
+
+        var pipeline = Pages()
+            .Do(page => _logger.LogDebug("Processing page {PageUrl}", page.Uri))
+            .DoAwait(ProcessPageAsync)
+            .DoAwait(page => visitedPageRepository.UpsertAsync(page.Uri));
+
+        await pipeline.ExecuteAsync();
+        return;
+
+        IAsyncEnumerable<IPage> Pages() =>
+            _graphSearch.SearchAsync(
+                rootUri,
+                pageRetriever.GetPageAsync,
+                page => linkCalculator.CalculateLinks(page, adjacencyXPath));
 
         Task ProcessPageAsync(IPage page, int pageIndex)
         {
             var privatePage = page;
-
-            Task ProcessResourceAsync() =>
-                ResourceLinks(page, pageIndex, job.ResourceXPath).ToAsyncEnumerable()
-                    .WhereAwait(IsNotDownloaded)
-                    .SelectAwait(async resourceLink =>
-                        (x: resourceLink, stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
-                    .DoAwait(Download)
-                    .ExecuteAsync();
 
             return Policy.Handle<Exception>()
                 .RetryAsync(
@@ -80,58 +77,51 @@ public class ScrapDownloadsService : IScrapDownloadsService
                         privatePage = await privatePage.ReloadAsync();
                     })
                 .ExecuteAsync(ProcessResourceAsync);
+
+            Task ProcessResourceAsync() =>
+                ResourceLinks().ToAsyncEnumerable()
+                    .WhereAwait(IsNotDownloaded)
+                    .SelectAwait(async resourceLink =>
+                        (x: resourceLink, stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
+                    .DoAwait(Download)
+                    .ExecuteAsync();
+
+            IEnumerable<ResourceInfo> ResourceLinks()
+            {
+                var links = page.Links(job.ResourceXPath).ToArray();
+                return links.Select(
+                    (resourceUrl, resourceIndex) => new ResourceInfo(page, pageIndex, resourceUrl, resourceIndex));
+            }
+
         }
 
-        var pageRetriever = _pageRetrieverFactory.Build(job);
-        var linkCalculator = _linkCalculatorFactory.Build(job);
-        var visitedPageRepository = _visitedPageRepositoryFactory.Build(job);
-
-        var pipeline = Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
-            .Do(page => _logger.LogDebug("Processing page {PageUrl}", page.Uri))
-            .DoAwait(ProcessPageAsync).DoAwait(page => visitedPageRepository.UpsertAsync(page.Uri));
-
-        await pipeline.ExecuteAsync();
-    }
-
-    private static IEnumerable<ResourceInfo> ResourceLinks(
-        IPage page,
-        int crawlPageIndex,
-        XPath resourceXPathExpression)
-    {
-        var links = page.Links(resourceXPathExpression).ToArray();
-        return links.Select(
-            (resourceUrl, resourceIndex) => new ResourceInfo(page, crawlPageIndex, resourceUrl, resourceIndex));
-    }
-
-    private IAsyncEnumerable<IPage> Pages(
-        Uri rootUri,
-        IPageRetriever pageRetriever,
-        XPath? adjacencyXPath,
-        ILinkCalculator linkCalculator) =>
-        _graphSearch.SearchAsync(
-            rootUri,
-            pageRetriever.GetPageAsync,
-            page => linkCalculator.CalculateLinks(page, adjacencyXPath));
-
-    private async ValueTask<bool> IsNotDownloadedAsync(
-        ResourceInfo info,
-        IResourceRepository resourceRepository,
-        bool downloadAlways)
-    {
-        if (downloadAlways)
+        async ValueTask<bool> IsNotDownloaded(
+            ResourceInfo info)
         {
-            return true;
+            if (job.DownloadAlways)
+            {
+                return true;
+            }
+
+            var exists = await resourceRepository.ExistsAsync(info);
+            if (!exists)
+            {
+                return true;
+            }
+
+            var key = await resourceRepository.GetKeyAsync(info);
+            _logger.LogDebug("{Resource} already downloaded", key);
+
+            return false;
         }
 
-        var exists = await resourceRepository.ExistsAsync(info);
-        if (!exists)
+        async Task Download((ResourceInfo info, Stream stream) x)
         {
-            return true;
+            var (info, stream) = x;
+            await resourceRepository.UpsertAsync(info, stream);
+            _logger.LogInformation("Downloading {Url}", info.ResourceUrl);
+            var key = await resourceRepository.GetKeyAsync(info);
+            _logger.LogInformation("Downloaded to {Key}", key);
         }
-
-        var key = await resourceRepository.GetKeyAsync(info);
-        _logger.LogDebug("{Resource} already downloaded", key);
-
-        return false;
     }
 }

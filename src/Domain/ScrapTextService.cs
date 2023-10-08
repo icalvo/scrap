@@ -35,66 +35,54 @@ public class ScrapTextService : IScrapTextService
 
     public async Task ScrapTextAsync(ISingleScrapJob job)
     {
+        _logger.LogDebug("Defining pipeline...");
         var resourceRepository = await _resourceRepositoryFactory.BuildAsync(job);
-        var rootUri = job.RootUrl;
-        var adjacencyXPath = job.AdjacencyXPath;
-        job.ValidateResourceCapabilities();
+        var pageRetriever = _pageRetrieverFactory.Build(job);
+        var linkCalculator = _linkCalculatorFactory.Build(job);
+        var visitedPageRepository = _visitedPageRepositoryFactory.Build(job);
+
+        var pipeline = Pages().DoAwait(
+                (page, pageIndex) => PageTexts(page, pageIndex).WhereAwait(x => IsNotDownloadedAsync(x.info))
+                    .Select(x => (x.info, stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
+                    .DoAwait(y => resourceRepository.UpsertAsync(y.info, y.stream)).DoAwait(
+                        async x => _logger.LogInformation(
+                            "Downloaded text from {Url} to {Key}",
+                            x.info.ResourceUrl,
+                            await resourceRepository.GetKeyAsync(x.info))).ExecuteAsync())
+            .DoAwait(page => visitedPageRepository.UpsertAsync(page.Uri));
+
+        await pipeline.ExecuteAsync();
+
+        _logger.LogInformation("Finished!");
+
+        IAsyncEnumerable<IPage> Pages() =>
+            _graphSearch.SearchAsync(
+                job.RootUrl,
+                pageRetriever.GetPageAsync,
+                page => linkCalculator.CalculateLinks(page, job.AdjacencyXPath));
 
         IAsyncEnumerable<(ResourceInfo info, string text)> PageTexts(IPage page, int crawlPageIndex) =>
             page.Contents(job.ResourceXPath).Where(text => text != null).Select(
                 (text, textIndex) => (info: new ResourceInfo(page, crawlPageIndex, page.Uri, textIndex),
                     text: text ?? "")).ToAsyncEnumerable();
 
-        _logger.LogDebug("Defining pipeline...");
-        var pageRetriever = _pageRetrieverFactory.Build(job);
-        var linkCalculator = _linkCalculatorFactory.Build(job);
-        var visitedPageRepository = _visitedPageRepositoryFactory.Build(job);
-        var pipeline =
-            Pages(rootUri, pageRetriever, adjacencyXPath, linkCalculator)
-            .DoAwait((page, pageIndex) =>
-                PageTexts(page, pageIndex)
-                .WhereAwait(x => IsNotDownloadedAsync(x.info, resourceRepository, job.DownloadAlways))
-                .Select(x => (x.info, stream: (Stream)new MemoryStream(Encoding.UTF8.GetBytes(x.text))))
-                .DoAwait(y => resourceRepository.UpsertAsync(y.info, y.stream)).DoAwait(
-                    async x => _logger.LogInformation(
-                        "Downloaded text from {Url} to {Key}",
-                        x.info.ResourceUrl,
-                        await resourceRepository.GetKeyAsync(x.info))).ExecuteAsync())
-            .DoAwait(page => visitedPageRepository.UpsertAsync(page.Uri));
-
-        await pipeline.ExecuteAsync();
-        _logger.LogInformation("Finished!");
-    }
-
-    private IAsyncEnumerable<IPage> Pages(
-        Uri rootUri,
-        IPageRetriever pageRetriever,
-        XPath? adjacencyXPath,
-        ILinkCalculator linkCalculator) =>
-        _graphSearch.SearchAsync(
-            rootUri,
-            pageRetriever.GetPageAsync,
-            page => linkCalculator.CalculateLinks(page, adjacencyXPath));
-
-    private async ValueTask<bool> IsNotDownloadedAsync(
-        ResourceInfo info,
-        IResourceRepository resourceRepository,
-        bool downloadAlways)
-    {
-        if (downloadAlways)
+        async ValueTask<bool> IsNotDownloadedAsync(ResourceInfo info)
         {
-            return true;
+            if (job.DownloadAlways)
+            {
+                return true;
+            }
+
+            var exists = await resourceRepository.ExistsAsync(info);
+            if (!exists)
+            {
+                return true;
+            }
+
+            var key = await resourceRepository.GetKeyAsync(info);
+            _logger.LogDebug("{Resource} already downloaded", key);
+
+            return false;
         }
-
-        var exists = await resourceRepository.ExistsAsync(info);
-        if (!exists)
-        {
-            return true;
-        }
-
-        var key = await resourceRepository.GetKeyAsync(info);
-        _logger.LogDebug("{Resource} already downloaded", key);
-
-        return false;
     }
 }

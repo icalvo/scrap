@@ -11,9 +11,7 @@ namespace Scrap.Tests.Unit;
 
 public class ScrapTextsServiceMockBuilder
 {
-    public const string ResourceXPath = "//img/@src";
     private readonly Mock<ILinkCalculatorFactory> _linkCalculatorFactoryMock = new();
-    private readonly ITestOutputHelper _output;
 
     private readonly Mock<IVisitedPageRepositoryFactory> _visitedPageRepositoryFactoryMock =
         new();
@@ -23,13 +21,12 @@ public class ScrapTextsServiceMockBuilder
 
     public ScrapTextsServiceMockBuilder(ITestOutputHelper output)
     {
-        _output = output;
-        _linkCalculatorFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(LinkCalculatorMock.Object);
+        _linkCalculatorFactoryMock.Setup(x => x.Build(It.IsAny<ILinkCalculatorOptions>())).Returns(LinkCalculatorMock.Object);
         _visitedPageRepositoryFactoryMock.Setup(x => x.Build()).Returns(VisitedPageRepositoryMock.Object);
-        _visitedPageRepositoryFactoryMock.Setup(x => x.Build(It.IsAny<Job>()))
+        _visitedPageRepositoryFactoryMock.Setup(x => x.Build(It.IsAny<IVisitedPageRepositoryOptions>()))
             .Returns(VisitedPageRepositoryMock.Object);
-        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
-        _resourceRepositoryFactoryMock.Setup(x => x.BuildAsync(It.IsAny<Job>())).ReturnsAsync(ResourceRepositoryMock.Object);
+        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<IPageRetrieverOptions>())).Returns(PageRetrieverMock.Object);
+        _resourceRepositoryFactoryMock.Setup(x => x.BuildAsync(It.IsAny<IResourceRepositoryOptions>())).ReturnsAsync(ResourceRepositoryMock.Object);
         LoggerMock.SetupWithOutput(output);
     }
 

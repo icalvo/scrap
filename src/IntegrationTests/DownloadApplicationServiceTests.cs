@@ -54,15 +54,15 @@ public class DownloadApplicationServiceTests
         // Setup factories
         var visitedPageRepoFactoryMock = new Mock<IVisitedPageRepositoryFactory>();
         visitedPageRepoFactoryMock.Setup(x => x.Build()).Returns(visitedPageRepoMock.Object);
-        visitedPageRepoFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(visitedPageRepoMock.Object);
+        visitedPageRepoFactoryMock.Setup(x => x.Build(It.IsAny<IVisitedPageRepositoryOptions>())).Returns(visitedPageRepoMock.Object);
         visitedPageRepoFactoryMock.Setup(x => x.Build(It.IsAny<DatabaseInfo>())).Returns(visitedPageRepoMock.Object);
         var fileSystemFactoryMock = new Mock<IFileSystemFactory>();
         fileSystemFactoryMock.Setup(x => x.BuildAsync(It.IsAny<bool?>()))
             .ReturnsAsync(new FileSystem(fileSystemMock.Object));
         var pageRetrieverFactoryMock = new Mock<IPageRetrieverFactory>();
-        pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(pageRetrieverMock.Object);
+        pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<IPageRetrieverOptions>())).Returns(pageRetrieverMock.Object);
         var downloadStreamProviderFactoryMock = new Mock<IDownloadStreamProviderFactory>();
-        downloadStreamProviderFactoryMock.Setup(x => x.Build(It.IsAny<Job>()))
+        downloadStreamProviderFactoryMock.Setup(x => x.Build(It.IsAny<IDownloadStreamProviderOptions>()))
             .Returns(downloadStreamProviderMock.Object);
 
         var sc = new ServiceCollection();

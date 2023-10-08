@@ -1,4 +1,6 @@
-﻿namespace Scrap.Application.Scrap.All;
+﻿using Scrap.Application.Scrap.One;
+
+namespace Scrap.Application.Scrap.All;
 
 public interface IScrapAllApplicationService
 {

@@ -7,9 +7,9 @@ namespace Scrap.CommandLine.Commands;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global", Justification = "Instantiated by CommandLineParser")]
 [Verb("scrap", true, HelpText = "Scraps a site")]
-internal sealed class ScrapOneOptions : NameOrRootUrlOptions, IScrapOptions, IScrapOneCommand
+internal sealed class SingleScrapOptions : NameOrRootUrlOptions, IScrapOptions, ISingleScrapCommand
 {
-    public ScrapOneOptions(
+    public SingleScrapOptions(
         bool debug = false,
         bool verbose = false,
         string? nameOrRootUrlOption = null,
@@ -44,10 +44,10 @@ internal sealed class ScrapOneOptions : NameOrRootUrlOptions, IScrapOptions, ISc
             new Example(
                 "Scraps site 'example'",
                 new UnParserSettings { HideDefaultVerb = true },
-                new ScrapOneOptions(nameOrRootUrlOption: "example")),
+                new SingleScrapOptions(nameOrRootUrlOption: "example")),
             new Example(
                 "Finds a site for the root URL 'https://example.com/page/41' and scraps it starting from that page",
                 new UnParserSettings { HideDefaultVerb = true },
-                new ScrapOneOptions(nameOrRootUrlOption: "https://example.com/page/41"))
+                new SingleScrapOptions(nameOrRootUrlOption: "https://example.com/page/41"))
         };
 }

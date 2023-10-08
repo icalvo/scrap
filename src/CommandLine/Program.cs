@@ -18,7 +18,7 @@ sc.AddSingleton<IGlobalConfigurationChecker, GlobalConfigurationChecker>();
 
 var commandSetups = new ICommandSetup[]
 {
-    BuildCommandSetup<ScrapVerb, ScrapOneOptions>(),
+    BuildCommandSetup<ScrapVerb, SingleScrapOptions>(),
     BuildCommandSetup<AllVerb, ScrapAllOptions>(),
     BuildCommandSetup<ConfigureVerb, ConfigureOptions>(),
     BuildCommandSetup<DeleteVisitedVerb, DeleteVisitedOptions>(),

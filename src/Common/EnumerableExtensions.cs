@@ -11,6 +11,16 @@ public static class EnumerableExtensions
         }
     }
 
+    public static async IAsyncEnumerable<T> DoIf<T>(this IAsyncEnumerable<T> source, Func<T, bool> condition, Action<T> action)
+    {
+        await foreach (var item in source)
+        {
+            if (condition(item))
+                action(item);
+            yield return item;
+        }
+    }
+
     public static async IAsyncEnumerable<T> DoAwait<T>(this IAsyncEnumerable<T> source, Func<T, int, Task> action)
     {
         var i = 0;

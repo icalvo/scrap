@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Scrap.Common.Graphs;
 using Scrap.Domain.Jobs;
+using Scrap.Domain.Sites;
 
 namespace Scrap.Domain;
 
@@ -13,6 +14,7 @@ public static class DependencyInjection
         container.AddSingleton<IJobBuilder, JobBuilder>();
         container.AddTransient<IScrapDownloadsService, ScrapDownloadsService>();
         container.AddTransient<IScrapTextService, ScrapTextService>();
+        container.AddSingleton<ISiteFactory, SiteFactory>();
         
         return container;
     }

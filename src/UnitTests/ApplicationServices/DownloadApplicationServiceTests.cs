@@ -1,7 +1,10 @@
 ﻿using Moq;
 using Scrap.Application.Download;
+using Scrap.Common;
 using Scrap.Domain;
+using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
+using Scrap.Domain.Sites;
 using SharpX;
 using Xunit;
 using Xunit.Abstractions;
@@ -22,8 +25,8 @@ public class DownloadApplicationServiceTests
     {
         var builder = new DownloadApplicationServiceMockBuilder(_output);
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
-        var job = JobBuilder.Build(ResourceType.DownloadLink);
-        builder.JobServiceMock.SetupWithJob(job, "x");
+        var job = Mock.Of<IDownloadJob>();
+        builder.CommandJobBuilderMock.SetupCommandJobBuilder(job, "x");
         var service = builder.Build();
 
         await service.DownloadAsync(

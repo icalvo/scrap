@@ -2,5 +2,5 @@
 
 public interface IResourcesApplicationService
 {
-    IAsyncEnumerable<string> GetResourcesAsync(IResourceCommand resourceOneCommand);
+    IAsyncEnumerable<string> GetResourcesAsync(IResourceCommand command);
 }

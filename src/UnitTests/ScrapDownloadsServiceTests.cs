@@ -1,5 +1,6 @@
 ﻿using Moq;
 using Scrap.Domain;
+using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 using Xunit;
 using Xunit.Abstractions;
@@ -30,7 +31,7 @@ public class ScrapDownloadsServiceTests
                 "https://example.com/3.txt",
                 "https://example.com/4.txt"));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
-        var job = JobBuilder.Build(ResourceType.DownloadLink);
+        var job = JobBuilder.BuildScrap(ResourceType.DownloadLink);
         var service = builder.BuildScrapDownloadsService();
 
         await service.DownloadLinksAsync(job);
@@ -77,7 +78,7 @@ public class ScrapDownloadsServiceTests
                 "https://example.com/3.txt",
                 "https://example.com/4.txt"));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
-        var job = JobBuilder.Build(ResourceType.DownloadLink);
+        var job = JobBuilder.BuildScrap(ResourceType.DownloadLink);
         var service = builder.BuildScrapDownloadsService();
 
         await service.DownloadLinksAsync(job);

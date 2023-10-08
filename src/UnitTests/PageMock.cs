@@ -11,7 +11,7 @@ public class PageMock : IPage
 
     public PageMock(string uri)
     {
-        _pageMock = new Mock<IPage>();
+        _pageMock = new Mock<IPage>(MockBehavior.Strict);
         _pageMock.Setup(x => x.Document)
             .Returns(Mock.Of<IXPathNavigable>(x => x.CreateNavigator() == Mock.Of<XPathNavigator>()));
         _pageMock.Setup(x => x.Uri).Returns(new Uri(uri));

@@ -1,6 +1,9 @@
 ﻿using FluentAssertions;
+using Moq;
 using Scrap.Application.Resources;
 using Scrap.Domain;
+using Scrap.Domain.Jobs;
+using Scrap.Domain.Sites;
 using SharpX;
 using Xunit;
 using Xunit.Abstractions;
@@ -29,8 +32,9 @@ public class ResourcesApplicationServiceTests
                 JobBuilder.ResourceXPath,
                 "https://example.com/3.txt",
                 "https://example.com/4.txt"));
-        var job = JobBuilder.Build(ResourceType.DownloadLink);
-        builder.JobServiceMock.SetupWithJob(job, "x");
+        var job = JobBuilder.BuildResources();
+        builder.CommandJobBuilderMock.SetupCommandJobBuilder(job, "x");
+
         var service = builder.Build();
         ResourceCommand cmd = new(
             false,

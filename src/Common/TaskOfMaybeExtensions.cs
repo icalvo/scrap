@@ -2,10 +2,6 @@
 
 namespace Scrap.Common;
 
-public static class TaskExtensions
-{
-    public static Task<T> ToTaskResult<T>(this T result) => Task.FromResult(result);
-}
 public static class TaskOfMaybeExtensions
 {
     public static Task DoAsync<TIn>(this Task<Maybe<TIn>> task, Action<TIn> f) =>
@@ -19,11 +15,24 @@ public static class TaskOfMaybeExtensions
 
     public static Task<Maybe<TOut>> MapAsync<TIn, TOut>(this Task<Maybe<TIn>> task, Func<TIn, Task<TOut>> f) =>
         task.ContinueWithAsync(
-            x => x.Map(y => f(y).ContinueAsync(z => z.ToJust()), () => Task.FromResult(Maybe.Nothing<TOut>())));
+            x => x.Map(y =>
+            {
+                Task<TOut> task1 = f(y);
+                return task1.ContinueAsync(z => z.ToJust());
+            }, () => Task.FromResult(Maybe.Nothing<TOut>())));
 
+    public static Task<Maybe<TIn>> PipeAsync<TIn>(this Task<Maybe<TIn>> task, Action<TIn> f) =>
+        task.MapAsync<TIn, TIn>(
+            x =>
+            {
+                f(x);
+                return x.ToTaskResult();
+            });
+    
     public static Task<Maybe<TOut>> BindAsync<TIn, TOut>(this Task<Maybe<TIn>> task, Func<TIn, Task<Maybe<TOut>>> f) =>
         task.ContinueWithAsync(x => x.Map(f, () => Task.FromResult(Maybe.Nothing<TOut>())));
 
+    
     public static async IAsyncEnumerable<TOut> MapAsync<TIn, TOut>(
         this Task<Maybe<TIn>> task,
         Func<TIn, IAsyncEnumerable<TOut>> f)

@@ -2,6 +2,9 @@
 using Moq;
 using Scrap.Application.Traversal;
 using Scrap.Domain;
+using Scrap.Domain.Jobs;
+using Scrap.Domain.Sites;
+using SharpX;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,8 +24,9 @@ public class TraversalApplicationServiceTests
     {
         var builder = new TraversalApplicationServiceMockBuilder();
         builder.SetupTraversal(new PageMock("https://example.com/a"), new PageMock("https://example.com/b"));
-        var job = JobBuilder.Build(ResourceType.DownloadLink);
-        builder.JobServiceMock.SetupWithJob(job, "x");
+        var job = Mock.Of<ITraverseJob>();
+        builder.CommandJobBuilderMock.SetupCommandJobBuilder(job, "asdf");
+
         var service = builder.Build();
 
         var actual = await service.TraverseAsync(Mock.Of<ITraverseCommand>()).ToArrayAsync();

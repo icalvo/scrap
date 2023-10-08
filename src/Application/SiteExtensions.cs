@@ -1,6 +1,7 @@
 ﻿using Scrap.Common;
 using Scrap.Domain;
 using Scrap.Domain.Sites;
+using SharpX;
 
 namespace Scrap.Application;
 
@@ -23,12 +24,12 @@ internal static class SiteExtensions
     public static SiteDto ToDto(this Site site) =>
         new(
             site.Name,
-            site.AdjacencyXPath?.ToString(),
-            site.ResourceXPath?.ToString(),
-            site.ResourceRepoArgs,
-            site.RootUrl?.AbsoluteUri,
-            site.HttpRequestRetries,
-            site.HttpRequestDelayBetweenRetries,
-            site.UrlPattern,
+            site.AdjacencyXPath.FromJust()?.ToString(),
+            site.ResourceXPath.FromJust()?.ToString(),
+            site.ResourceRepoArgs.FromJust(),
+            site.RootUrl.FromJust()?.AbsoluteUri,
+            site.HttpRequestRetries.FromJust(),
+            site.HttpRequestDelayBetweenRetries.FromJust(),
+            site.UrlPattern.FromJust(),
             site.ResourceType);
 }

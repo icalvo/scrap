@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
 using Scrap.Domain;
+using Scrap.Domain.Jobs;
 using Scrap.Domain.Resources;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,7 +25,7 @@ public class ScrapTextsServiceTests
             new PageMock("https://example.com/a").Contents(JobBuilder.ResourceXPath, "qwer", "asdf"),
             new PageMock("https://example.com/b").Contents(JobBuilder.ResourceXPath, "zxcv", "yuio"));
         builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
-        var job = JobBuilder.Build(ResourceType.Text);
+        var job = JobBuilder.BuildScrap(ResourceType.Text);
         var service = builder.Build();
 
         await service.ScrapTextAsync(job);
@@ -36,18 +37,5 @@ public class ScrapTextsServiceTests
         builder.VisitedPageRepositoryMock.Verify(x => x.ExistsAsync(It.IsAny<Uri>()), Times.Never);
         builder.VisitedPageRepositoryMock.Verify(x => x.UpsertAsync(new Uri("https://example.com/a")), Times.Once);
         builder.VisitedPageRepositoryMock.Verify(x => x.UpsertAsync(new Uri("https://example.com/b")), Times.Once);
-    }
-
-
-    [Fact]
-    public async Task? ScrapTextAsync_DownloadJob_Throws()
-    {
-        var builder = new ScrapTextsServiceMockBuilder(_output);
-        var job = JobBuilder.Build(ResourceType.DownloadLink);
-        builder.ResourceRepositoryMock.Setup(x => x.Type).Returns("FileSystemRepository");
-        var service = builder.Build();
-
-        var action = () => service.ScrapTextAsync(job);
-        await action.Should().ThrowAsync<InvalidOperationException>();
     }
 }

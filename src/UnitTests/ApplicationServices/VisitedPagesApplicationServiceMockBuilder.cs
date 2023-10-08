@@ -12,7 +12,7 @@ public class VisitedPagesApplicationServiceMockBuilder
     public VisitedPagesApplicationServiceMockBuilder()
     {
         _visitedPageRepositoryFactoryMock.Setup(x => x.Build()).Returns(VisitedPageRepositoryMock.Object);
-        _visitedPageRepositoryFactoryMock.Setup(x => x.Build(It.IsAny<Job>()))
+        _visitedPageRepositoryFactoryMock.Setup(x => x.Build(It.IsAny<IVisitedPageRepositoryOptions>()))
             .Returns(VisitedPageRepositoryMock.Object);
     }
 

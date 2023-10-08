@@ -11,26 +11,25 @@ public class DownloadApplicationService : IDownloadApplicationService
     private readonly IDownloadStreamProviderFactory _downloadStreamProviderFactory;
     private readonly IPageRetrieverFactory _pageRetrieverFactory;
     private readonly IResourceRepositoryFactory _resourceRepositoryFactory;
-    private readonly IJobBuilder _jobBuilder;
     private readonly ILogger<DownloadApplicationService> _logger;
+    private readonly ICommandJobBuilder<IDownloadCommand, IDownloadJob> _commandJobBuilder;
 
     public DownloadApplicationService(
         IPageRetrieverFactory pageRetrieverFactory,
         IResourceRepositoryFactory resourceRepositoryFactory,
         IDownloadStreamProviderFactory downloadStreamProviderFactory,
-        IJobBuilder jobBuilder,
-        ILogger<DownloadApplicationService> logger)
+        ILogger<DownloadApplicationService> logger,
+        ICommandJobBuilder<IDownloadCommand, IDownloadJob> commandJobBuilder)
     {
         _pageRetrieverFactory = pageRetrieverFactory;
         _resourceRepositoryFactory = resourceRepositoryFactory;
         _downloadStreamProviderFactory = downloadStreamProviderFactory;
-        _jobBuilder = jobBuilder;
         _logger = logger;
+        _commandJobBuilder = commandJobBuilder;
     }
 
     public Task DownloadAsync(IDownloadCommand command) =>
-        _jobBuilder.BuildDownloadJob(command.NameOrRootUrl, command.DownloadAlways, false)
-            .DoAsync(x => DownloadAsync(x.Item1, command));
+        _commandJobBuilder.Build(command).DoAsync(x => DownloadAsync(x.Item1, command));
 
     private async Task DownloadAsync(IDownloadJob job, IDownloadCommand command)
     {

@@ -26,13 +26,13 @@ public class ScrapDownloadsServiceMockBuilder
 
     public ScrapDownloadsServiceMockBuilder(ITestOutputHelper output)
     {
-        _linkCalculatorFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(LinkCalculatorMock.Object);
+        _linkCalculatorFactoryMock.Setup(x => x.Build(It.IsAny<ILinkCalculatorOptions>())).Returns(LinkCalculatorMock.Object);
         _visitedPageRepositoryFactoryMock.Setup(x => x.Build()).Returns(VisitedPageRepositoryMock.Object);
-        _visitedPageRepositoryFactoryMock.Setup(x => x.Build(It.IsAny<Job>()))
+        _visitedPageRepositoryFactoryMock.Setup(x => x.Build(It.IsAny<IVisitedPageRepositoryOptions>()))
             .Returns(VisitedPageRepositoryMock.Object);
-        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
-        _resourceRepositoryFactoryMock.Setup(x => x.BuildAsync(It.IsAny<Job>())).ReturnsAsync(ResourceRepositoryMock.Object);
-        _streamProviderFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(_streamProviderMock);
+        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<IPageRetrieverOptions>())).Returns(PageRetrieverMock.Object);
+        _resourceRepositoryFactoryMock.Setup(x => x.BuildAsync(It.IsAny<IResourceRepositoryOptions>())).ReturnsAsync(ResourceRepositoryMock.Object);
+        _streamProviderFactoryMock.Setup(x => x.Build(It.IsAny<IDownloadStreamProviderOptions>())).Returns(_streamProviderMock);
 
         _streamProviderMock.SetupWithString();
 

@@ -4,15 +4,15 @@ using Scrap.Application.Scrap.One;
 namespace Scrap.CommandLine.Commands;
 
 [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-internal sealed class ScrapVerb : IVerb<ScrapVerb, ScrapOneOptions>
+internal sealed class ScrapVerb : IVerb<ScrapVerb, SingleScrapOptions>
 {
-    private readonly IScrapOneApplicationService _scrapOneApplicationService;
+    private readonly ISingleScrapApplicationService _singleScrapApplicationService;
 
-    public ScrapVerb(IScrapOneApplicationService scrapOneApplicationService)
+    public ScrapVerb(ISingleScrapApplicationService singleScrapApplicationService)
     {
-        _scrapOneApplicationService = scrapOneApplicationService;
+        _singleScrapApplicationService = singleScrapApplicationService;
     }
 
-    public async Task ExecuteAsync(ScrapOneOptions oneOptions) =>
-        await _scrapOneApplicationService.ScrapAsync(oneOptions);
+    public async Task ExecuteAsync(SingleScrapOptions options) =>
+        await _singleScrapApplicationService.ScrapAsync(options);
 }

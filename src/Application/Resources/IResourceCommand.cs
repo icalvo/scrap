@@ -2,7 +2,7 @@
 
 namespace Scrap.Application.Resources;
 
-public interface IResourceCommand : IScrapOneCommand
+public interface IResourceCommand : ISingleScrapCommand
 {
     Uri PageUrl { get; }
     int PageIndex { get; }

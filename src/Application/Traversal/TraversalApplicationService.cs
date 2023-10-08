@@ -1,8 +1,10 @@
-﻿using Scrap.Common;
+﻿using Scrap.Application.Download;
+using Scrap.Common;
 using Scrap.Common.Graphs;
 using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
+using SharpX;
 
 namespace Scrap.Application.Traversal;
 
@@ -11,24 +13,26 @@ public class TraversalApplicationService : ITraversalApplicationService
     private readonly IGraphSearch _graphSearch;
     private readonly ILinkCalculatorFactory _linkCalculatorFactory;
     private readonly IPageRetrieverFactory _pageRetrieverFactory;
-    private readonly IJobBuilder _jobBuilder;
+    private readonly ICommandJobBuilder<ITraverseCommand, ITraverseJob> _siteFactory;
+    
     public TraversalApplicationService(
         IGraphSearch graphSearch,
         IPageRetrieverFactory pageRetrieverFactory,
         ILinkCalculatorFactory linkCalculatorFactory,
-        IJobBuilder jobBuilder)
+        ICommandJobBuilder<ITraverseCommand, ITraverseJob> siteFactory)
     {
         _graphSearch = graphSearch;
         _pageRetrieverFactory = pageRetrieverFactory;
         _linkCalculatorFactory = linkCalculatorFactory;
-        _jobBuilder = jobBuilder;
+        _siteFactory = siteFactory;
     }
 
     public IAsyncEnumerable<string> TraverseAsync(ITraverseCommand command) =>
-        _jobBuilder.BuildJobAsync(command.NameOrRootUrl, command.FullScan, false, true, true).MapAsync(
-                x => PagesAsync(x.job));
 
-    private async IAsyncEnumerable<string> PagesAsync(Job job)
+        _siteFactory.Build(command)
+            .MapAsync(x => PagesAsync(x.Item1));
+
+        private async IAsyncEnumerable<string> PagesAsync(ITraverseJob job)
     {
         var rootUri = job.RootUrl;
         var adjacencyXPath = job.AdjacencyXPath;
@@ -43,7 +47,7 @@ public class TraversalApplicationService : ITraversalApplicationService
     private IAsyncEnumerable<IPage> Pages(
         Uri rootUri,
         IPageRetriever pageRetriever,
-        XPath? adjacencyXPath,
+        Maybe<XPath> adjacencyXPath,
         ILinkCalculator linkCalculator) =>
         _graphSearch.SearchAsync(
             rootUri,

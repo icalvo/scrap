@@ -21,7 +21,7 @@ public class ResourceRepositoryConfigurationJsonConverter : JsonConverter<IResou
         var json = cfg.GetRawText();
         return cfg.GetProperty("type").GetString() switch
         {
-            "filesystem" => JsonSerializer.Deserialize<FileSystemResourceRepositoryConfiguration>(
+            FileSystemResourceRepositoryConfiguration.TypeName => JsonSerializer.Deserialize<FileSystemResourceRepositoryConfiguration>(
                                 json,
                                 new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }) ??
                             throw new InvalidOperationException("Couldn't deserialize resource repo config"),

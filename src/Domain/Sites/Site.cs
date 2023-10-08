@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
+using Scrap.Common;
 using Scrap.Domain.Resources;
+using SharpX;
 
 namespace Scrap.Domain.Sites;
 
@@ -17,27 +19,27 @@ public class Site
         string? urlPattern = null)
     {
         Name = name;
-        RootUrl = rootUrl;
-        AdjacencyXPath = adjacencyXPath;
-        ResourceXPath = resourceXPath;
-        ResourceRepoArgs = resourceRepoArgs;
-        HttpRequestRetries = httpRequestRetries;
-        HttpRequestDelayBetweenRetries = httpRequestDelayBetweenRetries;
-        UrlPattern = urlPattern;
+        RootUrl = rootUrl.ToMaybe2();
+        AdjacencyXPath = adjacencyXPath.ToMaybe2();
+        ResourceXPath = resourceXPath.ToMaybe2();
+        ResourceRepoArgs = resourceRepoArgs.ToMaybe2();
+        HttpRequestRetries = httpRequestRetries.ToMaybe3();
+        HttpRequestDelayBetweenRetries = httpRequestDelayBetweenRetries.ToMaybe3();
+        UrlPattern = urlPattern.ToMaybe2();
         ResourceType = resourceType ?? ResourceType.DownloadLink;
     }
 
     public string Name { get; }
-    public Uri? RootUrl { get; }
-    public XPath? AdjacencyXPath { get; }
-    public XPath? ResourceXPath { get; }
-    public IResourceRepositoryConfiguration? ResourceRepoArgs { get; }
-    public int? HttpRequestRetries { get; }
-    public TimeSpan? HttpRequestDelayBetweenRetries { get; }
-    public string? UrlPattern { get; }
+    public Maybe<Uri> RootUrl { get; }
+    public Maybe<XPath> AdjacencyXPath { get; }
+    public Maybe<XPath> ResourceXPath { get; }
+    public Maybe<IResourceRepositoryConfiguration> ResourceRepoArgs { get; }
+    public Maybe<int> HttpRequestRetries { get; }
+    public Maybe<TimeSpan> HttpRequestDelayBetweenRetries { get; }
+    public Maybe<string> UrlPattern { get; }
     public ResourceType ResourceType { get; }
 
-    public bool HasResourceCapabilities() => ResourceXPath != null && ResourceRepoArgs != null;
+    public bool HasResourceCapabilities() => ResourceXPath.IsJust() && ResourceRepoArgs.IsJust();
 
     public void Log(ILogger logger, LogLevel logLevel)
     {

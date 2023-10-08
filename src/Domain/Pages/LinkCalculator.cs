@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using Scrap.Common;
+using SharpX;
 
 namespace Scrap.Domain.Pages;
 
@@ -13,29 +15,28 @@ public class LinkCalculator : ILinkCalculator
         _visitedPageRepository = visitedPageRepository;
     }
 
-    public async IAsyncEnumerable<Uri> CalculateLinks(IPage page, XPath? adjacencyXPath)
-    {
-        if (adjacencyXPath == null)
-        {
-            yield break;
-        }
-
-        var links = page.Links(adjacencyXPath).ToArray();
-        if (links.Length == 0)
-        {
-            _logger.LogTrace("No links at {PageUri}", page.Uri);
-            yield break;
-        }
-
-        foreach (var link in links)
-        {
-            if (await _visitedPageRepository.ExistsAsync(link))
+    public IAsyncEnumerable<Uri> CalculateLinks(IPage page, Maybe<XPath> adjacencyXPath) =>
+        adjacencyXPath
+            .Select(page.Links)
+            .Select(x => x.ToArray())
+            .Select(x =>
             {
-                _logger.LogDebug("Page {Link} already visited", link);
-                continue;
-            }
+                if (x.Length == 0)
+                {
+                    _logger.LogTrace("No links at {PageUri}", page.Uri);;
+                }
 
-            yield return link;
-        }
-    }
+                return x;
+            })
+            .Select(x =>
+                x.ToAsyncEnumerable()
+                    .SelectAwait(
+                        async link => (link, visited: await _visitedPageRepository.ExistsAsync(link))
+                    )
+                    .DoIf(
+                        tuple => tuple.visited,
+                        tuple => _logger.LogDebug("Page {Link} already visited", tuple.link))
+                    .Where(tuple => !tuple.visited)
+                    .Select(tuple => tuple.link))
+            .FromJust2(AsyncEnumerable.Empty<Uri>());
 }

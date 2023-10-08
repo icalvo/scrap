@@ -30,27 +30,15 @@ public static class MaybeExtensions
         return maybe;
     }
 
-    public static async Task<TOut> ContinueAsync<TIn, TOut>(this Task<TIn> task, Func<TIn, TOut> f)
-    {
-        var result = await task;
-        return f(result);
-    }
+    public static Result<T, TM> ToResult<T, TM>(this Maybe<T> maybe, TM errorMessage) =>
+        maybe.Map(Result<T, TM>.Succeed, () => Result<T, TM>.FailWith(errorMessage));
 
-    public static async Task<TOut> ContinueWithAsync<TIn, TOut>(this Task<TIn> task, Func<TIn, Task<TOut>> f)
-    {
-        var result = await task;
-        return await f(result);
-    }
+    public static Maybe<T> ToMaybe2<T>(this T? obj) => obj == null ? Maybe.Nothing<T>() : Maybe.Just(obj);
+    public static Maybe<T> ToMaybe3<T>(this T? obj) where T : struct => 
+        obj == null ? Maybe.Nothing<T>() : Maybe.Just(obj.Value);
 
-    public static async Task ContinueAsync<TIn>(this Task<TIn> task, Action<TIn> f)
-    {
-        var result = await task;
-        f(result);
-    }
-
-    public static async Task ContinueWithAsync<TIn>(this Task<TIn> task, Func<TIn, Task> f)
-    {
-        var result = await task;
-        await f(result);
-    }
+    public static T FromJust2<T>(this Maybe<T> obj, T ifNone) where T : class => 
+        obj.FromJust(ifNone)!;
+    public static T FromJust3<T>(this Maybe<T> obj, T ifNone) where T : struct => 
+        obj.FromJust(ifNone);
 }

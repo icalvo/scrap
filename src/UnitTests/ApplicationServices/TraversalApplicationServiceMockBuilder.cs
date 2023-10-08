@@ -1,4 +1,6 @@
 ﻿using Moq;
+using Scrap.Application;
+using Scrap.Application.Download;
 using Scrap.Application.Traversal;
 using Scrap.Common.Graphs;
 using Scrap.Domain.Jobs;
@@ -14,21 +16,22 @@ public class TraversalApplicationServiceMockBuilder
 
     public TraversalApplicationServiceMockBuilder()
     {
-        _linkCalculatorFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(LinkCalculatorMock.Object);
-        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
+        _linkCalculatorFactoryMock.Setup(x => x.Build(It.IsAny<ILinkCalculatorOptions>())).Returns(LinkCalculatorMock.Object);
+        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<IPageRetrieverOptions>())).Returns(PageRetrieverMock.Object);
     }
 
     public Mock<IGraphSearch> GraphSearchMock { get; private set; } = new();
     public Mock<ILinkCalculator> LinkCalculatorMock { get; } = new();
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();
     public Mock<IJobBuilder> JobServiceMock { get; } = new();
+    public Mock<ICommandJobBuilder<ITraverseCommand, ITraverseJob>> CommandJobBuilderMock { get; } = new();
 
     public ITraversalApplicationService Build() =>
         new TraversalApplicationService(
             GraphSearchMock.Object,
             _pageRetrieverFactoryMock.Object,
             _linkCalculatorFactoryMock.Object,
-            JobServiceMock.Object);
+            CommandJobBuilderMock.Object);
 
     public void SetupTraversal(params IPage[] pages)
     {

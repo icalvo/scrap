@@ -1,10 +1,10 @@
-﻿using Scrap.Domain;
+﻿using Scrap.Application.Download;
+using Scrap.Domain;
 using SharpX;
 
 namespace Scrap.Application.Traversal;
 
-public interface ITraverseCommand
+public interface ITraverseCommand : INameOrRootUrlCommand
 {
-    Maybe<NameOrRootUrl> NameOrRootUrl { get; }
     bool FullScan { get; }
 }

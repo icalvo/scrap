@@ -3,8 +3,10 @@ using System.Diagnostics.CodeAnalysis;
 namespace Scrap.Domain.Resources.FileSystem;
 
 public class FileSystemResourceRepositoryConfiguration
-    : BaseResourceRepositoryConfiguration<FileSystemResourceRepository>
+    : IResourceRepositoryConfiguration
 {
+    public const string TypeName = "filesystem";
+
     [SuppressMessage("ReSharper", "UnusedMember.Local", Justification = "Deserialization by MemoryRepo")]
     public FileSystemResourceRepositoryConfiguration(string[] pathFragments, string rootFolder)
     {

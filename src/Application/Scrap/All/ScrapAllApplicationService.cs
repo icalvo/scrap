@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using Scrap.Application.Scrap.One;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Sites;
 using SharpX;
+using static SharpX.Maybe;
 
 namespace Scrap.Application.Scrap.All;
 
@@ -38,13 +40,14 @@ public class ScrapAllApplicationService : IScrapAllApplicationService
             string.Join(", ", sites.Select(x => x.Name)));
         foreach (var site in sites)
         {
-            await _jobBuilder.BuildJob(
+            var buildJob = _jobBuilder.BuildSingleScrapJob(
                 site,
-                null,
+                Nothing<Uri>(),
                 command.FullScan,
                 command.DownloadAlways,
                 command.DisableMarkingVisited,
-                command.DisableResourceWrites).DoAsync(
+                command.DisableResourceWrites);
+            await buildJob.DoAsync(
                 async job =>
                 {
                     try

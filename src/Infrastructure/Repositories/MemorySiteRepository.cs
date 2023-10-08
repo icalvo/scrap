@@ -73,7 +73,7 @@ public class MemorySiteRepository : ISiteRepository
     public async IAsyncEnumerable<Site> FindByRootUrlAsync(string rootUrl)
     {
         var store = await _store.ValueAsync();
-        var result = store.Values.Where(x => x.UrlPattern != null && Regex.IsMatch(rootUrl, x.UrlPattern));
+        var result = store.Values.Where(x => x.UrlPattern.Select(p => Regex.IsMatch(rootUrl, p)).FromJust3(false));
         foreach (var site in result)
         {
             _logger.LogTrace("Found site {Site} matching URL pattern {UrlPattern}", site.Name, site.UrlPattern);

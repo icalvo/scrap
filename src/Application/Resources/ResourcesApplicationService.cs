@@ -1,4 +1,5 @@
-﻿using Scrap.Common;
+﻿using Scrap.Application.Download;
+using Scrap.Common;
 using Scrap.Domain;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
@@ -9,25 +10,25 @@ namespace Scrap.Application.Resources;
 public class ResourcesApplicationService : IResourcesApplicationService
 {
     private readonly IPageRetrieverFactory _pageRetrieverFactory;
-    private readonly IJobBuilder _sitesApplicationBuilder;
+    private readonly ICommandJobBuilder<IResourceCommand, IResourcesJob> _siteFactory;
 
-    public ResourcesApplicationService(IPageRetrieverFactory pageRetrieverFactory, IJobBuilder sitesApplicationBuilder)
+    public ResourcesApplicationService(
+        IPageRetrieverFactory pageRetrieverFactory,
+        ICommandJobBuilder<IResourceCommand, IResourcesJob> siteFactory)
     {
         _pageRetrieverFactory = pageRetrieverFactory;
-        _sitesApplicationBuilder = sitesApplicationBuilder;
+        _siteFactory = siteFactory;
     }
 
-    public IAsyncEnumerable<string> GetResourcesAsync(IResourceCommand oneCommand) =>
-        _sitesApplicationBuilder
-            .BuildJobAsync(oneCommand.NameOrRootUrl, oneCommand.FullScan, oneCommand.DownloadAlways, oneCommand.DisableMarkingVisited, oneCommand.DisableResourceWrites)
-            .MapAsync(x => GetResourcesAsync(x.job, oneCommand.PageUrl, oneCommand.PageIndex));
+    public IAsyncEnumerable<string> GetResourcesAsync(IResourceCommand command) =>
+        _siteFactory.Build(command)
+            .MapAsync(x => GetResourcesAsync(x.Item1, command.PageUrl, command.PageIndex));
 
     private async IAsyncEnumerable<string> GetResourcesAsync(IResourcesJob job, Uri pageUrl, int pageIndex)
     {
-        job.ValidateResourceCapabilities();
         var pageRetriever = _pageRetrieverFactory.Build(job);
         var page = await pageRetriever.GetPageAsync(pageUrl);
-        var resources = ResourceLinks(page, pageIndex, job.ResourceXPath!).Select(x => x.ResourceUrl.AbsoluteUri);
+        var resources = ResourceLinks(page, pageIndex, job.ResourceXPath).Select(x => x.ResourceUrl.AbsoluteUri);
 
         foreach (var resource in resources)
         {

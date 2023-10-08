@@ -1,18 +1,20 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
 using NSubstitute;
+using Scrap.Application;
 using Scrap.Application.Download;
+using Scrap.Common;
 using Scrap.Domain.Downloads;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
 using Scrap.Domain.Resources;
+using Scrap.Domain.Sites;
 using Xunit.Abstractions;
 
 namespace Scrap.Tests.Unit.ApplicationServices;
 
 public class DownloadApplicationServiceMockBuilder
 {
-    private readonly ITestOutputHelper _output;
     private readonly IPageRetrieverFactory _pageRetrieverFactory = Substitute.For<IPageRetrieverFactory>();
 
     private readonly IResourceRepositoryFactory _resourceRepositoryFactory =
@@ -25,11 +27,9 @@ public class DownloadApplicationServiceMockBuilder
 
     public DownloadApplicationServiceMockBuilder(ITestOutputHelper output)
     {
-        _output = output;
-
-        _pageRetrieverFactory.Build(Arg.Any<Job>()).Returns(PageRetrieverMock.Object);
-        _resourceRepositoryFactory.BuildAsync(Arg.Any<Job>()).Returns(ResourceRepositoryMock.Object);
-        _streamProviderFactory.Build(Arg.Any<Job>()).Returns(_streamProvider);
+        _pageRetrieverFactory.Build(Arg.Any<IPageRetrieverOptions>()).Returns(PageRetrieverMock.Object);
+        _resourceRepositoryFactory.BuildAsync(Arg.Any<IResourceRepositoryOptions>()).Returns(ResourceRepositoryMock.Object);
+        _streamProviderFactory.Build(Arg.Any<IDownloadStreamProviderOptions>()).Returns(_streamProvider);
         _streamProvider.SetupWithString();
         LoggerMock.SetupWithOutput(output);
     }
@@ -37,30 +37,24 @@ public class DownloadApplicationServiceMockBuilder
     public Mock<ILogger> LoggerMock { get; } = new();
     public Mock<IResourceRepository> ResourceRepositoryMock { get; } = new();
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();
-    public Mock<IJobBuilder> JobServiceMock { get; } = new();
+    public Mock<ICommandJobBuilder<IDownloadCommand, IDownloadJob>> CommandJobBuilderMock { get; } = new();
 
     public IDownloadApplicationService Build() =>
         new DownloadApplicationService(
             _pageRetrieverFactory,
             _resourceRepositoryFactory,
             _streamProviderFactory,
-            JobServiceMock.Object,
-            LoggerMock.Object.ToGeneric<DownloadApplicationService>());
+            LoggerMock.Object.ToGeneric<DownloadApplicationService>(),
+            CommandJobBuilderMock.Object);
+}
 
-    public void SetupTraversal(params IPage[] pages)
+public static class CommandJobBuilderExtensions
+{
+    public static void SetupCommandJobBuilder<TCommand, TJob>(
+        this Mock<ICommandJobBuilder<TCommand, TJob>> commandJobBuilderMock, TJob job, string siteName)
     {
-        foreach (var pageMock in pages)
-        {
-            PageRetrieverMock.Setup(x => x.GetPageAsync(pageMock.Uri)).ReturnsAsync(pageMock);
-        }
-    }
-
-    public void SetupTraversal2(params IPage[] pages)
-    {
-        foreach (var pageMock in pages)
-        {
-            PageRetrieverMock.Setup(x => x.GetPageAsync(pageMock.Uri)).ThrowsAsync(new Exception());
-            PageRetrieverMock.Setup(x => x.GetPageWithoutCacheAsync(pageMock.Uri)).ReturnsAsync(pageMock);
-        }
+        commandJobBuilderMock.Setup(x =>
+            x.Build(It.IsAny<TCommand>())).ReturnsAsync(
+            (job, new Site(siteName)).ToUnitResult());
     }
 }

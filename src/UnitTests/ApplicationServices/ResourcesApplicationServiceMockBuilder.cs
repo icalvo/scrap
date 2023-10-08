@@ -1,4 +1,6 @@
 ﻿using Moq;
+using Scrap.Application;
+using Scrap.Application.Download;
 using Scrap.Application.Resources;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
@@ -11,30 +13,20 @@ public class ResourcesApplicationServiceMockBuilder
 
     public ResourcesApplicationServiceMockBuilder()
     {
-        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
-        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<Job>())).Returns(PageRetrieverMock.Object);
+        _pageRetrieverFactoryMock.Setup(x => x.Build(It.IsAny<IPageRetrieverOptions>())).Returns(PageRetrieverMock.Object);
     }
 
     public Mock<IPageRetriever> PageRetrieverMock { get; } = new();
-    public Mock<IJobBuilder> JobServiceMock { get; } = new();
+    public Mock<ICommandJobBuilder<IResourceCommand, IResourcesJob>> CommandJobBuilderMock { get; } = new();
 
     public IResourcesApplicationService Build() =>
-        new ResourcesApplicationService(_pageRetrieverFactoryMock.Object, JobServiceMock.Object);
+        new ResourcesApplicationService(_pageRetrieverFactoryMock.Object, CommandJobBuilderMock.Object);
 
     public void SetupTraversal(params IPage[] pages)
     {
         foreach (var pageMock in pages)
         {
             PageRetrieverMock.Setup(x => x.GetPageAsync(pageMock.Uri)).ReturnsAsync(pageMock);
-        }
-    }
-
-    public void SetupTraversal2(params IPage[] pages)
-    {
-        foreach (var pageMock in pages)
-        {
-            PageRetrieverMock.Setup(x => x.GetPageAsync(pageMock.Uri)).ThrowsAsync(new Exception());
-            PageRetrieverMock.Setup(x => x.GetPageWithoutCacheAsync(pageMock.Uri)).ReturnsAsync(pageMock);
         }
     }
 }

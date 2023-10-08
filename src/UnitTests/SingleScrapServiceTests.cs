@@ -20,12 +20,12 @@ public class SingleScrapServiceTests
     [Fact]
     public async Task ExecuteJobAsync_Downloads()
     {
-        var job = JobBuilder.Build(ResourceType.DownloadLink);
+        var job = JobBuilder.BuildScrap(ResourceType.DownloadLink);
 
         var scrapDownloadsServiceMock = new Mock<IScrapDownloadsService>();
-        scrapDownloadsServiceMock.Setup(x => x.DownloadLinksAsync(It.IsAny<Job>())).Returns(Task.CompletedTask);
+        scrapDownloadsServiceMock.Setup(x => x.DownloadLinksAsync(It.IsAny<ISingleScrapJob>())).Returns(Task.CompletedTask);
         var scrapTextServiceMock = new Mock<IScrapTextService>();
-        scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<Job>())).Returns(Task.CompletedTask);
+        scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<ISingleScrapJob>())).Returns(Task.CompletedTask);
         var service = new SingleScrapService(
             scrapDownloadsServiceMock.Object,
             scrapTextServiceMock.Object,
@@ -33,19 +33,19 @@ public class SingleScrapServiceTests
 
         await service.ExecuteJobAsync("a", job);
 
-        scrapDownloadsServiceMock.Verify(x => x.DownloadLinksAsync(It.IsAny<Job>()), Times.Once);
-        scrapTextServiceMock.Verify(x => x.ScrapTextAsync(It.IsAny<Job>()), Times.Never);
+        scrapDownloadsServiceMock.Verify(x => x.DownloadLinksAsync(It.IsAny<ISingleScrapJob>()), Times.Once);
+        scrapTextServiceMock.Verify(x => x.ScrapTextAsync(It.IsAny<ISingleScrapJob>()), Times.Never);
     }
 
     [Fact]
     public async Task ExecuteJobAsync_Texts()
     {
-        var job = JobBuilder.Build(ResourceType.Text);
+        var job = JobBuilder.BuildScrap(ResourceType.Text);
 
         var scrapDownloadsServiceMock = new Mock<IScrapDownloadsService>();
-        scrapDownloadsServiceMock.Setup(x => x.DownloadLinksAsync(It.IsAny<Job>())).Returns(Task.CompletedTask);
+        scrapDownloadsServiceMock.Setup(x => x.DownloadLinksAsync(It.IsAny<ISingleScrapJob>())).Returns(Task.CompletedTask);
         var scrapTextServiceMock = new Mock<IScrapTextService>();
-        scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<Job>())).Returns(Task.CompletedTask);
+        scrapTextServiceMock.Setup(x => x.ScrapTextAsync(It.IsAny<ISingleScrapJob>())).Returns(Task.CompletedTask);
         var service = new SingleScrapService(
             scrapDownloadsServiceMock.Object,
             scrapTextServiceMock.Object,
@@ -53,7 +53,7 @@ public class SingleScrapServiceTests
 
         await service.ExecuteJobAsync("a", job);
 
-        scrapDownloadsServiceMock.Verify(x => x.DownloadLinksAsync(It.IsAny<Job>()), Times.Never);
-        scrapTextServiceMock.Verify(x => x.ScrapTextAsync(It.IsAny<Job>()), Times.Once);
+        scrapDownloadsServiceMock.Verify(x => x.DownloadLinksAsync(It.IsAny<ISingleScrapJob>()), Times.Never);
+        scrapTextServiceMock.Verify(x => x.ScrapTextAsync(It.IsAny<ISingleScrapJob>()), Times.Once);
     }
 }

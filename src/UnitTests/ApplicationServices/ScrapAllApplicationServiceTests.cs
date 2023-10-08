@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Moq;
 using NSubstitute;
 using Scrap.Application.Scrap;
 using Scrap.Application.Scrap.All;
@@ -16,7 +17,7 @@ public class ScrapAllApplicationServiceTests
     [Fact]
     public async Task ScrapAllAsync()
     {
-        var job = JobBuilder.Build(ResourceType.DownloadLink);
+        var job = Mock.Of<ISingleScrapJob>();
 
         var jobService = Substitute.For<IJobBuilder>();
         var siteRepository = Substitute.For<ISiteRepository>();
@@ -35,10 +36,10 @@ public class ScrapAllApplicationServiceTests
                     resourceRepoArgs: Substitute.For<IResourceRepositoryConfiguration?>())
             }.ToAsyncEnumerable());
 
-        jobService.BuildJob(
+        jobService.BuildSingleScrapJob(
             Arg.Is<Site>(y => y.Name == "C" || y.Name == "D"),
-                null,
-                null,
+            Maybe.Nothing<Uri>(), 
+                false,
                 false,
                 false,
             false).Returns(job.ToJust());
@@ -52,7 +53,7 @@ public class ScrapAllApplicationServiceTests
 
         await service.ScrapAllAsync(Substitute.For<IScrapAllCommand>());
 
-        await singleScrapService.Received(2).ExecuteJobAsync(Arg.Any<string>(), Arg.Any<Job>());
+        await singleScrapService.Received(2).ExecuteJobAsync(Arg.Any<string>(), Arg.Any<ISingleScrapJob>());
         await singleScrapService.Received().ExecuteJobAsync("C", job);
         await singleScrapService.Received().ExecuteJobAsync("D", job);
     }

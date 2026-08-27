@@ -93,7 +93,7 @@ public class DropboxFileSystem : IRawFileSystem
         IOAuthCodeGetter getter)
     {
         string? existingRefreshToken = await tokenRepository.GetTokenAsync();
-        
+
 
         var (refreshToken, client) = await GetDropboxClientAuxAsync(appKey, existingRefreshToken, getter);
 
@@ -151,13 +151,13 @@ public class DropboxFileSystem : IRawFileSystem
             OAuth2Response tokenResult = await DropboxOAuth2Helper.ProcessCodeFlowAsync(
                 code: code,
                 appKey: appKey,
-                codeVerifier: codeVerifier,
-                redirectUri: null);
+                redirectUri: null,
+                codeVerifier: codeVerifier);
             var client = new DropboxClient(
-                appKey: appKey,
                 oauth2AccessToken: tokenResult.AccessToken,
                 oauth2RefreshToken: tokenResult.RefreshToken,
-                oauth2AccessTokenExpiresAt: tokenResult.ExpiresAt ?? default(DateTime));
+                oauth2AccessTokenExpiresAt: tokenResult.ExpiresAt ?? default,
+                appKey: appKey);
             return (tokenResult.RefreshToken, client);
         }
     }

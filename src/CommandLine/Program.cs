@@ -32,7 +32,7 @@ var commandSetups = new ICommandSetup[]
 var optionTypes = commandSetups.Select(x => x.OptionsType).ToArray();
 var parser = new Parser(settings => settings.HelpWriter = null);
 var parserResult = parser.ParseArguments(args, optionTypes);
-await parserResult.WithNotParsed(errors => DisplayHelp(parserResult)).WithParsedAsync(
+await parserResult.WithNotParsed(_ => DisplayHelp(parserResult)).WithParsedAsync(
     async options =>
     {
         try
@@ -135,7 +135,7 @@ async Task<(IConfiguration, IServiceCollection)> BuildServiceCollection()
     registrations.AddSingleton(registrations);
 
     return (configuration, registrations);
-        
+
     async Task<IAsyncDisposable> OpenAndDoIfExistsAsync(string path, Action<Stream> action)
     {
         if (!await fileSystem.File.ExistsAsync(path))

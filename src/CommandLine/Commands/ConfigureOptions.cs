@@ -5,7 +5,6 @@ using Scrap.Domain;
 
 namespace Scrap.CommandLine.Commands;
 
-[SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
 [Verb("configure", aliases: new[] { "c", "cfg", "config" }, HelpText = "Configures the tool")]
 public class ConfigureOptions : OptionsBase
 {
@@ -28,7 +27,6 @@ public class ConfigureOptions : OptionsBase
     public override bool CheckGlobalConfig => false;
 
     [Usage]
-    [SuppressMessage("ReSharper", "UnusedMember.Global", Justification = "Called by CommandLineParser")]
     public static IEnumerable<Example> Examples =>
         new[]
         {

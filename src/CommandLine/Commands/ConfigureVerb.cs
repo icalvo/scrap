@@ -38,6 +38,7 @@ internal sealed class ConfigureVerb : IVerb<ConfigureVerb, ConfigureOptions>
     private async Task ConfigureInteractiveAsync(IFileSystem fileSystem)
     {
         Debug.Assert(_configuration != null, nameof(_configuration) + " != null");
+        Console.WriteLine($"File system: {_fileSystemFactory.FileSystemType}");
         var globalUserConfigPath = _configuration.GlobalUserConfigPath() ?? fileSystem.DefaultGlobalUserConfigFile;
         var globalUserConfigFolder = fileSystem.Path.GetDirectoryName(globalUserConfigPath);
 

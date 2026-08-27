@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using LiteDB;
 using Microsoft.Extensions.Logging;
 using Polly;
+using Polly.Retry;
 using Scrap.Domain.Pages;
 
 namespace Scrap.Infrastructure.Repositories;
@@ -36,12 +37,23 @@ public class LiteDbVisitedPageRepository : IVisitedPageRepository
     {
         if (!_disableWrites)
         {
-            Policy.Handle<IOException>()
-                .Retry(
-                    5,
-                    (_, retryNumber) => _logger.LogWarning(
-                        "IOException while upserting; retry {RetryNumber}",
-                        retryNumber)).Execute(
+            new ResiliencePipelineBuilder()
+                .AddRetry(
+                    new RetryStrategyOptions
+                    {
+                        MaxRetryAttempts = 5,
+                        Delay = TimeSpan.Zero,
+                        ShouldHandle = new PredicateBuilder().Handle<IOException>(),
+                        OnRetry = args =>
+                        {
+                            _logger.LogWarning(
+                                "IOException while upserting; retry {RetryNumber}",
+                                args.AttemptNumber);
+                            return ValueTask.CompletedTask;
+                        }
+                    })
+                .Build()
+                .Execute(
                     () => _collection.Upsert(link.AbsoluteUri, new VisitedPage(link.AbsoluteUri)));
             _logger.LogTrace("Inserted marker {Page}", link.AbsoluteUri);
         }

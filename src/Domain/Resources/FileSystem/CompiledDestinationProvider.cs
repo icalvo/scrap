@@ -84,7 +84,7 @@ public class CompiledDestinationProvider : IDestinationProvider
         // define other necessary objects for compilation
         var assemblyName = Path.GetRandomFileName();
 
-        var references = Net70.References.All.Concat(
+        var references = Net80.References.All.Concat(
             new[]
             {
                 MetadataReference.CreateFromFile(typeof(IDestinationProvider).Assembly.Location),

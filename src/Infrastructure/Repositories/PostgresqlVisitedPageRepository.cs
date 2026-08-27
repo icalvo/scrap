@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using Polly;
+using Polly.Retry;
 using Scrap.Domain.Pages;
 
 namespace Scrap.Infrastructure.Repositories;
@@ -44,13 +45,24 @@ public class PostgresqlVisitedPageRepository : IVisitedPageRepository
     {
         if (!_disableWrites)
         {
-            await Policy.Handle<IOException>()
-                .RetryAsync(
-                    5,
-                    (_, retryNumber) => _logger.LogWarning(
-                        "IOException while upserting; retry {RetryNumber}",
-                        retryNumber)).ExecuteAsync(
-                    () => _connection.ExecuteAsync(
+            await new ResiliencePipelineBuilder()
+                .AddRetry(
+                    new RetryStrategyOptions
+                    {
+                        MaxRetryAttempts = 5,
+                        Delay = TimeSpan.Zero,
+                        ShouldHandle = new PredicateBuilder().Handle<IOException>(),
+                        OnRetry = args =>
+                        {
+                            _logger.LogWarning(
+                                "IOException while upserting; retry {RetryNumber}",
+                                args.AttemptNumber);
+                            return ValueTask.CompletedTask;
+                        }
+                    })
+                .Build()
+                .ExecuteAsync(
+                    async _ => await _connection.ExecuteAsync(
                         "UPSERT INTO page_markers(url) VALUES(@Url)",
                         new { Url = link.AbsoluteUri }));
             _logger.LogTrace("Inserted marker {Page}", link.AbsoluteUri);

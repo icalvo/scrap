@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Scrap.Common</RootNamespace>
-    <LangVersion>10</LangVersion>
+    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>Nullable</WarningsAsErrors>
     <IsPackable>false</IsPackable>
@@ -12,10 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ben.demystifier" Version="0.4.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
-    <PackageReference Include="SharpX" Version="6.3.0"/>
-    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+    <PackageReference Include="ben.demystifier" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="SharpX" />
+    <PackageReference Include="System.Linq.Async" />
   </ItemGroup>
 
 </Project>

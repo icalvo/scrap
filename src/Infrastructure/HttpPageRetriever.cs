@@ -10,20 +10,20 @@ public class HttpPageRetriever : IPageRetriever
 {
     private readonly IDownloadStreamProvider _client;
     private readonly ILogger<HttpPageRetriever> _logger;
-    private readonly IAsyncPolicy _noCachePolicy;
+    private readonly ResiliencePipeline _noCachePipeline;
     private readonly ILogger<Page> _pageLogger;
-    private readonly IAsyncPolicy _policy;
+    private readonly ResiliencePipeline _pipeline;
 
     public HttpPageRetriever(
         IDownloadStreamProvider client,
-        IAsyncPolicy policy,
-        IAsyncPolicy noCachePolicy,
+        ResiliencePipeline pipeline,
+        ResiliencePipeline noCachePipeline,
         ILogger<HttpPageRetriever> logger,
         ILoggerFactory loggerFactory)
     {
         _client = client;
-        _policy = policy;
-        _noCachePolicy = noCachePolicy;
+        _pipeline = pipeline;
+        _noCachePipeline = noCachePipeline;
         _logger = logger;
         _pageLogger = new Logger<Page>(loggerFactory);
     }
@@ -32,18 +32,26 @@ public class HttpPageRetriever : IPageRetriever
 
     public Task<IPage> GetPageWithoutCacheAsync(Uri uri) => GetPageAsync(uri, true);
 
-    private Task<IPage> GetPageAsync(Uri uri, bool noCache)
+    private async Task<IPage> GetPageAsync(Uri uri, bool noCache)
     {
-        //_logger.LogTrace("GET {Uri}", uri);
-        var policy = noCache ? _noCachePolicy : _policy;
-        return policy.ExecuteAsync<IPage>(
-            async _ =>
-            {
-                await using var stream = await _client.GetStreamAsync(uri);
-                HtmlDocument document = new();
-                document.Load(stream);
-                return new Page(uri, document, this, _pageLogger);
-            },
-            new Context($"Page {uri.AbsoluteUri}"));
+        var pipeline = noCache ? _noCachePipeline : _pipeline;
+        var context = ResilienceContextPool.Shared.Get($"Page {uri.AbsoluteUri}", CancellationToken.None);
+        try
+        {
+            return await pipeline.ExecuteAsync(
+                async (ctx, state) =>
+                {
+                    await using var stream = await state.client.GetStreamAsync(state.uri);
+                    HtmlDocument document = new();
+                    document.Load(stream);
+                    return (IPage)new Page(state.uri, document, state.retriever, state.pageLogger);
+                },
+                context,
+                (client: _client, uri, retriever: this, pageLogger: _pageLogger));
+        }
+        finally
+        {
+            ResilienceContextPool.Shared.Return(context);
+        }
     }
 }

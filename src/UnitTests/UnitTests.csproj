@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <AssemblyName>Scrap.Tests.Unit</AssemblyName>
     <RootNamespace>Scrap.Tests.Unit</RootNamespace>
@@ -11,20 +11,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="6.12.0"/>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.53"/>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0"/>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2"/>
-    <PackageReference Include="Moq" Version="4.20.69"/>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
-    <PackageReference Include="NSubstitute" Version="5.1.0"/>
-    <PackageReference Include="SharpX" Version="6.3.0"/>
-    <PackageReference Include="xunit" Version="2.5.1"/>
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.1">
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="HtmlAgilityPack" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="SharpX" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="6.0.0">
+    <PackageReference Include="coverlet.collector">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -4,8 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Polly.Caching;
-using Polly.Caching.Memory;
 using Scrap.Common.Logging;
 using Scrap.Domain;
 using Scrap.Domain.Pages;
@@ -45,7 +43,6 @@ public static class DependencyInjection
         container.AddOptions<MemoryCacheOptions>();
         container.AddMemoryCache();
 
-        container.AddSingleton<IAsyncCacheProvider, MemoryCacheProvider>();
         container.AddSingleton(
             sp =>
             {

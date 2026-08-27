@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Polly;
+using Polly.Retry;
 using Scrap.Common;
 using Scrap.Common.Graphs;
 using Scrap.Domain.Jobs;
@@ -64,22 +65,31 @@ public class ScrapDownloadsService : IScrapDownloadsService
             var privatePage = page;
 
             Task ProcessResourceAsync() =>
-                ResourceLinks(page, pageIndex, job.ResourceXPath).ToAsyncEnumerable()
+                ResourceLinks(privatePage, pageIndex, job.ResourceXPath).ToAsyncEnumerable()
                     .WhereAwait(IsNotDownloaded)
                     .SelectAwait(async resourceLink =>
                         (x: resourceLink, stream: await downloadStreamProvider.GetStreamAsync(resourceLink.ResourceUrl)))
                     .DoAwait(Download)
                     .ExecuteAsync();
 
-            return Policy.Handle<Exception>()
-                .RetryAsync(
-                    RetryCount,
-                    async (ex, retryCount) =>
+            return new ResiliencePipelineBuilder()
+                .AddRetry(
+                    new RetryStrategyOptions
                     {
-                        _logger.LogWarning("Error #{RetryCount} processing page resources: {Message}. Reloading page and trying again...", retryCount, ex.Message);
-                        privatePage = await privatePage.ReloadAsync();
+                        MaxRetryAttempts = RetryCount,
+                        Delay = TimeSpan.Zero,
+                        OnRetry = async args =>
+                        {
+                            _logger.LogWarning(
+                                "Error #{RetryCount} processing page resources: {Message}. Reloading page and trying again...",
+                                args.AttemptNumber,
+                                args.Outcome.Exception?.Message);
+                            privatePage = await privatePage.ReloadAsync();
+                        }
                     })
-                .ExecuteAsync(ProcessResourceAsync);
+                .Build()
+                .ExecuteAsync(async _ => await ProcessResourceAsync())
+                .AsTask();
         }
 
         var pageRetriever = _pageRetrieverFactory.Build(job);

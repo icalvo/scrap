@@ -1,10 +1,11 @@
 ﻿using System.Net;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Polly;
-using Polly.Caching;
 using Polly.Retry;
 using Scrap.Domain.Jobs;
 using Scrap.Domain.Pages;
+using Scrap.Infrastructure.Resilience;
 
 namespace Scrap.Infrastructure.Factories;
 
@@ -12,52 +13,65 @@ public class AsyncPolicyFactory : IAsyncPolicyFactory
 {
     private static readonly TimeSpan DefaultCacheTtl = TimeSpan.FromMinutes(5);
 
-    private readonly IAsyncCacheProvider _cacheProvider;
+    private readonly IMemoryCache _memoryCache;
     private readonly ILoggerFactory _loggerFactory;
 
-    public AsyncPolicyFactory(IAsyncCacheProvider asyncCacheProvider, ILoggerFactory loggerFactory)
+    public AsyncPolicyFactory(IMemoryCache memoryCache, ILoggerFactory loggerFactory)
     {
-        _cacheProvider = asyncCacheProvider;
+        _memoryCache = memoryCache;
         _loggerFactory = loggerFactory;
     }
 
-    public IAsyncPolicy Build(Job job, AsyncPolicyConfiguration config) => Policy.WrapAsync(Policies(job, config).ToArray());
-
-    private IEnumerable<IAsyncPolicy> Policies(Job job, AsyncPolicyConfiguration config)
+    public ResiliencePipeline Build(Job job, AsyncPolicyConfiguration config)
     {
+        var builder = new ResiliencePipelineBuilder();
+
         if (config == AsyncPolicyConfiguration.WithCache)
         {
-            yield return BuildCachePolicy();
+            var cacheLogger = _loggerFactory.CreateLogger("Cache");
+            builder.AddStrategy(
+                _ => new MemoryCacheResilienceStrategy(_memoryCache, DefaultCacheTtl, cacheLogger),
+                new MemoryCacheStrategyOptions());
         }
 
-        yield return BuildRetryPolicy(job.HttpRequestRetries);
-        yield return AsyncDelayPolicy.Create(job.HttpRequestDelayBetweenRetries);
+        if (job.HttpRequestRetries > 0)
+        {
+            builder.AddRetry(BuildRetryOptions(job.HttpRequestRetries));
+        }
+
+        if (job.HttpRequestDelayBetweenRetries > TimeSpan.Zero)
+        {
+            builder.AddStrategy(
+                _ => new FixedDelayResilienceStrategy(job.HttpRequestDelayBetweenRetries),
+                new FixedDelayStrategyOptions());
+        }
+
+        return builder.Build();
     }
 
-    private static AsyncRetryPolicy BuildRetryPolicy(int httpRequestRetries)
-    {
-        static bool IsClientError(Exception ex) =>
-            ex is HttpRequestException
+    private static RetryStrategyOptions BuildRetryOptions(int httpRequestRetries) =>
+        new()
+        {
+            MaxRetryAttempts = httpRequestRetries,
+            Delay = TimeSpan.Zero,
+            ShouldHandle = static args =>
             {
-                StatusCode: >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError
-            };
+                if (args.Outcome.Exception is HttpRequestException
+                    {
+                        StatusCode: >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError
+                    })
+                {
+                    return PredicateResult.False();
+                }
 
-        return Policy.Handle<Exception>(ex => !IsClientError(ex)).WaitAndRetryAsync(
-            httpRequestRetries,
-            _ => TimeSpan.Zero,
-            (exception, _) => { Console.WriteLine(exception.Message); });
-    }
-
-    private AsyncCachePolicy BuildCachePolicy()
-    {
-        var cacheLogger = _loggerFactory.CreateLogger("Cache");
-        return Policy.CacheAsync(
-            _cacheProvider,
-            DefaultCacheTtl,
-            (_, key) => { cacheLogger.LogRequest("CACHED", key); },
-            (_, _) => { },
-            (_, _) => { },
-            (_, _, _) => { },
-            (_, _, _) => { });
-    }
+                return args.Outcome.Exception is not null
+                    ? PredicateResult.True()
+                    : PredicateResult.False();
+            },
+            OnRetry = static args =>
+            {
+                Console.WriteLine(args.Outcome.Exception?.Message);
+                return ValueTask.CompletedTask;
+            }
+        };
 }

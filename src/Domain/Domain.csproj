@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Scrap.Domain</RootNamespace>
-    <LangVersion>10</LangVersion>
+    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>Nullable</WarningsAsErrors>
     <IsPackable>false</IsPackable>
@@ -12,21 +12,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Basic.Reference.Assemblies.Net70" Version="1.4.5"/>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.53"/>
-    <PackageReference Include="LamarCompiler" Version="6.3.0"/>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.7.0"/>
-    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.7.0"/>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0"/>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.7.0"/>
-    <PackageReference Include="Microsoft.CodeAnalysis.Scripting" Version="4.7.0"/>
-    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="4.7.0"/>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0"/>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1"/>
-    <PackageReference Include="Polly" Version="7.2.4"/>
-    <PackageReference Include="SharpX" Version="6.3.0"/>
-    <PackageReference Include="System.Linq.Async" Version="6.0.1"/>
-    <PackageReference Include="System.Text.Json" Version="7.0.3"/>
+    <PackageReference Include="Basic.Reference.Assemblies.Net80" />
+    <PackageReference Include="HtmlAgilityPack" />
+    <PackageReference Include="Microsoft.CodeAnalysis" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Scripting" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Polly" />
+    <PackageReference Include="SharpX" />
+    <PackageReference Include="System.Linq.Async" />
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>
